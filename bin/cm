@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+$LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
+
+require 'rubygems'
+require 'gli'
+require 'docurium'
+require 'docurium/cli'
+
+include GLI
+
+version Docurium::Version
+
+desc 'Generate HTML documentation'
+long_desc 'Generate HTML docs from a C header directory'
+command :doc do |c|
+
+  c.desc 'Write the output to a git branch instead'
+  c.switch [:b,:branch]
+
+  c.desc 'Write the output to this directory (defaults to "docs")'
+  c.switch [:o,:output]
+
+  c.action do |global_options,options,args|
+    dir = args.first
+    Docurium::CLI.doc(dir, options)
+  end
+end
+
+pre { |global,command,options,args| true }
+
+post { |global,command,options,args| true }
+
+on_error do |exception|
+  puts exception
+  puts exception.backtrace
+end
+
+exit GLI.run(ARGV)
