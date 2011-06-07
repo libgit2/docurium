@@ -34,7 +34,15 @@ $(function() {
     },
 
     loadFile: function(data) {
-      $(".content").load( $(this).attr('href') )
+      console.log($(this))
+      $.ajax({
+        url: $(this).attr('href'),
+        context: this,
+        success: function(data){
+          $(".content").html('<h1>' + $(this).text() + '</h1>')
+          $(".content").append(data)
+        }
+      })
       return false
     },
 

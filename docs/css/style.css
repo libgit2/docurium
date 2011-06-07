@@ -63,7 +63,8 @@ div.sidebar-shell {
 input.search {
   font-size: 12px;
   width: 308px;
-  padding: 3px 3px 3px 23px;
+  padding: 5px 5px 5px 23px;
+  margin-bottom: 8px;
   font-family: Helvetica,Arial,freesans,sans-serif;
   border: 1px solid #DDD;
   border-top-color: #CCC;
