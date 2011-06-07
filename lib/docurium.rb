@@ -1,4 +1,5 @@
 require 'json'
+require 'albino'
 require 'pp'
 
 class Docurium
@@ -13,7 +14,7 @@ class Docurium
       puts "You need to specify a directory"
     else
       @valid = true
-      @header_dir = dir
+      @header_dir = File.expand_path(dir)
     end
   end
 
@@ -27,12 +28,9 @@ class Docurium
 
   def generate_docs
     puts "generating docs from #{@header_dir}"
-    Dir.chdir(@header_dir) do
-      Dir.glob(File.join('**/*.h')).each do |header|
-        next if !File.file?(header)
-        puts "  - processing #{header}"
-        parse_header(header)
-      end
+    headers.each do |header|
+      puts "  - processing #{header}"
+      parse_header(header)
     end
     # TODO: get_version
     if @branch
@@ -44,12 +42,27 @@ class Docurium
 
   private
 
+  def headers
+    h = []
+    Dir.chdir(@header_dir) do
+      Dir.glob(File.join('**/*.h')).each do |header|
+        next if !File.file?(header)
+        h << header
+      end
+    end
+    h
+  end
+
+  def header_content(header_path)
+    File.readlines(File.join(@header_dir, header_path))
+  end
+
   def parse_header(filepath)
     in_comment = false
     current = -1
     lineno = 0
     data = []
-    File.readlines(filepath).each do |line|
+    header_content(filepath).each do |line|
       lineno += 1
       line = line.strip
       next if line.size == 0
@@ -145,6 +158,14 @@ class Docurium
     #
     FileUtils.mkdir_p(output_dir)
     Dir.chdir(output_dir) do
+      headers.each do |header|
+        puts "Highlighting (HEAD):" + header
+        content = Albino.colorize(header_content(header).join("\n"), :c)
+        FileUtils.mkdir_p(File.join('src/HEAD', File.dirname(header)))
+        File.open('src/HEAD/' + header, 'w+') do |f|
+          f.write content
+        end
+      end
       FileUtils.cp_r(File.join(here, '..', 'site', '.'), '.') 
       File.open("versions.json", 'w+') do |f|
         f.write(['HEAD'].to_json)

@@ -553,12 +553,14 @@ pre.headers + pre.highlight {
   border-radius: 0 0 3px 3px;
 }
 
-pre.highlight {
+.highlight pre {
   -webkit-border-radius:3px;
   -moz-border-radius:3px;
   border-radius:3px;
   background-color: #FAFAFB;
 }
+
+.highlight pre { line-height: 0.8em; }
 
 pre.terminal {
   background-color: #444;

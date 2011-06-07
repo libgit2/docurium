@@ -34,7 +34,8 @@ $(function() {
     },
 
     loadFile: function(data) {
-      console.log(this)
+      $(".content").load( $(this).attr('href') )
+      return false
     },
 
     refreshView: function() {
@@ -46,7 +47,7 @@ $(function() {
       files.append(title)
       filelist = $('<ul>')
       _.each(data['files'], function(file, i, data) {
-        flink = $('<a href="#">' + file['file'] + '</a>')
+        flink = $('<a href="/src/' + this.get('version') + '/' + file['file'] + '">' + file['file'] + '</a>')
         flink.click( this.loadFile )
         fitem = $('<li>')
         fitem.append(flink)
