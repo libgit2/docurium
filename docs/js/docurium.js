@@ -27,13 +27,36 @@ $(function() {
       })
     },
 
+    collapseSection: function(data) {
+      console.log($(this))
+      $(this).toggleClass('disable')
+      $(this).next().toggle(100)
+    },
+
+    loadFile: function(data) {
+      console.log(this)
+    },
+
     refreshView: function() {
       data = this.get('data')
+
+      // File Listing
+      files = $('<li>')
+      title = $('<h3 class="disable"><a href="#">Files</a></h3>').click( this.collapseSection )
+      files.append(title)
+      filelist = $('<ul>')
+      _.each(data['files'], function(file, i, data) {
+        flink = $('<a href="#">' + file['file'] + '</a>')
+        flink.click( this.loadFile )
+        fitem = $('<li>')
+        fitem.append(flink)
+        filelist.append(fitem)
+      }, this)
+      files.append(filelist)
+
       list = $('#files-list')
       list.empty()
-      _.each(data['files'], function(file) {
-        list.append($('<h3>' + file + '</h3>'))
-      }
+      list.append(files)
     }
 
   })

@@ -245,14 +245,14 @@ div.sidebar-module > ul h3.disable {
 
 
 div.sidebar-module > ul h3 a,
-div.sidebar-module > ul h3.disable span {
+div.sidebar-module > ul h3.disable a {
   padding: 8px 0px 8px 10px;
   color: #666;
   display: block;
   text-decoration: none;
 }
 
-div.sidebar-module > ul h3.disable span {
+div.sidebar-module > ul h3.disable a {
   padding-left: 20px;
   background-image: url(/shared/images/active-arrow.png);
   background-position: left center;

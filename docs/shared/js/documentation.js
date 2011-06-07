@@ -1,10 +1,10 @@
 // Init sidebar
 $(function() {
   var activeItem,
-      helpList = $('#js-help-sidebar .js-topic'),
+      helpList = $('#js-help-sidebar .subgroup'),
       firstOccurance = true
 
-  $('#js-help-sidebar .js-topic').each(function(){
+  $('#js-help-sidebar .subgroup').each(function(){
     if($(this).find('.disable').length == 0 || firstOccurance == false){
       $(this).find('.js-guides').children().hide()
     } else {
@@ -13,13 +13,13 @@ $(function() {
     }
   })
 
-  $('#js-help-sidebar .js-topic h3 a').click(function(){
-    var clickedTopic = $(this).parents('.js-topic'),
-        topicGuides = clickedTopic.find('.js-guides li')
+  $('#js-help-sidebar .subgroup h3 a').click(function(){
+    var clickedTopic = $(this).parents('.subgroup'),
+        topicGuides = clickedTopic.find('.subgroup li')
     
     if(activeItem != clickedTopic.index()){
       if(helpList.eq(activeItem)){
-        helpList.eq(activeItem).find('.js-guides li').toggle(100)
+        helpList.eq(activeItem).find('.subgroup li').toggle(100)
       }
       activeItem = clickedTopic.index()
       topicGuides.toggle(100)
