@@ -8,16 +8,16 @@ I built it to replace the Doxygen generated documentation for the libgit2 projec
 
 Run the `cm` binary and pass it your headers directory.
 
-  $ cm doc includes/
-  * generating header based docs
-    - processing limit.h
-    - processing recess.h
-  * output html in docs/
+    $ cm doc includes/
+    * generating header based docs
+      - processing limit.h
+      - processing recess.h
+    * output html in docs/
 
-  $ cm doc --branch=gh-pages includes/
-  * generating header based docs
-    - processing chacon.h
-  * output html in gh-pages branch at 3dc12a
+    $ cm doc --branch=gh-pages includes/
+    * generating header based docs
+      - processing chacon.h
+    * output html in gh-pages branch at 3dc12a
 
 # License
 
