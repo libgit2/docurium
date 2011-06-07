@@ -1,23 +1,32 @@
 $(function() {
   // our document model - stores the datastructure generated from docurium
   var Docurium = Backbone.Model.extend({
+
     initialize: function() {
-      if (!this.get("version")) {
-        this.set({"version": "unknown"})
-      }
-    }
+      this.set({'version': 'unknown'})
+      this.loadVersions()
+    },
+
+    loadVersions: function() {
+      $.get("versions.json", function(data) {
+        docurium.set({'version': 'HEAD', 'versions': data})
+        docurium.loadDoc()
+      })
+    },
+
+    loadDoc: function() {
+      version = this.get('version')
+      $.get(version + '.json', function(data) {
+        docurium.set({'files': data})
+      })
+    },
+
   })
 
-  window.docurium = new Docurium;
+  window.docurium = new Docurium
 
   docurium.bind('change:version', function(model, version) {
     $('#version').text(version)
-  });
-
-
-  $.get("versions.json", function(data) {
-    docurium.set({'version': 'HEAD'})
-    console.log(data)
   })
 
 })
