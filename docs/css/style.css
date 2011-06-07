@@ -75,3 +75,8 @@ input.search {
   background: url(/images/search_icon.png) 5px 50% no-repeat white;
 }
 
+a small { 
+  font-size: 0.8em;
+  color: #aaa;
+}
+

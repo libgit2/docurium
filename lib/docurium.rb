@@ -9,13 +9,17 @@ class Docurium
 
   def initialize(dir)
     @valid = false
-    @data = {:files => []}
+    @data = {:files => [], :functions => {}}
     if !dir
       puts "You need to specify a directory"
     else
       @valid = true
       @header_dir = File.expand_path(dir)
     end
+  end
+
+  def set_function_filter(prefix)
+    @prefix_filter = prefix
   end
 
   def set_branch(branch)
@@ -32,6 +36,7 @@ class Docurium
       puts "  - processing #{header}"
       parse_header(header)
     end
+    @data[:groups] = group_functions
     # TODO: get_version
     if @branch
       write_branch
@@ -41,6 +46,17 @@ class Docurium
   end
 
   private
+
+  def group_functions
+    func = {}
+    @data[:functions].each_pair do |key, value|
+      key = key.gsub(@prefix_filter, '') if @prefix_filter
+      group, rest = key.split('_', 2)
+      func[group] ||= []
+      func[group] << key
+    end
+    func.to_a.sort
+  end
 
   def headers
     h = []
@@ -93,8 +109,8 @@ class Docurium
       end
     end
     meta  = extract_meta(data)
-    funcs = extract_functions(data)
-    @data[:files] << {:file => filepath, :meta => meta, :functions => funcs}
+    funcs = extract_functions(filepath, data)
+    @data[:files] << {:file => filepath, :meta => meta, :functions => funcs, :lines => lineno}
   end
 
   # go through all the comment blocks and extract:
@@ -113,7 +129,8 @@ class Docurium
     {:file => file, :brief => brief, :defgroup => defgroup, :ingroup => ingroup}
   end
 
-  def extract_functions(data)
+  def extract_functions(file, data)
+    @data[:functions]
     funcs = []
     data.each do |block|
       ignore = false
@@ -123,12 +140,12 @@ class Docurium
           ret  = m[1]
           fun  = m[2]
           args = m[3]
-          funcs << {
+          @data[:functions][fun] = {
             :return => ret,
-            :function => fun,
             :args => args,
             :line => block[:line],
             :comments => block[:comments] }
+          funcs << fun
         end
         ignore = true if line =~ /\{/
       end
@@ -150,10 +167,7 @@ class Docurium
     # modules
     #
     # functions
-    # variables
-    # defines
-    # enums
-    # typedefs
+    # globals (variables, defines, enums, typedefs)
     # data structures
     #
     FileUtils.mkdir_p(output_dir)
