@@ -1,3 +1,4 @@
+require 'json'
 require 'pp'
 
 class Docurium
@@ -33,6 +34,7 @@ class Docurium
         parse_header(header)
       end
     end
+    # TODO: get_version
     if @branch
       write_branch
     else
@@ -51,6 +53,7 @@ class Docurium
       lineno += 1
       line = line.strip
       next if line.size == 0
+      next if line[0, 1] == '#' #preprocessor
 
       if m = /(.*?)\/\*(.*?)\*\//.match(line)
         code = m[1]
@@ -107,7 +110,12 @@ class Docurium
           ret  = m[1]
           fun  = m[2]
           args = m[3]
-          funcs << [ret, fun, args, block[:line], block[:comments]]
+          funcs << {
+            :return => ret,
+            :function => fun,
+            :args => args,
+            :line => block[:line],
+            :comments => block[:comments] }
         end
         ignore = true if line =~ /\{/
       end
@@ -123,6 +131,7 @@ class Docurium
   def write_dir
     output_dir = @output_dir || 'docs'
     puts "Writing to directory #{output_dir}"
+    here = File.expand_path(File.dirname(__FILE__))
 
     # files
     # modules
@@ -134,11 +143,15 @@ class Docurium
     # typedefs
     # data structures
     #
-    @data.each do |path, d|
-      puts '---'
-      puts path
-      pp d[:meta]
-      pp d[:functions]
+    FileUtils.mkdir_p(output_dir)
+    Dir.chdir(output_dir) do
+      FileUtils.cp_r(File.join(here, '..', 'site', '.'), '.') 
+      File.open("versions.json", 'w+') do |f|
+        f.write(['HEAD'].to_json)
+      end
+      File.open("HEAD.json", 'w+') do |f|
+        f.write(@data.to_json)
+      end
     end
     puts "Done!"
   end
