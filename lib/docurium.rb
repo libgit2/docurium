@@ -81,7 +81,7 @@ class Docurium
     end
     meta  = extract_meta(data)
     funcs = extract_functions(data)
-    @data[filepath] = {:meta => meta, :functions => funcs}
+    @data << {:file => filepath, :meta => meta, :functions => funcs}
   end
 
   # go through all the comment blocks and extract:
