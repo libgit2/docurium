@@ -52,6 +52,7 @@ class Docurium
     @data[:functions].each_pair do |key, value|
       k = key.gsub(@prefix_filter, '') if @prefix_filter
       group, rest = k.split('_', 2)
+      next if group.empty?
       func[group] ||= []
       func[group] << key
       func[group].sort!
@@ -135,8 +136,9 @@ class Docurium
     funcs = []
     data.each do |block|
       ignore = false
-      code = block[:code].join("\n")
-      if m = /^(.*?) ([a-z_]+)\((.*)\)/.match(code)
+      code = block[:code].join(" ")
+      puts code
+      if m = /^(.*?) ([a-z_]+)\((.*?)\)/.match(code)
         ret  = m[1].strip
         if r = /\((.*)\)/.match(ret) # strip macro
           ret = r[1]

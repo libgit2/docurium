@@ -46,7 +46,12 @@ $(function() {
 
       $('.content').empty()
       $('.content').append($('<h1>').append(fname))
-      $('.content').append($('<code>').append('(' + fdata[fname]['args'] + ')'))
+      $('.content').append($('<code>').addClass('params').append('(' + fdata[fname]['args'] + ')'))
+
+      $('.content').append($('<br>'))
+      $('.content').append($('<br>'))
+
+      $('.content').append($('<code>').addClass('params').append('returns: ' + fdata[fname]['return']))
       $('.content').append($('<br>'))
       $('.content').append($('<br>'))
       $('.content').append($('<pre>').append(fdata[fname]['comments']))
@@ -85,7 +90,7 @@ $(function() {
         f = functions[i]
         d = fdata[f]
         row = $('<tr>')
-        row.append($('<td>').attr('nowrap', true).attr('valign', 'top').append(d['return']))
+        row.append($('<td>').attr('nowrap', true).attr('valign', 'top').append(d['return'].substring(0, 20)))
         link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
         row.append($('<td>').attr('valign', 'top').addClass('methodName').append( link ))
         args = d['args'].split(',')
@@ -99,7 +104,6 @@ $(function() {
       }
       $('.content').append(table)
 
-      $('.content').append($('<hr>'))
       for(i=0; i<functions.length; i++) {
         f = functions[i]
         $('.content').append($('<h2>').attr('name', groupLink(gname, f)).append(f).append($('<small>').append(' (' + fdata[f]['args'] + ')')))
