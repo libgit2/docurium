@@ -20,6 +20,7 @@ $(function() {
       $.ajax({
         url: version + '.json',
         context: this,
+        dataType: 'json',
         success: function(data){
           console.log(this.get('version'))
           this.set({'data': data})
@@ -45,10 +46,21 @@ $(function() {
       functions = group[1]
       $('.content').empty()
       $('.content').append($('<h1>').append(gname + ' functions'))
+
+      table = $('<table>')
       for(i=0; i<functions.length; i++) {
         f = functions[i]
-        $('.content').append($('<li>').append(f))
+        d = fdata[f]
+        row = $('<tr>')
+        row.append($('<td>').append(f))
+        args = d['args'].split(',')
+        for(j=0; j<args.length; j++) {
+          row.append($('<td>').append(args[j] + ','))
+        }
+        table.append(row)
       }
+      $('.content').append(table)
+
       $('.content').append($('<hr>'))
       for(i=0; i<functions.length; i++) {
         f = functions[i]
@@ -57,7 +69,7 @@ $(function() {
         //$('.content').append($('<p>').append(fdata[f]['description']))
         $('.content').append($('<pre>').append(fdata[f]['comments']))
       }
-      ws.saveLocation("group/" + gname);
+      ws.saveLocation(docurium.get('version') + "/group/" + gname);
       return false
     },
 
@@ -126,15 +138,20 @@ $(function() {
   var Workspace = Backbone.Controller.extend({
 
     routes: {
-      "group/:func":          "group",
-      "search/:query":        "search",
+      ":version/group/:func":         "group",
+      ":version/file/*file":          "file",
+      ":version/search/:query":       "search",
     },
 
-    group: function(gname) {
+    group: function(version, gname) {
       docurium.showGroup(null, gname)
     },
 
-    search: function(query) {
+    file: function(version, fname) {
+      docurium.showFile(null, gname)
+    },
+
+    search: function(version, query) {
     }
 
   });

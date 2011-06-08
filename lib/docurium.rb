@@ -135,20 +135,17 @@ class Docurium
     funcs = []
     data.each do |block|
       ignore = false
-      block[:code].each do |line|
-        next if ignore
-        if m = /(.*?) ([a-z_]+)\((.*)\)/.match(line)
-          ret  = m[1]
-          fun  = m[2]
-          args = m[3]
-          @data[:functions][fun] = {
-            :return => ret,
-            :args => args,
-            :line => block[:line],
-            :comments => block[:comments] }
-          funcs << fun
-        end
-        ignore = true if line =~ /\{/
+      code = block[:code].join("\n")
+      if m = /^(.*?) ([a-z_]+)\((.*)\)/.match(code)
+        ret  = m[1].strip
+        fun  = m[2].strip
+        args = m[3].strip
+        @data[:functions][fun] = {
+          :return => ret,
+          :args => args,
+          :line => block[:line],
+          :comments => block[:comments] }
+        funcs << fun
       end
     end
     funcs
