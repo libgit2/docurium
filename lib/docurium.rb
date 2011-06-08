@@ -50,10 +50,11 @@ class Docurium
   def group_functions
     func = {}
     @data[:functions].each_pair do |key, value|
-      key = key.gsub(@prefix_filter, '') if @prefix_filter
-      group, rest = key.split('_', 2)
+      k = key.gsub(@prefix_filter, '') if @prefix_filter
+      group, rest = k.split('_', 2)
       func[group] ||= []
       func[group] << key
+      func[group].sort!
     end
     func.to_a.sort
   end
@@ -88,20 +89,20 @@ class Docurium
         code = m[1]
         comment = m[2]
         current += 1
-        data[current] ||= {:comments => [comment], :code => [code], :line => lineno}
+        data[current] ||= {:comments => comment, :code => [code], :line => lineno}
       elsif m = /(.*?)\/\/(.*?)/.match(line)
         code = m[1]
         comment = m[2]
         current += 1
-        data[current] ||= {:comments => [comment], :code => [code], :line => lineno}
+        data[current] ||= {:comments => comment, :code => [code], :line => lineno}
       else
         if line =~ /\/\*/
           in_comment = true  
           current += 1
         end
-        data[current] ||= {:comments => [], :code => [], :line => lineno}
+        data[current] ||= {:comments => '', :code => [], :line => lineno}
         if in_comment
-          data[current][:comments] << line
+          data[current][:comments] += line + "\n"
         else
           data[current][:code] << line
         end
@@ -172,6 +173,13 @@ class Docurium
     #
     FileUtils.mkdir_p(output_dir)
     Dir.chdir(output_dir) do
+      FileUtils.cp_r(File.join(here, '..', 'site', '.'), '.') 
+      File.open("versions.json", 'w+') do |f|
+        f.write(['HEAD'].to_json)
+      end
+      File.open("HEAD.json", 'w+') do |f|
+        f.write(@data.to_json)
+      end
       headers.each do |header|
         puts "Highlighting (HEAD):" + header
         content = Albino.colorize(header_content(header).join("\n"), :c)
@@ -179,13 +187,6 @@ class Docurium
         File.open('src/HEAD/' + header, 'w+') do |f|
           f.write content
         end
-      end
-      FileUtils.cp_r(File.join(here, '..', 'site', '.'), '.') 
-      File.open("versions.json", 'w+') do |f|
-        f.write(['HEAD'].to_json)
-      end
-      File.open("HEAD.json", 'w+') do |f|
-        f.write(@data.to_json)
       end
     end
     puts "Done!"
