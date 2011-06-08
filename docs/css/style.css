@@ -60,9 +60,16 @@ div.sidebar-shell {
   margin: 0 0;
 }
 
+div.sidebar-module {
+  width: 232px;
+}
+.content {
+  width: 660px;
+}
+
 input.search {
   font-size: 12px;
-  width: 308px;
+  width: 200px;
   padding: 5px 5px 5px 23px;
   margin-bottom: 8px;
   font-family: Helvetica,Arial,freesans,sans-serif;
