@@ -138,6 +138,9 @@ class Docurium
       code = block[:code].join("\n")
       if m = /^(.*?) ([a-z_]+)\((.*)\)/.match(code)
         ret  = m[1].strip
+        if r = /\((.*)\)/.match(ret) # strip macro
+          ret = r[1]
+        end
         fun  = m[2].strip
         args = m[3].strip
         @data[:functions][fun] = {

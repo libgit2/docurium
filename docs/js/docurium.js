@@ -33,7 +33,37 @@ $(function() {
       $(this).next().toggle(100)
     },
 
-    showGroup: function(data, manual) {
+    showFun: function(gname, fname) {
+      id = '#groupItem' + gname
+      ref = parseInt($(id).attr('ref'))
+
+      group = docurium.get('data')['groups'][ref]
+      fdata = docurium.get('data')['functions']
+      gname = group[0]
+      functions = group[1]
+      console.log(fdata)
+      console.log(ref)
+
+      $('.content').empty()
+      $('.content').append($('<h1>').append(fname))
+      $('.content').append($('<code>').append('(' + fdata[fname]['args'] + ')'))
+      $('.content').append($('<br>'))
+      $('.content').append($('<br>'))
+      $('.content').append($('<pre>').append(fdata[fname]['comments']))
+
+      $('.content').append($('<hr>'))
+      $('.content').append('Also in ' + gname + ':<br/>')
+
+      for(i=0; i<functions.length; i++) {
+        f = functions[i]
+        d = fdata[f]
+        link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
+        $('.content').append(link)
+        $('.content').append(', ')
+      }
+    },
+
+    showGroup: function(data, manual, flink) {
       if(manual) {
         id = '#groupItem' + manual
         ref = parseInt($(id).attr('ref'))
@@ -43,20 +73,28 @@ $(function() {
       group = docurium.get('data')['groups'][ref]
       fdata = docurium.get('data')['functions']
       gname = group[0]
+
+      ws.saveLocation(groupLink(gname));
+
       functions = group[1]
       $('.content').empty()
       $('.content').append($('<h1>').append(gname + ' functions'))
 
-      table = $('<table>')
+      table = $('<table>').addClass('methods')
       for(i=0; i<functions.length; i++) {
         f = functions[i]
         d = fdata[f]
         row = $('<tr>')
-        row.append($('<td>').append(f))
+        row.append($('<td>').attr('nowrap', true).attr('valign', 'top').append(d['return']))
+        link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
+        row.append($('<td>').attr('valign', 'top').addClass('methodName').append( link ))
         args = d['args'].split(',')
+        argtd = $('<td>')
         for(j=0; j<args.length; j++) {
-          row.append($('<td>').append(args[j] + ','))
+          argtd.append(args[j])
+          argtd.append($('<br>'))
         }
+        row.append(argtd)
         table.append(row)
       }
       $('.content').append(table)
@@ -64,12 +102,9 @@ $(function() {
       $('.content').append($('<hr>'))
       for(i=0; i<functions.length; i++) {
         f = functions[i]
-        $('.content').append($('<h2>').append(f))
-        $('.content').append($('<p>').append(fdata[f]['args']))
-        //$('.content').append($('<p>').append(fdata[f]['description']))
+        $('.content').append($('<h2>').attr('name', groupLink(gname, f)).append(f).append($('<small>').append(' (' + fdata[f]['args'] + ')')))
         $('.content').append($('<pre>').append(fdata[f]['comments']))
       }
-      ws.saveLocation(docurium.get('version') + "/group/" + gname);
       return false
     },
 
@@ -139,6 +174,7 @@ $(function() {
 
     routes: {
       ":version/group/:func":         "group",
+      ":version/group/:func/:file":   "groupFun",
       ":version/file/*file":          "file",
       ":version/search/:query":       "search",
     },
@@ -147,14 +183,27 @@ $(function() {
       docurium.showGroup(null, gname)
     },
 
+    groupFun: function(version, gname, fname) {
+      docurium.showFun(gname, fname)
+    },
+
     file: function(version, fname) {
-      docurium.showFile(null, gname)
+      docurium.showFile(null, fname)
     },
 
     search: function(version, query) {
-    }
+    },
 
   });
+
+  function groupLink(gname, fname) {
+    if(fname) {
+      return docurium.get('version') + "/group/" + gname + '/' + fname
+    } else {
+      return docurium.get('version') + "/group/" + gname
+    }
+  }
+
     
   window.docurium = new Docurium
   window.ws = new Workspace

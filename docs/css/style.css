@@ -87,3 +87,19 @@ a small {
   color: #aaa;
 }
 
+h2 small { 
+  font-size: 0.8em;
+  font-weight: normal;
+  color: #666;
+}
+
+table.methods {
+  width: 100%;
+}
+table.methods tr td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #ddd;
+}
+table.methods tr td.methodName a {
+  font-weight: bold;
+}
