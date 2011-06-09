@@ -171,20 +171,31 @@ class Docurium
 
         # replace ridiculous syntax
         args.gsub!(/(\w+) \(\*(.*?)\)\(([^\)]*)\)/) do |m|
-          "#{$1}(*)(#{$3.gsub(',', '###')}) #{$2}" 
+          type, name = $1, $2
+          cast = $3.gsub(',', '###')
+          "#{type}(*)(#{cast}) #{name}" 
         end
 
         args = args.split(',').map do |arg|
           argarry = arg.split(' ')
           var = argarry.pop
-          [argarry.join(' ').gsub('###', ','), var]
+          type = argarry.join(' ').gsub('###', ',') + ' '
+
+          ## split pointers off end of type or beg of name
+          var.gsub!('*') do |m|
+            type += '*'
+            ''
+          end
+          ## TODO: parse comments to extract data about args
+          {:type => type.strip, :name => var}
         end
 
         @data[:functions][fun] = {
           :return => ret,
           :args => args,
+          :file => file,
           :line => block[:line],
-          :comments => block[:comments] }
+          :comments => block[:comments].strip }
         funcs << fun
       end
     end
