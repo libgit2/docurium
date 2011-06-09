@@ -32,17 +32,21 @@ class Docurium
 
   def generate_docs
     puts "generating docs from #{@header_dir}"
-    headers.each do |header|
-      puts "  - processing #{header}"
-      parse_header(header)
-    end
-    @data[:groups] = group_functions
-    # TODO: get_version
+    puts "parsing headers"
+    parse_headers
     if @branch
       write_branch
     else
       write_dir
     end
+  end
+
+  def parse_headers
+    # TODO: get_version
+    headers.each do |header|
+      parse_header(header)
+    end
+    @data[:groups] = group_functions
   end
 
   private
@@ -57,7 +61,18 @@ class Docurium
       func[group] << key
       func[group].sort!
     end
-    func.to_a.sort
+    final = {}
+    misc = []
+    func.each_pair do |group, arr|
+      if(arr.length > 1)
+        final[group] = arr
+      else
+        misc += arr
+      end
+    end
+    final = final.to_a.sort
+    final << ['misc', misc] if misc.length > 0
+    final
   end
 
   def headers
@@ -90,12 +105,12 @@ class Docurium
         code = m[1]
         comment = m[2]
         current += 1
-        data[current] ||= {:comments => comment, :code => [code], :line => lineno}
+        data[current] ||= {:comments => clean_comment(comment), :code => [code], :line => lineno}
       elsif m = /(.*?)\/\/(.*?)/.match(line)
         code = m[1]
         comment = m[2]
         current += 1
-        data[current] ||= {:comments => comment, :code => [code], :line => lineno}
+        data[current] ||= {:comments => clean_comment(comment), :code => [code], :line => lineno}
       else
         if line =~ /\/\*/
           in_comment = true  
@@ -103,7 +118,7 @@ class Docurium
         end
         data[current] ||= {:comments => '', :code => [], :line => lineno}
         if in_comment
-          data[current][:comments] += line + "\n"
+          data[current][:comments] += clean_comment(line) + "\n"
         else
           data[current][:code] << line
         end
@@ -113,6 +128,14 @@ class Docurium
     meta  = extract_meta(data)
     funcs = extract_functions(filepath, data)
     @data[:files] << {:file => filepath, :meta => meta, :functions => funcs, :lines => lineno}
+  end
+
+  def clean_comment(comment)
+    comment = comment.gsub(/^\/\//, '')
+    comment = comment.gsub(/^\/\**/, '')
+    comment = comment.gsub(/^\**/, '')
+    comment = comment.gsub(/^[\w\*]*\//, '')
+    comment
   end
 
   # go through all the comment blocks and extract:
@@ -137,14 +160,26 @@ class Docurium
     data.each do |block|
       ignore = false
       code = block[:code].join(" ")
-      puts code
-      if m = /^(.*?) ([a-z_]+)\((.*?)\)/.match(code)
+      code = code.gsub(/\{(.*)\}/, '') # strip inline code
+      if m = /^(.*?) ([a-z_]+)\((.*)\)/.match(code)
         ret  = m[1].strip
         if r = /\((.*)\)/.match(ret) # strip macro
           ret = r[1]
         end
         fun  = m[2].strip
         args = m[3].strip
+
+        # replace ridiculous syntax
+        args.gsub!(/(\w+) \(\*(.*?)\)\(([^\)]*)\)/) do |m|
+          "#{$1}(*)(#{$3.gsub(',', '###')}) #{$2}" 
+        end
+
+        args = args.split(',').map do |arg|
+          argarry = arg.split(' ')
+          var = argarry.pop
+          [argarry.join(' ').gsub('###', ','), var]
+        end
+
         @data[:functions][fun] = {
           :return => ret,
           :args => args,

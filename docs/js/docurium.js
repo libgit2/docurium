@@ -22,7 +22,6 @@ $(function() {
         context: this,
         dataType: 'json',
         success: function(data){
-          console.log(this.get('version'))
           this.set({'data': data})
           Backbone.history.start()
         }
@@ -41,30 +40,32 @@ $(function() {
       fdata = docurium.get('data')['functions']
       gname = group[0]
       functions = group[1]
-      console.log(fdata)
-      console.log(ref)
 
-      $('.content').empty()
-      $('.content').append($('<h1>').append(fname))
-      $('.content').append($('<code>').addClass('params').append('(' + fdata[fname]['args'] + ')'))
+      content = $('.content')
+      content.empty()
+      content.append($('<h1>').append(fname))
+      content.append($('<code>').addClass('params').append('(' + fdata[fname]['args'] + ')'))
 
-      $('.content').append($('<br>'))
-      $('.content').append($('<br>'))
+      content.append($('<br><br>'))
 
-      $('.content').append($('<code>').addClass('params').append('returns: ' + fdata[fname]['return']))
-      $('.content').append($('<br>'))
-      $('.content').append($('<br>'))
-      $('.content').append($('<pre>').append(fdata[fname]['comments']))
+      content.append($('<code>').addClass('params').append('returns: ' + fdata[fname]['return']))
+      content.append($('<br><br>'))
+      content.append($('<pre>').append(fdata[fname]['comments']))
 
-      $('.content').append($('<hr>'))
-      $('.content').append('Also in ' + gname + ':<br/>')
+      content.append($('<hr>'))
+
+      flink = $('<a href="#" ref="' + ref.toString() + '" id="groupItem' + group[0] + '">' + group[0] + '</a>')
+      flink.click( docurium.showGroup )
+      content.append("Also in ")
+      content.append(flink)
+      content.append(" group: <br/>")
 
       for(i=0; i<functions.length; i++) {
         f = functions[i]
         d = fdata[f]
         link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
-        $('.content').append(link)
-        $('.content').append(', ')
+        content.append(link)
+        content.append(', ')
       }
     },
 
