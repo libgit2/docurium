@@ -106,7 +106,7 @@ table.methods tr td.methodName a {
 
 table.funcTable tr td {
   padding: 5px 10px;
-  border-bottom: 1px solid #ddd;
+  /* border-bottom: 1px solid #ddd; */
 }
 table.funcTable tr td.comment {
   color: #999;
@@ -136,6 +136,8 @@ code.params {
   margin-top: 0;
   color: #585;
 }
+
+.returns { margin-bottom: 15px; }
 
 h1.funcTitle {
   font-size: 1.1em;

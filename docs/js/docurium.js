@@ -60,16 +60,20 @@ $(function() {
       }
       content.append(argtable)
 
-      content.append($('<br><br>'))
-
+      retdiv = $('<div>').addClass('returns')
+      retdiv.append($('<h3>').append("returns"))
+      rettable = $('<table>').addClass('funcTable')
+      retrow = $('<tr>')
+      rettable.append(retrow)
+      retdiv.append(rettable)
 
       ret = fdata[fname]['return']
-      retText = 'returns: ' + ret.type
+      retrow.append($('<td>').attr('valign', 'top').append(ret.type))
       if(ret.comment) {
-        retText = retText + ' (' + ret.comment + ')'
+        retrow.append($('<td>').addClass('comment').append(ret.comment))
       }
-      content.append($('<code>').addClass('params').append(retText))
-      content.append($('<br><br>'))
+      content.append(retdiv)
+
       if (fdata[fname]['comments']) {
         content.append($('<pre>').append(fdata[fname]['comments']))
       }
