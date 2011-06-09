@@ -104,6 +104,18 @@ table.methods tr td.methodName a {
   font-weight: bold;
 }
 
+table.funcTable tr td {
+  padding: 5px 10px;
+  border-bottom: 1px solid #ddd;
+}
+table.funcTable tr td.comment {
+  color: #999;
+}
+table.funcTable tr td.var {
+  font-weight: bold;
+  color: #833;
+}
+
 code.params {
  white-space: pre-wrap;       /* css-3 */
  white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
@@ -112,8 +124,27 @@ code.params {
  word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }
 
+.example {
+  padding: 10px;
+  background: #efe;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #7a7;
+}
+.example h3 {
+  margin: 8px 0;
+  margin-top: 0;
+  color: #585;
+}
+
 h1.funcTitle {
   font-size: 1.1em;
+}
+h3.funcDesc {
+  font-size: 1.0em;
+  font-weight: normal;
+  color: #696;
+  padding-bottom: 10px;
 }
 
 h1.funcTitle small {
@@ -121,4 +152,10 @@ h1.funcTitle small {
   font-weight: normal;
   color: #888;
   margin-left: 10px;
+}
+
+div.also {
+  padding: 10px;
+  border-top: 1px solid #ddd;
+  background: #eee;
 }

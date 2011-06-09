@@ -204,12 +204,12 @@ class Docurium
         end
 
         comments = strip_block(comments)
-        comment_lines = comments.split("\n")
+        comment_lines = comments.split("\n\n")
 
         desc = ''
         if comments.size > 0
-          desc = comment_lines.shift
-          comments = comment_lines.join("\n").strip
+          desc = comment_lines.shift.split("\n").map { |e| e.strip }.join(' ')
+          comments = comment_lines.join("\n\n").strip
         end
 
         @data[:functions][fun] = {

@@ -44,20 +44,24 @@ $(function() {
       content = $('.content')
       content.empty()
 
-      content.append($('<h1>').addClass('funcTitle').append(fname).append($('<small>').append( ' ' + fdata[fname]['description'] )))
+      content.append($('<h1>').addClass('funcTitle').append(fname))
+      if(fdata[fname]['description']) {
+        sub = content.append($('<h3>').addClass('funcDesc').append( ' ' + fdata[fname]['description'] ))
+      }
 
-      argtable = $('<table>')
+      argtable = $('<table>').addClass('funcTable')
       args = fdata[fname]['args']
       for(i=0; i<args.length; i++) {
         row = $('<tr>')
-        row.append($('<td>').attr('nowrap', true).append(args[i].type))
-        row.append($('<td>').append(args[i].name))
-        row.append($('<td>').append(args[i].comment))
+        row.append($('<td>').attr('valign', 'top').attr('nowrap', true).append(args[i].type))
+        row.append($('<td>').attr('valign', 'top').addClass('var').append(args[i].name))
+        row.append($('<td>').addClass('comment').append(args[i].comment))
         argtable.append(row)
       }
       content.append(argtable)
 
       content.append($('<br><br>'))
+
 
       ret = fdata[fname]['return']
       retText = 'returns: ' + ret.type
@@ -66,23 +70,34 @@ $(function() {
       }
       content.append($('<code>').addClass('params').append(retText))
       content.append($('<br><br>'))
-      content.append($('<pre>').append(fdata[fname]['comments']))
+      if (fdata[fname]['comments']) {
+        content.append($('<pre>').append(fdata[fname]['comments']))
+      }
 
-      content.append($('<hr>'))
+      ex = $('<code>').addClass('params')
+      ex.append(fdata[fname]['return']['type'] + ' ' + fname + '(' + fdata[fname]['argline'] + ');')
+      example = $('<div>').addClass('example')
+      example.append($('<h3>').append("signature"))
+      example.append(ex)
+      content.append(example)
+
+      also = $('<div>').addClass('also')
 
       flink = $('<a href="#" ref="' + ref.toString() + '" id="groupItem' + group[0] + '">' + group[0] + '</a>')
       flink.click( docurium.showGroup )
-      content.append("Also in ")
-      content.append(flink)
-      content.append(" group: <br/>")
+      also.append("Also in ")
+      also.append(flink)
+      also.append(" group: <br/>")
 
       for(i=0; i<functions.length; i++) {
         f = functions[i]
         d = fdata[f]
         link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
-        content.append(link)
-        content.append(', ')
+        also.append(link)
+        also.append(', ')
       }
+
+      content.append(also)
     },
 
     showGroup: function(data, manual, flink) {

@@ -53,7 +53,13 @@ context "Docurium Header Parsing" do
     assert_equal 'callback',        func[:args][2][:name]
     assert_equal 'int(*)(const char *, void *)', func[:args][2][:type]
     assert_equal 'Function which will be called for every listed ref', func[:args][2][:comment]
-    assert_equal 10, func[:comments].split("\n").size
+    assert_equal 8, func[:comments].split("\n").size
+  end
+
+  test "can get the full description from multi liners" do
+    func = @data[:functions]['git_commit_create_o']
+    desc = "Create a new commit in the repository using `git_object` instances as parameters."
+    assert_equal desc, func[:description]
   end
 
   test "can group functions" do
