@@ -198,6 +198,7 @@ class Docurium
         return_comment = ''
         block[:comments].gsub!(/\@return ([^@]*)/m) do |m|
           return_comment = $1.gsub("\n", ' ').gsub("\t", ' ').strip
+          ''
         end
 
         @data[:functions][fun] = {
@@ -205,11 +206,15 @@ class Docurium
           :args => args,
           :file => file,
           :line => block[:line],
-          :comments => block[:comments] }
+          :comments => strip_block(block[:comments]) }
         funcs << fun
       end
     end
     funcs
+  end
+
+  def strip_block(block)
+    block.split("\n").map { |line| line.strip }.join("\n").strip
   end
 
   def write_branch

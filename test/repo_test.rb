@@ -51,6 +51,7 @@ context "Docurium Header Parsing" do
     assert_equal 'callback',        func[:args][2][:name]
     assert_equal 'int(*)(const char *, void *)', func[:args][2][:type]
     assert_equal 'Function which will be called for every listed ref', func[:args][2][:comment]
+    assert_equal 11, func[:comments].split("\n").size
   end
 
   test "can group functions" do

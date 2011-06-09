@@ -43,12 +43,28 @@ $(function() {
 
       content = $('.content')
       content.empty()
+
       content.append($('<h1>').append(fname))
-      content.append($('<code>').addClass('params').append('(' + fdata[fname]['args'] + ')'))
+
+      argtable = $('<table>')
+      args = fdata[fname]['args']
+      for(i=0; i<args.length; i++) {
+        row = $('<tr>')
+        row.append($('<td>').append(args[i].type))
+        row.append($('<td>').append(args[i].name))
+        row.append($('<td>').append(args[i].comment))
+        argtable.append(row)
+      }
+      content.append(argtable)
 
       content.append($('<br><br>'))
 
-      content.append($('<code>').addClass('params').append('returns: ' + fdata[fname]['return']))
+      ret = fdata[fname]['return']
+      retText = 'returns: ' + ret.type
+      if(ret.comment) {
+        retText = retText + ' (' + ret.comment + ')'
+      }
+      content.append($('<code>').addClass('params').append(retText))
       content.append($('<br><br>'))
       content.append($('<pre>').append(fdata[fname]['comments']))
 
