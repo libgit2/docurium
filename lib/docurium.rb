@@ -186,16 +186,26 @@ class Docurium
             type += '*'
             ''
           end
+          desc = ''
+          block[:comments].gsub!(/\@param #{Regexp.escape(var)} ([^@]*)/m) do |m|
+            desc = $1.gsub("\n", ' ').gsub("\t", ' ').strip
+            ''
+          end
           ## TODO: parse comments to extract data about args
-          {:type => type.strip, :name => var}
+          {:type => type.strip, :name => var, :comment => desc}
+        end
+
+        return_comment = ''
+        block[:comments].gsub!(/\@return ([^@]*)/m) do |m|
+          return_comment = $1.gsub("\n", ' ').gsub("\t", ' ').strip
         end
 
         @data[:functions][fun] = {
-          :return => ret,
+          :return => {:type => ret, :comment => return_comment},
           :args => args,
           :file => file,
           :line => block[:line],
-          :comments => block[:comments].strip }
+          :comments => block[:comments] }
         funcs << fun
       end
     end

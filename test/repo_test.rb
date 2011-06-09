@@ -18,25 +18,30 @@ context "Docurium Header Parsing" do
 
   test "can parse normal functions" do
     func = @data[:functions]['git_blob_rawcontent']
-    assert_equal 'const void *',     func[:return]
-    assert_equal 73,        func[:line]
-    assert_equal 'blob.h',  func[:file]
-    assert_equal 'blob',        func[:args][0][:name]
-    assert_equal 'git_blob *',  func[:args][0][:type]
+    assert_equal 'const void *',  func[:return][:type]
+    assert_equal 'the pointer; NULL if the blob has no contents',  func[:return][:comment]
+    assert_equal 73,              func[:line]
+    assert_equal 'blob.h',        func[:file]
+    assert_equal 'blob',          func[:args][0][:name]
+    assert_equal 'git_blob *',    func[:args][0][:type]
+    assert_equal 'pointer to the blob',  func[:args][0][:comment]
   end
 
   test "can parse defined functions" do
     func = @data[:functions]['git_tree_lookup']
-    assert_equal 'int',     func[:return]
+    assert_equal 'int',     func[:return][:type]
+    assert_equal '0 on success; error code otherwise',     func[:return][:comment]
     assert_equal 42,        func[:line]
     assert_equal 'tree.h',  func[:file]
-    assert_equal 'id',            func[:args][2][:name]
+    assert_equal 'id',               func[:args][2][:name]
     assert_equal 'const git_oid *',  func[:args][2][:type]
+    assert_equal 'identity of the tree to locate.',  func[:args][2][:comment]
   end
 
   test "can parse function cast args" do
     func = @data[:functions]['git_reference_listcb']
-    assert_equal 'int',             func[:return]
+    assert_equal 'int',             func[:return][:type]
+    assert_equal '0 on success; error code otherwise',  func[:return][:comment]
     assert_equal 301,               func[:line]
     assert_equal 'refs.h',          func[:file]
     assert_equal 'repo',              func[:args][0][:name]
@@ -45,6 +50,7 @@ context "Docurium Header Parsing" do
     assert_equal 'unsigned int',    func[:args][1][:type]
     assert_equal 'callback',        func[:args][2][:name]
     assert_equal 'int(*)(const char *, void *)', func[:args][2][:type]
+    assert_equal 'Function which will be called for every listed ref', func[:args][2][:comment]
   end
 
   test "can group functions" do
