@@ -228,8 +228,9 @@ class Docurium
     funcs
   end
 
+  # TODO: rolled this back, want to strip the first few spaces, not everything
   def strip_block(block)
-    block.split("\n").map { |line| line.strip }.join("\n").strip
+    block.strip
   end
 
   def write_branch
