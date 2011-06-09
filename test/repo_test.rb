@@ -18,10 +18,12 @@ context "Docurium Header Parsing" do
 
   test "can parse normal functions" do
     func = @data[:functions]['git_blob_rawcontent']
+    assert_equal 'Get a read-only buffer with the raw content of a blob.',  func[:description]
     assert_equal 'const void *',  func[:return][:type]
     assert_equal 'the pointer; NULL if the blob has no contents',  func[:return][:comment]
     assert_equal 73,              func[:line]
     assert_equal 'blob.h',        func[:file]
+    assert_equal 'git_blob *blob',func[:argline]
     assert_equal 'blob',          func[:args][0][:name]
     assert_equal 'git_blob *',    func[:args][0][:type]
     assert_equal 'pointer to the blob',  func[:args][0][:comment]
@@ -51,7 +53,7 @@ context "Docurium Header Parsing" do
     assert_equal 'callback',        func[:args][2][:name]
     assert_equal 'int(*)(const char *, void *)', func[:args][2][:type]
     assert_equal 'Function which will be called for every listed ref', func[:args][2][:comment]
-    assert_equal 11, func[:comments].split("\n").size
+    assert_equal 10, func[:comments].split("\n").size
   end
 
   test "can group functions" do

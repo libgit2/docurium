@@ -161,16 +161,18 @@ class Docurium
       ignore = false
       code = block[:code].join(" ")
       code = code.gsub(/\{(.*)\}/, '') # strip inline code
+      rawComments = block[:comments]
+      comments = block[:comments]
       if m = /^(.*?) ([a-z_]+)\((.*)\)/.match(code)
         ret  = m[1].strip
         if r = /\((.*)\)/.match(ret) # strip macro
           ret = r[1]
         end
         fun  = m[2].strip
-        args = m[3].strip
+        origArgs = m[3].strip
 
         # replace ridiculous syntax
-        args.gsub!(/(\w+) \(\*(.*?)\)\(([^\)]*)\)/) do |m|
+        args = origArgs.gsub(/(\w+) \(\*(.*?)\)\(([^\)]*)\)/) do |m|
           type, name = $1, $2
           cast = $3.gsub(',', '###')
           "#{type}(*)(#{cast}) #{name}" 
@@ -187,7 +189,7 @@ class Docurium
             ''
           end
           desc = ''
-          block[:comments].gsub!(/\@param #{Regexp.escape(var)} ([^@]*)/m) do |m|
+          comments = comments.gsub(/\@param #{Regexp.escape(var)} ([^@]*)/m) do |m|
             desc = $1.gsub("\n", ' ').gsub("\t", ' ').strip
             ''
           end
@@ -196,17 +198,30 @@ class Docurium
         end
 
         return_comment = ''
-        block[:comments].gsub!(/\@return ([^@]*)/m) do |m|
+        comments.gsub!(/\@return ([^@]*)/m) do |m|
           return_comment = $1.gsub("\n", ' ').gsub("\t", ' ').strip
           ''
         end
 
+        comments = strip_block(comments)
+        comment_lines = comments.split("\n")
+
+        desc = ''
+        if comments.size > 0
+          desc = comment_lines.shift
+          comments = comment_lines.join("\n").strip
+        end
+
         @data[:functions][fun] = {
+          :description => desc,
           :return => {:type => ret, :comment => return_comment},
           :args => args,
+          :argline => origArgs,
           :file => file,
           :line => block[:line],
-          :comments => strip_block(block[:comments]) }
+          :comments => comments,
+          :rawComments => rawComments
+        }
         funcs << fun
       end
     end

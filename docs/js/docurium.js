@@ -44,13 +44,13 @@ $(function() {
       content = $('.content')
       content.empty()
 
-      content.append($('<h1>').append(fname))
+      content.append($('<h1>').addClass('funcTitle').append(fname).append($('<small>').append( ' ' + fdata[fname]['description'] )))
 
       argtable = $('<table>')
       args = fdata[fname]['args']
       for(i=0; i<args.length; i++) {
         row = $('<tr>')
-        row.append($('<td>').append(args[i].type))
+        row.append($('<td>').attr('nowrap', true).append(args[i].type))
         row.append($('<td>').append(args[i].name))
         row.append($('<td>').append(args[i].comment))
         argtable.append(row)
@@ -107,13 +107,13 @@ $(function() {
         f = functions[i]
         d = fdata[f]
         row = $('<tr>')
-        row.append($('<td>').attr('nowrap', true).attr('valign', 'top').append(d['return'].substring(0, 20)))
+        row.append($('<td>').attr('nowrap', true).attr('valign', 'top').append(d['return']['type'].substring(0, 20)))
         link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
         row.append($('<td>').attr('valign', 'top').addClass('methodName').append( link ))
-        args = d['args'].split(',')
+        args = d['args']
         argtd = $('<td>')
         for(j=0; j<args.length; j++) {
-          argtd.append(args[j])
+          argtd.append(args[j].type + ' ' + args[j].name)
           argtd.append($('<br>'))
         }
         row.append(argtd)
@@ -123,8 +123,9 @@ $(function() {
 
       for(i=0; i<functions.length; i++) {
         f = functions[i]
-        $('.content').append($('<h2>').attr('name', groupLink(gname, f)).append(f).append($('<small>').append(' (' + fdata[f]['args'] + ')')))
-        $('.content').append($('<pre>').append(fdata[f]['comments']))
+        argsText = '( ' + fdata[f]['argline'] + ' )'
+        $('.content').append($('<h2>').attr('name', groupLink(gname, f)).append(f).append($('<small>').append(argsText)))
+        $('.content').append($('<pre>').append(fdata[f]['rawComments']))
       }
       return false
     },
