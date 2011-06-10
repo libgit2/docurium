@@ -30,6 +30,7 @@ $(function() {
 
     collapseSection: function(data) {
       $(this).next().toggle(100)
+      return false
     },
 
     showFun: function(gname, fname) {
@@ -104,6 +105,24 @@ $(function() {
       content.append(also)
     },
 
+    showType: function(data, manual) {
+      if(manual) {
+        id = '#typeItem' + domSafe(manual)
+        ref = parseInt($(id).attr('ref'))
+      } else {
+        ref = parseInt($(this).attr('ref'))
+      }
+      tdata = docurium.get('data')['types'][ref]
+      tname = tdata[0]
+
+      ws.saveLocation(typeLink(tname))
+
+      data = tdata[1]
+      $('.content').empty()
+      $('.content').append($('<h1>').append(tname))
+      return false
+    },
+
     showGroup: function(data, manual, flink) {
       if(manual) {
         id = '#groupItem' + manual
@@ -169,28 +188,30 @@ $(function() {
       menu = $('<li>')
       title = $('<h3><a href="#">Functions</a></h3>').click( this.collapseSection )
       menu.append(title)
-      flist = $('<ul>')
+      list = $('<ul>')
       _.each(data['groups'], function(group, i) {
         flink = $('<a href="#" ref="' + i.toString() + '" id="groupItem' + group[0] + '">' + group[0] + ' &nbsp;<small>(' + group[1].length + ')</small></a>')
         flink.click( this.showGroup )
         fitem = $('<li>')
         fitem.append(flink)
-        flist.append(fitem)
+        list.append(fitem)
       }, this)
-      menu.append(flist)
-
-      // Data Structures
-      title = $('<h3><a href="#">Data Structures</a></h3>').click( this.collapseSection )
-      menu.append(title)
-      list = $('<ul>')
+      list.hide()
       menu.append(list)
 
-      // Globals
-      title = $('<h3><a href="#">Globals</a></h3>').click( this.collapseSection )
+      // Types
+      title = $('<h3><a href="#">Types</a></h3>').click( this.collapseSection )
       menu.append(title)
       list = $('<ul>')
+      _.each(data['types'], function(group, i) {
+        flink = $('<a href="#" ref="' + i.toString() + '" id="typeItem' + domSafe(group[0]) + '">' + group[0]  + '</a>')
+        flink.click( this.showType )
+        fitem = $('<li>')
+        fitem.append(flink)
+        list.append(fitem)
+      }, this)
       menu.append(list)
-       
+
       // File Listing
       title = $('<h3><a href="#">Files</a></h3>').click( this.collapseSection )
       menu.append(title)
@@ -215,8 +236,9 @@ $(function() {
   var Workspace = Backbone.Controller.extend({
 
     routes: {
-      ":version/group/:func":         "group",
-      ":version/group/:func/:file":   "groupFun",
+      ":version/group/:group":        "group",
+      ":version/type/:type":          "showtype",
+      ":version/group/:group/:func":  "groupFun",
       ":version/file/*file":          "file",
       ":version/search/:query":       "search",
     },
@@ -227,6 +249,11 @@ $(function() {
 
     groupFun: function(version, gname, fname) {
       docurium.showFun(gname, fname)
+    },
+
+    showtype: function(version, tname) {
+      console.log("SHOWTYPE")
+      docurium.showType(null, tname)
     },
 
     file: function(version, fname) {
@@ -244,6 +271,14 @@ $(function() {
     } else {
       return docurium.get('version') + "/group/" + gname
     }
+  }
+
+  function typeLink(tname) {
+    return docurium.get('version') + "/type/" + tname
+  }
+
+  function domSafe(str) {
+    return str.replace('_', '-')
   }
 
     

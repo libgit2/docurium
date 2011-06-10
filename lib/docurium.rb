@@ -9,7 +9,7 @@ class Docurium
 
   def initialize(dir)
     @valid = false
-    @data = {:files => [], :functions => {}, :globals => {}}
+    @data = {:files => [], :functions => {}, :globals => {}, :types => {}}
     if !dir
       puts "You need to specify a directory"
     else
@@ -47,6 +47,7 @@ class Docurium
       parse_header(header)
     end
     @data[:groups] = group_functions
+    @data[:types] = @data[:types].sort # make it an assoc array
   end
 
   private
@@ -98,12 +99,45 @@ class Docurium
     content = header_content(filepath)
 
     # look for structs and enums
+    in_block = false
+    block = ''
+    linestart = 0
+    tdef, type, name = nil
     content.each do |line|
       lineno += 1
       line = line.strip
       next if line.size == 0
-      if m = /\{/.match(line)
-        puts m[0]
+      if in_block
+        block += line + "\n"
+      end
+      if m = /^(typedef )*(struct|enum) (.*?)(\{|(\w*?);)/.match(line)
+        tdef = m[1] # typdef or nil
+        type = m[2] # struct or enum
+        name = m[3] # name or nil
+        linestart = lineno
+        name.strip! if name
+        tdef.strip! if tdef
+        if m[4] == '{'
+          in_block = true
+          # struct or enum
+          # puts line
+        else
+          val = m[4].gsub(';', '').strip
+          if !name.empty?
+            name = name.gsub('*', '').strip
+            @data[:types][name] = {:tdef => tdef, :type => type, :value => val, :file => filepath, :line => lineno}
+          end
+          # single line, probably typedef
+        end
+      end
+      if m = /\}(.*?);/.match(line)
+        if !m[1].strip.empty?
+          name = m[1].strip
+        end
+        name = name.gsub('*', '').strip
+        @data[:types][name] = {:block => block, :tdef => tdef, :type => type, :value => val, :file => filepath, :line => linestart}
+        in_block = false
+        block = ''
       end
     end
     
