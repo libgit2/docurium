@@ -215,11 +215,11 @@ $(function() {
       list = $('<ul>')
 
       fitem = $('<li>')
-      fitem.append($('<span>').append("Public"))
+      fitem.append($('<span>').addClass('divide').append("Enums"))
       list.append(fitem)
 
       _.each(data['types'], function(group, i) {
-        if(group[1]['block']) {
+        if(group[1]['block'] && group[1]['type'] == 'enum') {
           flink = $('<a href="#" ref="' + i.toString() + '" id="typeItem' + domSafe(group[0]) + '">' + group[0]  + '</a>')
           flink.click( this.showType )
           fitem = $('<li>')
@@ -229,7 +229,21 @@ $(function() {
       }, this)
 
       fitem = $('<li>')
-      fitem.append($('<span>').append("Private"))
+      fitem.append($('<span>').addClass('divide').append("Public Struct"))
+      list.append(fitem)
+
+      _.each(data['types'], function(group, i) {
+        if(group[1]['block'] && group[1]['type'] != 'enum') {
+          flink = $('<a href="#" ref="' + i.toString() + '" id="typeItem' + domSafe(group[0]) + '">' + group[0]  + '</a>')
+          flink.click( this.showType )
+          fitem = $('<li>')
+          fitem.append(flink)
+          list.append(fitem)
+        }
+      }, this)
+
+      fitem = $('<li>')
+      fitem.append($('<span>').addClass('divide').append("Private Struct"))
       list.append(fitem)
 
       _.each(data['types'], function(group, i) {
@@ -241,6 +255,7 @@ $(function() {
           list.append(fitem)
         }
       }, this)
+      //list.hide()
       menu.append(list)
 
       // File Listing
