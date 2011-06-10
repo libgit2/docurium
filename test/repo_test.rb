@@ -12,7 +12,7 @@ context "Docurium Header Parsing" do
 
   test "can parse header files" do
     keys = @data.keys.map { |k| k.to_s }.sort
-    assert_equal ['files', 'functions', 'globals', 'groups', 'types'], keys
+    assert_equal ['files', 'functions', 'globals', 'groups', 'prefix', 'types'], keys
     assert_equal 150, @data[:functions].size
   end
 
@@ -40,6 +40,7 @@ context "Docurium Header Parsing" do
     assert_equal 'const void *',  func[:return][:type]
     assert_equal 'the pointer; NULL if the blob has no contents',  func[:return][:comment]
     assert_equal 73,              func[:line]
+    assert_equal 84,              func[:lineto]
     assert_equal 'blob.h',        func[:file]
     assert_equal 'git_blob *blob',func[:argline]
     assert_equal 'blob',          func[:args][0][:name]

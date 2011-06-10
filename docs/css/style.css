@@ -167,3 +167,7 @@ div.sidebar-module ul ul li span.divide {
   background: #eee;
   cursor: default;
 }
+
+div.fileLink {
+  padding: 10px;
+}

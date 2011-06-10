@@ -9,11 +9,12 @@ class Docurium
 
   def initialize(dir)
     @valid = false
-    @data = {:files => [], :functions => {}, :globals => {}, :types => {}}
+    @data = {:files => [], :functions => {}, :globals => {}, :types => {}, :prefix => ''}
     if !dir
       puts "You need to specify a directory"
     else
       @valid = true
+      @data[:prefix] = "include/git2"
       @header_dir = File.expand_path(dir)
     end
   end
@@ -114,23 +115,22 @@ class Docurium
         name.strip! if name
         tdef.strip! if tdef
         if m[4] == '{'
-          in_block = true
           # struct or enum
-          # puts line
+          in_block = true
         else
+          # single line, probably typedef
           val = m[4].gsub(';', '').strip
           if !name.empty?
             name = name.gsub('*', '').strip
             @data[:types][name] = {:tdef => tdef, :type => type, :value => val, :file => filepath, :line => lineno}
           end
-          # single line, probably typedef
         end
       elsif m = /\}(.*?);/.match(line)
         if !m[1].strip.empty?
           name = m[1].strip
         end
         name = name.gsub('*', '').strip
-        @data[:types][name] = {:block => block, :tdef => tdef, :type => type, :value => val, :file => filepath, :line => linestart}
+        @data[:types][name] = {:block => block, :tdef => tdef, :type => type, :value => val, :file => filepath, :line => linestart, :lineto => lineno}
         in_block = false
         block = ''
       elsif in_block
@@ -166,6 +166,7 @@ class Docurium
           current += 1
         end
         data[current] ||= {:comments => '', :code => [], :line => lineno}
+        data[current][:lineto] = lineno
         if in_comment
           data[current][:comments] += clean_comment(line) + "\n"
         else
@@ -275,6 +276,7 @@ class Docurium
           :argline => origArgs,
           :file => file,
           :line => block[:line],
+          :lineto => block[:lineto],
           :comments => comments,
           :rawComments => rawComments
         }
@@ -309,8 +311,13 @@ class Docurium
     FileUtils.mkdir_p(output_dir)
     Dir.chdir(output_dir) do
       FileUtils.cp_r(File.join(here, '..', 'site', '.'), '.') 
-      File.open("versions.json", 'w+') do |f|
-        f.write(['HEAD'].to_json)
+      versions = ['HEAD']
+      project = {
+        :versions => versions,
+        :github   => 'libgit2/libgit2',
+      }
+      File.open("project.json", 'w+') do |f|
+        f.write(project.to_json)
       end
       File.open("HEAD.json", 'w+') do |f|
         f.write(@data.to_json)

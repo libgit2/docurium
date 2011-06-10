@@ -9,8 +9,8 @@ $(function() {
     },
 
     loadVersions: function() {
-      $.get("versions.json", function(data) {
-        docurium.set({'version': 'HEAD', 'versions': data})
+      $.get("project.json", function(data) {
+        docurium.set({'version': 'HEAD', 'versions': data.versions, 'github': data.github})
         docurium.loadDoc()
       })
     },
@@ -103,7 +103,9 @@ $(function() {
       }
 
       content.append(also)
-      content.append($('<p>').append(fdata[fname].file + ':' + fdata[fname].line))
+      link = this.github_file(fdata[fname].file, fdata[fname].line, fdata[fname].lineto)
+      flink = $('<a>').attr('target', 'github').attr('href', link).append(fdata[fname].file)
+      content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
     },
 
     showType: function(data, manual) {
@@ -264,7 +266,7 @@ $(function() {
       menu.append(title)
       filelist = $('<ul>')
       _.each(data['files'], function(file) {
-        url = "https://github.com/" + "libgit2/libgit2" + "/blob/" + this.get('version') + "/include/git2/" + file['file']
+        url = this.github_file(file['file'])
         flink = $('<a target="github" href="' + url + '">' + file['file'] + '</a>')
         fitem = $('<li>')
         fitem.append(flink)
@@ -276,6 +278,20 @@ $(function() {
       list = $('#files-list')
       list.empty()
       list.append(menu)
+    },
+
+    github_file: function(file, line, lineto) {
+      url = "https://github.com/" + this.get('github')
+      url += "/blob/" + this.get('version') + '/' + data.prefix + '/' + file
+      if(line) {
+        url += '#L' + line.toString()
+        if(lineto) {
+          url += '-' + lineto.toString()
+        }
+      } else {
+        url += '#files'
+      }
+      return url
     }
 
   })
