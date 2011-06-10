@@ -103,6 +103,7 @@ $(function() {
       }
 
       content.append(also)
+      content.append($('<p>').append(fdata[fname].file + ':' + fdata[fname].line))
     },
 
     showType: function(data, manual) {
@@ -263,8 +264,8 @@ $(function() {
       menu.append(title)
       filelist = $('<ul>')
       _.each(data['files'], function(file) {
-        flink = $('<a href="/src/' + this.get('version') + '/' + file['file'] + '">' + file['file'] + '</a>')
-        flink.click( this.loadFile )
+        url = "https://github.com/" + "libgit2/libgit2" + "/blob/" + this.get('version') + "/include/git2/" + file['file']
+        flink = $('<a target="github" href="' + url + '">' + file['file'] + '</a>')
         fitem = $('<li>')
         fitem.append(flink)
         filelist.append(fitem)

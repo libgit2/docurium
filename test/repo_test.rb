@@ -13,7 +13,7 @@ context "Docurium Header Parsing" do
   test "can parse header files" do
     keys = @data.keys.map { |k| k.to_s }.sort
     assert_equal ['files', 'functions', 'globals', 'groups', 'types'], keys
-    assert_equal 151, @data[:functions].size
+    assert_equal 150, @data[:functions].size
   end
 
   test "can extract globals" do
@@ -85,8 +85,6 @@ context "Docurium Header Parsing" do
     group, funcs = @data[:groups].first
     assert_equal 'blob', group
     assert_equal 6, funcs.size
-    group, funcs = @data[:groups].last
-    assert_equal 'misc', group
   end
 
   test "can parse data structures" do

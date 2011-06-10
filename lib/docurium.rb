@@ -65,18 +65,8 @@ class Docurium
       func[group] << key
       func[group].sort!
     end
-    final = {}
     misc = []
-    func.each_pair do |group, arr|
-      if(arr.length > 1)
-        final[group] = arr
-      else
-        misc += arr
-      end
-    end
-    final = final.to_a.sort
-    final << ['misc', misc] if misc.length > 0
-    final
+    func.to_a.sort
   end
 
   def headers
@@ -158,6 +148,7 @@ class Docurium
       lineno += 1
       line = line.strip
       next if line.size == 0
+      next if line[0, 1] == '#'
       in_block = true if line =~ /\{/
       if m = /(.*?)\/\*(.*?)\*\//.match(line)
         code = m[1]
@@ -276,6 +267,7 @@ class Docurium
           comments = comment_lines.join("\n\n").strip
         end
 
+        next if fun == 'defined'
         @data[:functions][fun] = {
           :description => desc,
           :return => {:type => ret, :comment => return_comment},
@@ -322,14 +314,6 @@ class Docurium
       end
       File.open("HEAD.json", 'w+') do |f|
         f.write(@data.to_json)
-      end
-      headers.each do |header|
-        puts "Highlighting (HEAD):" + header
-        content = Albino.colorize(header_content(header).join("\n"), :c)
-        FileUtils.mkdir_p(File.join('src/HEAD', File.dirname(header)))
-        File.open('src/HEAD/' + header, 'w+') do |f|
-          f.write content
-        end
       end
     end
     puts "Done!"

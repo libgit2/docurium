@@ -1,9 +1,5 @@
 TODO
 
-* more data menu and display
-  * functions
-  * globals (variables, defines, enums, typedefs)
-  * data structures
 * highlight / cross-link structures
 * link to header file defined (and github code?)
 * links to example usage from example docco'd code
