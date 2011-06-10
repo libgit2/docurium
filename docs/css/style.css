@@ -17,9 +17,13 @@ html {
 #main {
   background-position-y: -10px
 }
-.topsearch .nav {
-  position:relative;
-  top:9px;
+#search-field {
+  margin: 0px;
+}
+#version-box {
+  padding: 10px;
+  padding-bottom: 5px;
+  background: #eee;
 }
 
 .category_index { float: left; margin: 0.25em; width:19em; }
@@ -171,3 +175,4 @@ div.sidebar-module ul ul li span.divide {
 div.fileLink {
   padding: 10px;
 }
+

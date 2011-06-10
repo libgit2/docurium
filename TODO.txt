@@ -1,7 +1,18 @@
 TODO
 
-* highlight / cross-link structures
-* links to example usage from example docco'd code
 * searching (function names, file names, content)
 
+* home screen
+
+* read from all git tags
+
+* switch versions
+
+* show versions introduced and signature changes
+
+* links to example usage from example docco'd code
+
 * highlight menu item when selected
+
+* write directly to branch
+
