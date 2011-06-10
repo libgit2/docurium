@@ -120,6 +120,16 @@ $(function() {
       data = tdata[1]
       $('.content').empty()
       $('.content').append($('<h1>').append(tname))
+
+      $('.content').append($('<p>').append(data.type))
+      $('.content').append($('<p>').append(data.value))
+      if(data.block) {
+        $('.content').append($('<pre>').append(data.block))
+      }
+      $('.content').append($('<p>').append(data.file + ':' + data.line))
+
+      console.log(data)
+
       return false
     },
 
@@ -203,12 +213,33 @@ $(function() {
       title = $('<h3><a href="#">Types</a></h3>').click( this.collapseSection )
       menu.append(title)
       list = $('<ul>')
+
+      fitem = $('<li>')
+      fitem.append($('<span>').append("Public"))
+      list.append(fitem)
+
       _.each(data['types'], function(group, i) {
-        flink = $('<a href="#" ref="' + i.toString() + '" id="typeItem' + domSafe(group[0]) + '">' + group[0]  + '</a>')
-        flink.click( this.showType )
-        fitem = $('<li>')
-        fitem.append(flink)
-        list.append(fitem)
+        if(group[1]['block']) {
+          flink = $('<a href="#" ref="' + i.toString() + '" id="typeItem' + domSafe(group[0]) + '">' + group[0]  + '</a>')
+          flink.click( this.showType )
+          fitem = $('<li>')
+          fitem.append(flink)
+          list.append(fitem)
+        }
+      }, this)
+
+      fitem = $('<li>')
+      fitem.append($('<span>').append("Private"))
+      list.append(fitem)
+
+      _.each(data['types'], function(group, i) {
+        if(!group[1]['block']) {
+          flink = $('<a href="#" ref="' + i.toString() + '" id="typeItem' + domSafe(group[0]) + '">' + group[0]  + '</a>')
+          flink.click( this.showType )
+          fitem = $('<li>')
+          fitem.append(flink)
+          list.append(fitem)
+        }
       }, this)
       menu.append(list)
 

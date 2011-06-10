@@ -107,9 +107,6 @@ class Docurium
       lineno += 1
       line = line.strip
       next if line.size == 0
-      if in_block
-        block += line + "\n"
-      end
       if m = /^(typedef )*(struct|enum) (.*?)(\{|(\w*?);)/.match(line)
         tdef = m[1] # typdef or nil
         type = m[2] # struct or enum
@@ -129,8 +126,7 @@ class Docurium
           end
           # single line, probably typedef
         end
-      end
-      if m = /\}(.*?);/.match(line)
+      elsif m = /\}(.*?);/.match(line)
         if !m[1].strip.empty?
           name = m[1].strip
         end
@@ -138,6 +134,8 @@ class Docurium
         @data[:types][name] = {:block => block, :tdef => tdef, :type => type, :value => val, :file => filepath, :line => linestart}
         in_block = false
         block = ''
+      elsif in_block
+        block += line + "\n"
       end
     end
     
