@@ -4,8 +4,10 @@ TODO
   * functions
   * globals (variables, defines, enums, typedefs)
   * data structures
-* highlight @param, etc
-* link to header (and github code?)
+* highlight / cross-link structures
+* link to header file defined (and github code?)
 * links to example usage from example docco'd code
 * searching (function names, file names, content)
 
+* highlight menu item when selected
+* permalink file entries

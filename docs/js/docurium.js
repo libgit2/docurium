@@ -143,7 +143,8 @@ $(function() {
       for(i=0; i<functions.length; i++) {
         f = functions[i]
         argsText = '( ' + fdata[f]['argline'] + ' )'
-        $('.content').append($('<h2>').attr('name', groupLink(gname, f)).append(f).append($('<small>').append(argsText)))
+        link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
+        $('.content').append($('<h2>').append(link).append($('<small>').append(argsText)))
         $('.content').append($('<pre>').append(fdata[f]['rawComments']))
       }
       return false

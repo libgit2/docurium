@@ -9,7 +9,7 @@ class Docurium
 
   def initialize(dir)
     @valid = false
-    @data = {:files => [], :functions => {}}
+    @data = {:files => [], :functions => {}, :globals => {}}
     if !dir
       puts "You need to specify a directory"
     else
@@ -56,7 +56,10 @@ class Docurium
     @data[:functions].each_pair do |key, value|
       k = key.gsub(@prefix_filter, '') if @prefix_filter
       group, rest = k.split('_', 2)
-      next if group.empty?
+      if group.empty?
+        pp value
+        next
+      end
       func[group] ||= []
       func[group] << key
       func[group].sort!
@@ -99,7 +102,13 @@ class Docurium
       lineno += 1
       line = line.strip
       next if line.size == 0
-      next if line[0, 1] == '#' #preprocessor
+      if line[0, 1] == '#' #preprocessor
+        if m = /\#define (.*?) (.*)/.match(line)
+          @data[:globals][m[1]] = {:value => m[2].strip, :file => filepath, :line => lineno}
+        else
+          next
+        end
+      end
 
       if m = /(.*?)\/\*(.*?)\*\//.match(line)
         code = m[1]
@@ -163,6 +172,7 @@ class Docurium
       code = code.gsub(/\{(.*)\}/, '') # strip inline code
       rawComments = block[:comments]
       comments = block[:comments]
+
       if m = /^(.*?) ([a-z_]+)\((.*)\)/.match(code)
         ret  = m[1].strip
         if r = /\((.*)\)/.match(ret) # strip macro

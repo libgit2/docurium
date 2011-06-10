@@ -12,8 +12,15 @@ context "Docurium Header Parsing" do
 
   test "can parse header files" do
     keys = @data.keys.map { |k| k.to_s }.sort
-    assert_equal ['files', 'functions', 'groups'], keys
+    assert_equal ['files', 'functions', 'globals', 'groups'], keys
     assert_equal 149, @data[:functions].size
+  end
+
+  test "can extract globals" do
+    assert_equal 55, @data[:globals].size
+    entry = @data[:globals]['GIT_IDXENTRY_EXTENDED2']
+    assert_equal "index.h", entry[:file]
+    assert_equal 73, entry[:line]
   end
 
   test "can parse normal functions" do
