@@ -56,9 +56,9 @@ class Docurium
     @data[:functions].each_pair do |key, value|
       k = key.gsub(@prefix_filter, '') if @prefix_filter
       group, rest = k.split('_', 2)
-      if group.empty?
-        pp value
-        next
+      next if group.empty?
+      if !rest
+        group = value[:file].gsub('.h', '').gsub('/', '_')
       end
       func[group] ||= []
       func[group] << key
