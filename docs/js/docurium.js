@@ -52,11 +52,12 @@ $(function() {
 
       argtable = $('<table>').addClass('funcTable')
       args = fdata[fname]['args']
-      for(i=0; i<args.length; i++) {
+      for(var i=0; i<args.length; i++) {
+        arg = args[i]
         row = $('<tr>')
-        row.append($('<td>').attr('valign', 'top').attr('nowrap', true).append(args[i].type))
-        row.append($('<td>').attr('valign', 'top').addClass('var').append(args[i].name))
-        row.append($('<td>').addClass('comment').append(args[i].comment))
+        row.append($('<td>').attr('valign', 'top').attr('nowrap', true).append(this.hotLink(arg.type)))
+        row.append($('<td>').attr('valign', 'top').addClass('var').append(arg.name))
+        row.append($('<td>').addClass('comment').append(arg.comment))
         argtable.append(row)
       }
       content.append(argtable)
@@ -80,7 +81,7 @@ $(function() {
       }
 
       ex = $('<code>').addClass('params')
-      ex.append(fdata[fname]['return']['type'] + ' ' + fname + '(' + fdata[fname]['argline'] + ');')
+      ex.append(this.hotLink(fdata[fname]['return']['type'] + ' ' + fname + '(' + fdata[fname]['argline'] + ');'))
       example = $('<div>').addClass('example')
       example.append($('<h3>').append("signature"))
       example.append(ex)
@@ -106,6 +107,8 @@ $(function() {
       link = this.github_file(fdata[fname].file, fdata[fname].line, fdata[fname].lineto)
       flink = $('<a>').attr('target', 'github').attr('href', link).append(fdata[fname].file)
       content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
+
+      this.addHotlinks()
     },
 
     showType: function(data, manual) {
@@ -172,7 +175,7 @@ $(function() {
       }
       $('.content').append(table)
 
-      for(i=0; i<functions.length; i++) {
+      for(var i=0; i<functions.length; i++) {
         f = functions[i]
         argsText = '( ' + fdata[f]['argline'] + ' )'
         link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
@@ -182,16 +185,28 @@ $(function() {
       return false
     },
 
-    loadFile: function(data) {
-      $.ajax({
-        url: $(this).attr('href'),
-        context: this,
-        success: function(data){
-          $(".content").html('<h1>' + $(this).text() + '</h1>')
-          $(".content").append(data)
-        }
-      })
-      return false
+    // look for structs and link them 
+    hotLink: function(text) {
+      types = this.get('data')['types']
+      for(var i=0; i<types.length; i++) {
+        type = types[i]
+        typeName = type[0]
+        typeData = type[1]
+        re = new RegExp(typeName + ' ', 'gi');
+        link = '<a ref="' + i.toString() + '" class="typeLink' + domSafe(typeName) + '" href="#">' + typeName + '</a> '
+        text = text.replace(re, link)
+      }
+      return text
+    },
+
+    addHotlinks: function() {
+      types = this.get('data')['types']
+      for(var i=0; i<types.length; i++) {
+        type = types[i]
+        typeName = type[0]
+        className = '.typeLink' + domSafe(typeName)
+        $(className).click( this.showType )
+      }
     },
 
     refreshView: function() {
@@ -209,7 +224,6 @@ $(function() {
         fitem.append(flink)
         list.append(fitem)
       }, this)
-      list.hide()
       menu.append(list)
 
       // Types
@@ -258,7 +272,7 @@ $(function() {
           list.append(fitem)
         }
       }, this)
-      //list.hide()
+      list.hide()
       menu.append(list)
 
       // File Listing

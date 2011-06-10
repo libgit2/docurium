@@ -97,7 +97,6 @@ class Docurium
     content.each do |line|
       lineno += 1
       line = line.strip
-      next if line.size == 0
 
       if line[0, 1] == '#' #preprocessor
         if m = /\#define (.*?) (.*)/.match(line)
