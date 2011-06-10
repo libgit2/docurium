@@ -13,7 +13,7 @@ context "Docurium Header Parsing" do
   test "can parse header files" do
     keys = @data.keys.map { |k| k.to_s }.sort
     assert_equal ['files', 'functions', 'globals', 'groups', 'types'], keys
-    assert_equal 149, @data[:functions].size
+    assert_equal 151, @data[:functions].size
   end
 
   test "can extract globals" do
@@ -25,6 +25,13 @@ context "Docurium Header Parsing" do
 
   test "can extract structs and enums" do
     assert_equal 25, @data[:types].size
+  end
+
+  test "can parse sequential sigs" do
+    func = @data[:functions]['git_odb_backend_pack']
+    assert_equal 'const char *', func[:args][1][:type]
+    func = @data[:functions]['git_odb_backend_loose']
+    assert_equal 'const char *', func[:args][1][:type]
   end
 
   test "can parse normal functions" do

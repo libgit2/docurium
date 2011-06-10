@@ -107,6 +107,15 @@ class Docurium
       lineno += 1
       line = line.strip
       next if line.size == 0
+
+      if line[0, 1] == '#' #preprocessor
+        if m = /\#define (.*?) (.*)/.match(line)
+          @data[:globals][m[1]] = {:value => m[2].strip, :file => filepath, :line => lineno}
+        else
+          next
+        end
+      end
+
       if m = /^(typedef )*(struct|enum) (.*?)(\{|(\w*?);)/.match(line)
         tdef = m[1] # typdef or nil
         type = m[2] # struct or enum
@@ -140,6 +149,7 @@ class Docurium
     end
     
     in_comment = false
+    in_block = false
     current = -1
     data = []
     lineno = 0
@@ -148,14 +158,7 @@ class Docurium
       lineno += 1
       line = line.strip
       next if line.size == 0
-      if line[0, 1] == '#' #preprocessor
-        if m = /\#define (.*?) (.*)/.match(line)
-          @data[:globals][m[1]] = {:value => m[2].strip, :file => filepath, :line => lineno}
-        else
-          next
-        end
-      end
-
+      in_block = true if line =~ /\{/
       if m = /(.*?)\/\*(.*?)\*\//.match(line)
         code = m[1]
         comment = m[2]
@@ -177,9 +180,14 @@ class Docurium
         else
           data[current][:code] << line
         end
+        if (m = /(.*?);$/.match(line)) && (data[current][:code].size > 0) && !in_block
+          current += 1
+        end
         in_comment = false if line =~ /\*\//
+        in_block = false if line =~ /\}/
       end
     end
+    data.compact!
     meta  = extract_meta(data)
     funcs = extract_functions(filepath, data)
     @data[:files] << {:file => filepath, :meta => meta, :functions => funcs, :lines => lineno}
