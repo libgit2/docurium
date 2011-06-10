@@ -94,11 +94,25 @@ class Docurium
   end
 
   def parse_header(filepath)
+    lineno = 0
+    content = header_content(filepath)
+
+    # look for structs and enums
+    content.each do |line|
+      lineno += 1
+      line = line.strip
+      next if line.size == 0
+      if m = /\{/.match(line)
+        puts m[0]
+      end
+    end
+    
     in_comment = false
     current = -1
-    lineno = 0
     data = []
-    header_content(filepath).each do |line|
+    lineno = 0
+    # look for functions
+    content.each do |line|
       lineno += 1
       line = line.strip
       next if line.size == 0

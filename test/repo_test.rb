@@ -23,6 +23,9 @@ context "Docurium Header Parsing" do
     assert_equal 73, entry[:line]
   end
 
+  test "can extract structs" do
+  end
+
   test "can parse normal functions" do
     func = @data[:functions]['git_blob_rawcontent']
     assert_equal 'Get a read-only buffer with the raw content of a blob.',  func[:description]
