@@ -70,7 +70,7 @@ $(function() {
       retdiv.append(rettable)
 
       ret = fdata[fname]['return']
-      retrow.append($('<td>').attr('valign', 'top').append(ret.type))
+      retrow.append($('<td>').attr('valign', 'top').append(this.hotLink(ret.type)))
       if(ret.comment) {
         retrow.append($('<td>').addClass('comment').append(ret.comment))
       }
@@ -120,21 +120,46 @@ $(function() {
       }
       tdata = docurium.get('data')['types'][ref]
       tname = tdata[0]
+      data = tdata[1]
 
       ws.saveLocation(typeLink(tname))
 
-      data = tdata[1]
-      $('.content').empty()
-      $('.content').append($('<h1>').append(tname))
+      content = $('.content')
+      content.empty()
+      content.append($('<h1>').addClass('funcTitle').append(tname).append($("<small>").append(data.type)))
 
-      $('.content').append($('<p>').append(data.type))
-      $('.content').append($('<p>').append(data.value))
+      content.append($('<p>').append(data.value))
       if(data.block) {
-        $('.content').append($('<pre>').append(data.block))
+        content.append($('<pre>').append(data.block))
       }
-      $('.content').append($('<p>').append(data.file + ':' + data.line))
 
-      console.log(data)
+      var ret = data.used.returns
+      if (ret.length > 0) {
+        content.append($('<h3>').append('Returns'))
+      }
+      for(var i=0; i<ret.length; i++) {
+        gname = docurium.groupOf(ret[i])
+        flink = $('<a>').attr('href', '#' + groupLink(gname, ret[i])).append(ret[i])
+        flink.click( docurium.showFun )
+        content.append(flink)
+        content.append(', ')
+      }
+
+      var needs = data.used.needs
+      if (needs.length > 0) {
+        content.append($('<h3>').append('Argument In'))
+      }
+      for(var i=0; i<needs.length; i++) {
+        gname = docurium.groupOf(needs[i])
+        flink = $('<a>').attr('href', '#' + groupLink(gname, needs[i])).append(needs[i])
+        flink.click( docurium.showFun )
+        content.append(flink)
+        content.append(', ')
+      }
+
+      link = docurium.github_file(data.file, data.line, data.lineto)
+      flink = $('<a>').attr('target', 'github').attr('href', link).append(data.file)
+      content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
 
       return false
     },
@@ -197,6 +222,23 @@ $(function() {
         text = text.replace(re, link)
       }
       return text
+    },
+
+    groupHash: false,
+    groupOf: function (func) {
+      if(!this.groupHash) {
+        this.groupHash = {}
+        data = this.get('data')
+        for(var i=0; i<data['groups'].length; i++) {
+          group = data['groups'][i][1]
+          groupName = data['groups'][i][0]
+          for(var j=0; j<group.length; j++) {
+            f = group[j]
+            this.groupHash[f] = groupName
+          }
+        }
+      }
+      return this.groupHash[func]
     },
 
     addHotlinks: function() {
@@ -316,7 +358,6 @@ $(function() {
       ":version/group/:group":        "group",
       ":version/type/:type":          "showtype",
       ":version/group/:group/:func":  "groupFun",
-      ":version/file/*file":          "file",
       ":version/search/:query":       "search",
     },
 
@@ -329,12 +370,7 @@ $(function() {
     },
 
     showtype: function(version, tname) {
-      console.log("SHOWTYPE")
       docurium.showType(null, tname)
-    },
-
-    file: function(version, fname) {
-      docurium.showFile(null, fname)
     },
 
     search: function(version, query) {

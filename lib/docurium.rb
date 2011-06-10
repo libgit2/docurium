@@ -49,6 +49,7 @@ class Docurium
     end
     @data[:groups] = group_functions
     @data[:types] = @data[:types].sort # make it an assoc array
+    find_type_usage
   end
 
   private
@@ -79,6 +80,25 @@ class Docurium
       end
     end
     h
+  end
+
+  def find_type_usage
+    # go through all the functions and see where types are used and returned
+    # store them in the types data
+    @data[:functions].each do |func, fdata|
+      @data[:types].each_with_index do |tdata, i|
+        type, typeData = tdata
+        @data[:types][i][1][:used] ||= {:returns => [], :needs => []}
+        if fdata[:return][:type].index(/#{type}[ ;\)\*]/)
+          @data[:types][i][1][:used][:returns] << func
+          @data[:types][i][1][:used][:returns].sort!
+        end
+        if fdata[:argline].index(/#{type}[ ;\)\*]/)
+          @data[:types][i][1][:used][:needs] << func
+          @data[:types][i][1][:used][:needs].sort!
+        end
+      end
+    end
   end
 
   def header_content(header_path)
