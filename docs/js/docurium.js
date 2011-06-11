@@ -337,8 +337,8 @@ $(function() {
     },
 
     github_file: function(file, line, lineto) {
-      url = "https://github.com/" + this.get('github')
-      url += "/blob/" + this.get('version') + '/' + data.prefix + '/' + file
+      url = "https://github.com/" + docurium.get('github')
+      url += "/blob/" + docurium.get('version') + '/' + data.prefix + '/' + file
       if(line) {
         url += '#L' + line.toString()
         if(lineto) {

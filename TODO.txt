@@ -1,6 +1,6 @@
 TODO
 
-* searching (function names, file names, content)
+* searching (types, file names)
 
 * home screen
 
