@@ -348,6 +348,59 @@ $(function() {
         url += '#files'
       }
       return url
+    },
+
+    search: function(data) {
+      var searchResults = []
+      var value = $('#search-field').attr('value')
+      if (value.length < 3) {
+        return false
+      }
+      this.searchResults = []
+
+      ws.saveLocation(searchLink(value))
+
+      data = docurium.get('data')
+
+      // look for functions (name, comment, argline)
+      for (var name in data.functions) {
+        f = data.functions[name]
+        if (name.search(value) > -1) {
+          gname = docurium.groupOf(name)
+          var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
+          searchResults.push(['fun-' + name, flink])
+        }
+        if (f.argline) {
+          if (f.argline.search(value) > -1) {
+            gname = docurium.groupOf(name)
+            var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
+            searchResults.push(['fun-' + name, flink, f.argline])
+          }
+        }
+      }
+
+      // look for types
+      // look for files
+      content = $('.content')
+      content.empty()
+
+      content.append($('<h1>').append("Search Results"))
+      table = $("<table>")
+      var shown = {}
+      for (var i in searchResults) {
+        row = $("<tr>")
+        result = searchResults[i]
+        if (!shown[result[0]]) {
+          link = result[1]
+          match = result[2]
+          row.append($('<td>').append(link))
+          row.append($('<td>').append(match))
+          table.append(row)
+          shown[result[0]] = true
+        }
+      }
+      content.append(table)
+
     }
 
   })
@@ -374,6 +427,8 @@ $(function() {
     },
 
     search: function(version, query) {
+      $('#search-field').attr('value', query)
+      docurium.search()
     },
 
   });
@@ -390,6 +445,10 @@ $(function() {
     return docurium.get('version') + "/type/" + tname
   }
 
+  function searchLink(tname) {
+    return docurium.get('version') + "/search/" + tname
+  }
+
   function domSafe(str) {
     return str.replace('_', '-')
   }
@@ -404,5 +463,7 @@ $(function() {
   docurium.bind('change:data', function(model, data) {
     model.refreshView()
   })
+
+  $('#search-field').keyup( docurium.search )
 
 })
