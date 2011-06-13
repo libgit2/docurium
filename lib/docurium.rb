@@ -6,11 +6,12 @@ require 'pp'
 class Docurium
   Version = VERSION = '0.0.1'
 
-  attr_accessor :header_dir, :branch, :output_dir, :data
+  attr_accessor :branch, :output_dir, :data
 
   def initialize(config_file)
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
+    @sigs = {}
     clear_data
   end
 
@@ -46,6 +47,7 @@ class Docurium
         checkout(version, workdir)
         puts "parsing headers"
         parse_headers
+        tally_sigs(version)
         File.open(File.join(outdir, "#{version}.json"), 'w+') do |f|
           f.write(@data.to_json)
         end
@@ -56,6 +58,7 @@ class Docurium
       project = {
         :versions => versions.reverse,
         :github   => @options['github'],
+        :signatures => @sigs
       }
       File.open("project.json", 'w+') do |f|
         f.write(project.to_json)
@@ -87,6 +90,21 @@ class Docurium
   end
 
   private
+
+  def tally_sigs(version)
+    @lastsigs ||= {}
+    @data[:functions].each do |fun_name, fun_data|
+      if !@sigs[fun_name]
+        @sigs[fun_name] ||= {:exists => [], :changes => []}
+      else
+        if @lastsigs[fun_name] != fun_data[:sig]
+          @sigs[fun_name][:changes] << version
+        end
+      end
+      @sigs[fun_name][:exists] << version
+      @lastsigs[fun_name] = fun_data[:sig]
+    end
+  end
 
   def git(command)
     out = ''
@@ -336,6 +354,10 @@ class Docurium
           {:type => type.strip, :name => var, :comment => desc}
         end
 
+        sig = args.map do |arg|
+          arg[:type].to_s
+        end.join('::')
+
         return_comment = ''
         comments.gsub!(/\@return ([^@]*)/m) do |m|
           return_comment = $1.gsub("\n", ' ').gsub("\t", ' ').strip
@@ -361,6 +383,7 @@ class Docurium
           :line => block[:line],
           :lineto => block[:lineto],
           :comments => comments,
+          :sig => sig,
           :rawComments => rawComments
         }
         funcs << fun

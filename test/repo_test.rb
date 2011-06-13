@@ -41,12 +41,6 @@ context "Docurium Header Parsing" do
     assert_equal 39, oid[1][:used][:needs].size
   end
 
-  test "can detect signature changes" do
-    #oid = @data[:functions].assoc('git_oid')
-    #assert_equal 10, oid[1][:used][:returns].size
-    #assert_equal 39, oid[1][:used][:needs].size
-  end
-
   test "can parse normal functions" do
     func = @data[:functions]['git_blob_rawcontent']
     assert_equal 'Get a read-only buffer with the raw content of a blob.',  func[:description]
