@@ -10,9 +10,19 @@ $(function() {
 
     loadVersions: function() {
       $.getJSON("project.json", function(data) {
-        docurium.set({'version': 'HEAD', 'versions': data.versions, 'github': data.github})
-        docurium.loadDoc()
+        docurium.set({'versions': data.versions, 'github': data.github})
+        docurium.setVersion()
       })
+    },
+
+    setVersion: function (version) {
+      if(!version) {
+        version = _.last(docurium.get('versions'))
+      }
+      if(docurium.get('version') != version) {
+        docurium.set({'version': version})
+        docurium.loadDoc()
+      }
     },
 
     loadDoc: function() {
@@ -34,6 +44,8 @@ $(function() {
     },
 
     showIndexPage: function() {
+      ws.saveLocation(docurium.get('version'))
+
       data = docurium.get('data')
       console.log(data)
       content = $('.content')
@@ -442,29 +454,36 @@ $(function() {
 
     routes: {
       "":                             "main",
+      ":version":                     "main",
       ":version/group/:group":        "group",
       ":version/type/:type":          "showtype",
       ":version/group/:group/:func":  "groupFun",
       ":version/search/:query":       "search",
     },
 
-    main: function() {
+    main: function(version) {
+      console.log("MAIN (" + version + ")")
+      docurium.setVersion(version)
       docurium.showIndexPage()
     },
 
     group: function(version, gname) {
+      docurium.setVersion(version)
       docurium.showGroup(null, gname)
     },
 
     groupFun: function(version, gname, fname) {
+      docurium.setVersion(version)
       docurium.showFun(gname, fname)
     },
 
     showtype: function(version, tname) {
+      docurium.setVersion(version)
       docurium.showType(null, tname)
     },
 
     search: function(version, query) {
+      docurium.setVersion(version)
       $('#search-field').attr('value', query)
       docurium.search()
     },

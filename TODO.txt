@@ -1,7 +1,5 @@
 TODO
 
-* read from all git tags
-
 * switch versions
 
 * show versions introduced and signature changes
