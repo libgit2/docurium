@@ -39,7 +39,7 @@ $(function() {
       content = $('.content')
       content.empty()
 
-      content.append($('<h1>').append("API Docs"))
+      content.append($('<h1>').append("Public API Functions"))
 
       // Function Groups
       for (var i in data['groups']) {

@@ -5,23 +5,26 @@ require 'pp'
 class Docurium
   Version = VERSION = '0.0.1'
 
-  attr_accessor :header_dir, :branch, :output_dir, :valid, :data
+  attr_accessor :header_dir, :branch, :output_dir, :data
 
-  def initialize(dir)
-    @valid = false
+  def initialize(config_file)
     @data = {:files => [], :functions => {}, :globals => {}, :types => {}, :prefix => ''}
-    if !dir
-      puts "You need to specify a directory"
-    else
-      @valid = true
-      @data[:prefix] = "include/git2"
-      @header_dir = File.expand_path(dir)
-    end
+    raise "You need to specify a config file" if !config_file
+    raise "You need to specify a valid config file" if !valid_config(config_file)
   end
 
-  def set_function_filter(prefix)
-    @prefix_filter = prefix
+  def valid_config(file)
+    return false if !File.file?(file)
+    fpath = File.expand_path(file)
+    @project_dir = File.dirname(fpath)
+    @config_file = File.basename(fpath)
+    @options = JSON.parse(File.read(fpath))
+    @data[:prefix] = @options['input'] || ''
+    @header_dir = File.join(@project_dir, @data[:prefix])
+    raise "Not an input directory" if !File.directory?(@header_dir)
+    true
   end
+
 
   def set_branch(branch)
     @branch = branch
@@ -57,7 +60,11 @@ class Docurium
   def group_functions
     func = {}
     @data[:functions].each_pair do |key, value|
-      k = key.gsub(@prefix_filter, '') if @prefix_filter
+      if @options['prefix']
+        k = key.gsub(@options['prefix'], '')
+      else
+        k = key
+      end
       group, rest = k.split('_', 2)
       next if group.empty?
       if !rest
