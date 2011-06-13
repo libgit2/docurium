@@ -368,7 +368,7 @@ $(function() {
         if (name.search(value) > -1) {
           gname = docurium.groupOf(name)
           var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
-          searchResults.push(['fun-' + name, flink])
+          searchResults.push(['fun-' + name, flink, 'function'])
         }
         if (f.argline) {
           if (f.argline.search(value) > -1) {
@@ -376,6 +376,14 @@ $(function() {
             var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
             searchResults.push(['fun-' + name, flink, f.argline])
           }
+        }
+      }
+      for (var i in data.types) {
+        var type = data.types[i]
+        name = type[0]
+        if (name.search(value) > -1) {
+          var link = $('<a>').attr('href', '#' + typeLink(name)).append(name)
+          searchResults.push(['type-' + name, link, type[1].type])
         }
       }
 
