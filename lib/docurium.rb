@@ -52,7 +52,7 @@ class Docurium
 
     Dir.chdir(outdir) do
       project = {
-        :versions => versions,
+        :versions => versions.reverse,
         :github   => @options['github'],
       }
       File.open("project.json", 'w+') do |f|
@@ -64,6 +64,7 @@ class Docurium
       write_branch
     else
       final_dir = File.join(@project_dir, @options['output'] || 'docs')
+      FileUtils.mkdir_p(final_dir)
       Dir.chdir(final_dir) do
         FileUtils.cp_r(File.join(outdir, '.'), '.') 
       end
