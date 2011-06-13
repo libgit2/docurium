@@ -1,7 +1,5 @@
 TODO
 
-* home screen
-
 * read from all git tags
 
 * switch versions
@@ -9,6 +7,7 @@ TODO
 * show versions introduced and signature changes
 
 * links to example usage from example docco'd code
+
 
 * highlight menu item when selected
 

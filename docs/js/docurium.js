@@ -23,7 +23,6 @@ $(function() {
         dataType: 'json',
         success: function(data){
           this.set({'data': data})
-          docurium.showIndexPage()
           Backbone.history.start()
         }
       })
@@ -442,10 +441,15 @@ $(function() {
   var Workspace = Backbone.Controller.extend({
 
     routes: {
+      "":                             "main",
       ":version/group/:group":        "group",
       ":version/type/:type":          "showtype",
       ":version/group/:group/:func":  "groupFun",
       ":version/search/:query":       "search",
+    },
+
+    main: function() {
+      docurium.showIndexPage()
     },
 
     group: function(version, gname) {
