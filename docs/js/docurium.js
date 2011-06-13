@@ -9,7 +9,7 @@ $(function() {
     },
 
     loadVersions: function() {
-      $.get("project.json", function(data) {
+      $.getJSON("project.json", function(data) {
         docurium.set({'version': 'HEAD', 'versions': data.versions, 'github': data.github})
         docurium.loadDoc()
       })
