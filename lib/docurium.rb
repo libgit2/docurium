@@ -20,9 +20,11 @@ class Docurium
   end
 
   def option_version(version, option, default)
-    if valhash = @options['legacy'][option]
-      valhash.each do |value, versions|
-        return value if versions.include?(version)
+    if @options['legacy']
+      if valhash = @options['legacy'][option]
+        valhash.each do |value, versions|
+          return value if versions.include?(version)
+        end
       end
     end
     opt = @options[option]

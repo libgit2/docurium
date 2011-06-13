@@ -3,10 +3,11 @@ require 'base64'
 
 context "Docurium Header Parsing" do
   setup do
-    @path = File.dirname(__FILE__) + '/fixtures/git2'
+    @path = File.dirname(__FILE__) + '/fixtures/git2/api.docurium'
     @doc  = Docurium.new(@path)
-    @doc.set_function_filter('git_')
-    @doc.parse_headers
+    Dir.chdir(File.dirname(@path)) do
+      @doc.parse_headers
+    end
     @data = @doc.data
   end
 
@@ -38,6 +39,12 @@ context "Docurium Header Parsing" do
     oid = @data[:types].assoc('git_oid')
     assert_equal 10, oid[1][:used][:returns].size
     assert_equal 39, oid[1][:used][:needs].size
+  end
+
+  test "can detect signature changes" do
+    #oid = @data[:functions].assoc('git_oid')
+    #assert_equal 10, oid[1][:used][:returns].size
+    #assert_equal 39, oid[1][:used][:needs].size
   end
 
   test "can parse normal functions" do
