@@ -165,18 +165,37 @@ h1.funcTitle small {
   margin-left: 10px;
 }
 
-div.also {
+.also {
   padding: 10px;
   border-top: 1px solid #ddd;
   background: #eee;
 }
 
-div.sidebar-module ul ul li span.divide {
+.sidebar-module ul ul li span.divide {
   background: #eee;
   cursor: default;
 }
 
-div.fileLink {
+.fileLink {
   padding: 10px;
 }
 
+.signatures {
+  padding: 10px;
+}
+
+.signatures a {
+  background: #eec;
+  padding: 4px;
+  margin: 0;
+  color: #000;
+}
+
+.signatures a.changed {
+  background: #ecc;
+}
+
+.signatures h3 {
+  margin: 8px 0;
+  margin-top: 0;
+}

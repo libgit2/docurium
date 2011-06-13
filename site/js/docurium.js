@@ -10,7 +10,7 @@ $(function() {
 
     loadVersions: function() {
       $.getJSON("project.json", function(data) {
-        docurium.set({'versions': data.versions, 'github': data.github})
+        docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures})
         docurium.setVersionPicker()
         docurium.setVersion()
       })
@@ -59,7 +59,6 @@ $(function() {
       ws.saveLocation(docurium.get('version'))
 
       data = docurium.get('data')
-      console.log(data)
       content = $('.content')
       content.empty()
 
@@ -94,11 +93,13 @@ $(function() {
       content = $('.content')
       content.empty()
 
+      // Show Function Name
       content.append($('<h1>').addClass('funcTitle').append(fname))
       if(fdata[fname]['description']) {
         sub = content.append($('<h3>').addClass('funcDesc').append( ' ' + fdata[fname]['description'] ))
       }
 
+      // Show Function Arguments
       argtable = $('<table>').addClass('funcTable')
       args = fdata[fname]['args']
       for(var i=0; i<args.length; i++) {
@@ -111,6 +112,7 @@ $(function() {
       }
       content.append(argtable)
 
+      // Show Function Return Value
       retdiv = $('<div>').addClass('returns')
       retdiv.append($('<h3>').append("returns"))
       rettable = $('<table>').addClass('funcTable')
@@ -125,10 +127,12 @@ $(function() {
       }
       content.append(retdiv)
 
+      // Show Non-Parsed Function Comments
       if (fdata[fname]['comments']) {
         content.append($('<pre>').append(fdata[fname]['comments']))
       }
 
+      // Show Function Signature
       ex = $('<code>').addClass('params')
       ex.append(this.hotLink(fdata[fname]['return']['type'] + ' ' + fname + '(' + fdata[fname]['argline'] + ');'))
       example = $('<div>').addClass('example')
@@ -136,8 +140,27 @@ $(function() {
       example.append(ex)
       content.append(example)
 
-      also = $('<div>').addClass('also')
+      // Show Function History
+      sigs = $('<div>').addClass('signatures')
+      sigs.append($('<h3>').append("versions"))
+      sigHist = docurium.get('signatures')[fname]
+      for(var i in sigHist.exists) {
+        ver = sigHist.exists[i]
+        link = $('<a>').attr('href', '#' + groupLink(gname, fname, ver)).append(ver)
+        if(sigHist.changes[ver]) {
+          link.addClass('changed')
+        }
+        sigs.append(link)
+      }
+      content.append(sigs)
 
+      // Link to Function Def on GitHub
+      link = this.github_file(fdata[fname].file, fdata[fname].line, fdata[fname].lineto)
+      flink = $('<a>').attr('target', 'github').attr('href', link).append(fdata[fname].file)
+      content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
+
+      // Show other functions in this group
+      also = $('<div>').addClass('also')
       flink = $('<a href="#" ref="' + ref.toString() + '" id="groupItem' + group[0] + '">' + group[0] + '</a>')
       flink.click( docurium.showGroup )
       also.append("Also in ")
@@ -151,11 +174,8 @@ $(function() {
         also.append(link)
         also.append(', ')
       }
-
       content.append(also)
-      link = this.github_file(fdata[fname].file, fdata[fname].line, fdata[fname].lineto)
-      flink = $('<a>').attr('target', 'github').attr('href', link).append(fdata[fname].file)
-      content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
+
 
       this.addHotlinks()
     },
@@ -474,7 +494,6 @@ $(function() {
     },
 
     main: function(version) {
-      console.log("MAIN (" + version + ")")
       docurium.setVersion(version)
       docurium.showIndexPage()
     },
@@ -502,11 +521,14 @@ $(function() {
 
   });
 
-  function groupLink(gname, fname) {
+  function groupLink(gname, fname, version) {
+    if(!version) {
+      version = docurium.get('version')
+    }
     if(fname) {
-      return docurium.get('version') + "/group/" + gname + '/' + fname
+      return version + "/group/" + gname + '/' + fname
     } else {
-      return docurium.get('version') + "/group/" + gname
+      return version + "/group/" + gname
     }
   }
 

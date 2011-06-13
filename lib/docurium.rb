@@ -95,10 +95,10 @@ class Docurium
     @lastsigs ||= {}
     @data[:functions].each do |fun_name, fun_data|
       if !@sigs[fun_name]
-        @sigs[fun_name] ||= {:exists => [], :changes => []}
+        @sigs[fun_name] ||= {:exists => [], :changes => {}}
       else
         if @lastsigs[fun_name] != fun_data[:sig]
-          @sigs[fun_name][:changes] << version
+          @sigs[fun_name][:changes][version] = true
         end
       end
       @sigs[fun_name][:exists] << version
