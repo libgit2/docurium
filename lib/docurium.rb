@@ -58,6 +58,7 @@ class Docurium
       project = {
         :versions => versions.reverse,
         :github   => @options['github'],
+        :name     => @options['name'],
         :signatures => @sigs
       }
       File.open("project.json", 'w+') do |f|

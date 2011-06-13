@@ -1,10 +1,6 @@
 TODO
 
-* show versions introduced and signature changes
-
 * links to example usage from example docco'd code
-
-* update title from the config file - nothing project specific in the index.html
 
 
 * write directly to branch

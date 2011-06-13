@@ -10,7 +10,11 @@ $(function() {
 
     loadVersions: function() {
       $.getJSON("project.json", function(data) {
-        docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures})
+        docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures, 'name': data.name})
+        if(data.name) {
+          $('#site-title').text(data.name + ' API')
+          document.title = data.name + ' API'
+        }
         docurium.setVersionPicker()
         docurium.setVersion()
       })
@@ -556,7 +560,6 @@ $(function() {
   })
 
   $('#search-field').keyup( docurium.search )
-  $('#logo').click( docurium.showIndexPage )
 
   $('#version-picker').click( docurium.collapseSection )
 
