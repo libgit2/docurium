@@ -1,7 +1,5 @@
 TODO
 
-* searching (types, file names)
-
 * home screen
 
 * read from all git tags

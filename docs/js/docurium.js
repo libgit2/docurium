@@ -23,6 +23,7 @@ $(function() {
         dataType: 'json',
         success: function(data){
           this.set({'data': data})
+          docurium.showIndexPage()
           Backbone.history.start()
         }
       })
@@ -31,6 +32,31 @@ $(function() {
     collapseSection: function(data) {
       $(this).next().toggle(100)
       return false
+    },
+
+    showIndexPage: function() {
+      data = docurium.get('data')
+      console.log(data)
+      content = $('.content')
+      content.empty()
+
+      content.append($('<h1>').append("API Docs"))
+
+      // Function Groups
+      for (var i in data['groups']) {
+        group = data['groups'][i]
+        content.append($('<h2>').append(group[0]))
+        list = $('<p>').addClass('functionList')
+        for(var j in group[1]) {
+          fun = group[1][j]
+          link = $('<a>').attr('href', '#' + groupLink(group[0], fun)).append(fun)
+          list.append(link)
+          if(j < group[1].length - 1) {
+           list.append(', ')
+          }
+        }
+        content.append(list)
+      }
     },
 
     showFun: function(gname, fname) {
@@ -473,5 +499,6 @@ $(function() {
   })
 
   $('#search-field').keyup( docurium.search )
+  $('#logo').click( docurium.showIndexPage )
 
 })
