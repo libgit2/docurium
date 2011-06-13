@@ -20,10 +20,14 @@ html {
 #search-field {
   margin: 0px;
 }
-#version-box {
+
+#versions li h3 {
   padding: 10px;
-  padding-bottom: 5px;
-  background: #eee;
+}
+
+h3 a#version {
+  display: inline;
+  color: #743;
 }
 
 .category_index { float: left; margin: 0.25em; width:19em; }

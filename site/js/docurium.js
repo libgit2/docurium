@@ -11,13 +11,25 @@ $(function() {
     loadVersions: function() {
       $.getJSON("project.json", function(data) {
         docurium.set({'versions': data.versions, 'github': data.github})
+        docurium.setVersionPicker()
         docurium.setVersion()
+      })
+    },
+
+    setVersionPicker: function () {
+      vers = docurium.get('versions')
+      $('#version-list').empty().hide()
+      _.each(vers, function(version) {
+        vlink = $('<a>').attr('href', '#' + version).append(version).click( function() {
+          $('#version-list').hide(100)
+        })
+        $('#version-list').append($('<li>').append(vlink))
       })
     },
 
     setVersion: function (version) {
       if(!version) {
-        version = _.last(docurium.get('versions'))
+        version = _.first(docurium.get('versions'))
       }
       if(docurium.get('version') != version) {
         docurium.set({'version': version})
@@ -523,5 +535,7 @@ $(function() {
 
   $('#search-field').keyup( docurium.search )
   $('#logo').click( docurium.showIndexPage )
+
+  $('#version-picker').click( docurium.collapseSection )
 
 })
