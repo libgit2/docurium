@@ -26,19 +26,11 @@ class Docurium
   end
 
 
-  def set_branch(branch)
-    @branch = branch
-  end
-
-  def set_output_dir(dir)
-    @output_dir = dir
-  end
-
   def generate_docs
     puts "generating docs from #{@header_dir}"
     puts "parsing headers"
     parse_headers
-    if @branch
+    if @options['branch']
       write_branch
     else
       write_dir
@@ -327,13 +319,6 @@ class Docurium
     puts "Writing to directory #{output_dir}"
     here = File.expand_path(File.dirname(__FILE__))
 
-    # files
-    # modules
-    #
-    # functions
-    # globals (variables, defines, enums, typedefs)
-    # data structures
-    #
     FileUtils.mkdir_p(output_dir)
     Dir.chdir(output_dir) do
       FileUtils.cp_r(File.join(here, '..', 'site', '.'), '.') 
