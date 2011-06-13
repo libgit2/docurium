@@ -9,6 +9,8 @@ TODO
 * links to example usage from example docco'd code
 
 
+* only update certain tags / HEAD, force full update
+
 * highlight menu item when selected
 
 * write directly to branch

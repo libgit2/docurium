@@ -11,21 +11,11 @@ include GLI
 version Docurium::Version
 
 desc 'Generate HTML documentation'
-long_desc 'Generate HTML docs from a C header directory'
+long_desc 'Generate HTML docs from a Docurium config file'
 command :doc do |c|
-
-  c.desc 'Write the output to a git branch instead'
-  c.flag [:b,:branch]
-
-  c.desc 'Write the output to this directory (defaults to "docs")'
-  c.flag [:o,:output]
-
-  c.desc 'Function filter (eg: "git_")'
-  c.flag [:f,:filter]
-
   c.action do |global_options,options,args|
-    dir = args.first
-    Docurium::CLI.doc(dir, options)
+    file = args.first
+    Docurium::CLI.doc(file, options)
   end
 end
 

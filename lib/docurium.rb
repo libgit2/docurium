@@ -1,5 +1,6 @@
 require 'json'
-require 'albino'
+require 'tempfile'
+require 'version_sorter'
 require 'pp'
 
 class Docurium
@@ -8,37 +9,72 @@ class Docurium
   attr_accessor :header_dir, :branch, :output_dir, :data
 
   def initialize(config_file)
-    @data = {:files => [], :functions => {}, :globals => {}, :types => {}, :prefix => ''}
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
+    clear_data
   end
 
-  def valid_config(file)
-    return false if !File.file?(file)
-    fpath = File.expand_path(file)
-    @project_dir = File.dirname(fpath)
-    @config_file = File.basename(fpath)
-    @options = JSON.parse(File.read(fpath))
-    @data[:prefix] = @options['input'] || ''
-    @header_dir = File.join(@project_dir, @data[:prefix])
-    raise "Not an input directory" if !File.directory?(@header_dir)
-    true
+  def clear_data(version = 'HEAD')
+    @data = {:files => [], :functions => {}, :globals => {}, :types => {}, :prefix => ''}
+    @data[:prefix] = option_version(version, 'input', '')
   end
 
+  def option_version(version, option, default)
+    if valhash = @options['legacy'][option]
+      valhash.each do |value, versions|
+        return value if versions.include?(version)
+      end
+    end
+    opt = @options[option]
+    opt = default if !opt
+    opt
+  end
 
   def generate_docs
-    puts "generating docs from #{@header_dir}"
-    puts "parsing headers"
-    parse_headers
+    puts "generating docs"
+    outdir = mkdir_temp
+    copy_site(outdir)
+    versions = get_versions
+    versions << 'HEAD'
+    versions.each do |version|
+      puts "generating docs for version #{version}"
+      workdir = mkdir_temp
+      Dir.chdir(workdir) do
+        clear_data(version)
+        checkout(version, workdir)
+        puts "parsing headers"
+        parse_headers
+        File.open(File.join(outdir, "#{version}.json"), 'w+') do |f|
+          f.write(@data.to_json)
+        end
+      end
+    end
+
+    Dir.chdir(outdir) do
+      project = {
+        :versions => versions,
+        :github   => @options['github'],
+      }
+      File.open("project.json", 'w+') do |f|
+        f.write(project.to_json)
+      end
+    end
+
     if @options['branch']
       write_branch
     else
-      write_dir
+      final_dir = File.join(@project_dir, @options['output'] || 'docs')
+      Dir.chdir(final_dir) do
+        FileUtils.cp_r(File.join(outdir, '.'), '.') 
+      end
     end
   end
 
+  def get_versions
+    VersionSorter.sort(git('tag').split("\n"))
+  end
+
   def parse_headers
-    # TODO: get_version
     headers.each do |header|
       parse_header(header)
     end
@@ -48,6 +84,34 @@ class Docurium
   end
 
   private
+
+  def git(command)
+    out = ''
+    Dir.chdir(@project_dir) do
+      out = `git #{command}`
+    end
+    out.strip
+  end
+
+  def checkout(version, workdir)
+    ENV['GIT_INDEX_FILE'] = mkfile_temp
+    ENV['GIT_WORK_TREE'] = workdir
+    ENV['GIT_DIR'] = File.join(@project_dir, '.git')
+    `git read-tree #{version}:#{@data[:prefix]}`
+    `git checkout-index -a`
+    ENV.delete('GIT_INDEX_FILE')
+    ENV.delete('GIT_WORK_TREE')
+    ENV.delete('GIT_DIR')
+  end
+
+  def valid_config(file)
+    return false if !File.file?(file)
+    fpath = File.expand_path(file)
+    @project_dir = File.dirname(fpath)
+    @config_file = File.basename(fpath)
+    @options = JSON.parse(File.read(fpath))
+    true
+  end
 
   def group_functions
     func = {}
@@ -72,11 +136,9 @@ class Docurium
 
   def headers
     h = []
-    Dir.chdir(@header_dir) do
-      Dir.glob(File.join('**/*.h')).each do |header|
-        next if !File.file?(header)
-        h << header
-      end
+    Dir.glob(File.join('**/*.h')).each do |header|
+      next if !File.file?(header)
+      h << header
     end
     h
   end
@@ -101,7 +163,7 @@ class Docurium
   end
 
   def header_content(header_path)
-    File.readlines(File.join(@header_dir, header_path))
+    File.readlines(header_path)
   end
 
   def parse_header(filepath)
@@ -314,26 +376,33 @@ class Docurium
     puts "Done!"
   end
 
-  def write_dir
-    output_dir = @output_dir || 'docs'
-    puts "Writing to directory #{output_dir}"
-    here = File.expand_path(File.dirname(__FILE__))
+  def mkdir_temp
+    tf = Tempfile.new('docurium')
+    tpath = tf.path
+    tf.unlink
+    FileUtils.mkdir_p(tpath)
+    tpath
+  end
 
-    FileUtils.mkdir_p(output_dir)
-    Dir.chdir(output_dir) do
+  def mkfile_temp
+    tf = Tempfile.new('docurium-index')
+    tpath = tf.path
+    tf.close
+    tpath
+  end
+
+
+  def copy_site(outdir)
+    puts "Copying site files to temp path (#{outdir})"
+    here = File.expand_path(File.dirname(__FILE__))
+    FileUtils.mkdir_p(outdir)
+    Dir.chdir(outdir) do
       FileUtils.cp_r(File.join(here, '..', 'site', '.'), '.') 
-      versions = ['HEAD']
-      project = {
-        :versions => versions,
-        :github   => 'libgit2/libgit2',
-      }
-      File.open("project.json", 'w+') do |f|
-        f.write(project.to_json)
-      end
-      File.open("HEAD.json", 'w+') do |f|
-        f.write(@data.to_json)
-      end
     end
+  end
+
+  def write_dir
+    puts "Writing to directory #{output_dir}"
     puts "Done!"
   end
 end
