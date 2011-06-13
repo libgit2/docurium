@@ -60,7 +60,8 @@ $(function() {
     },
 
     showIndexPage: function() {
-      ws.saveLocation(docurium.get('version'))
+      version = docurium.get('version')
+      ws.saveLocation(version)
 
       data = docurium.get('data')
       content = $('.content')
@@ -68,14 +69,22 @@ $(function() {
 
       content.append($('<h1>').append("Public API Functions"))
 
+      sigHist = docurium.get('signatures')
+
       // Function Groups
       for (var i in data['groups']) {
         group = data['groups'][i]
-        content.append($('<h2>').append(group[0]))
+        content.append($('<h2>').addClass('funcGroup').append(group[0]))
         list = $('<p>').addClass('functionList')
         for(var j in group[1]) {
           fun = group[1][j]
           link = $('<a>').attr('href', '#' + groupLink(group[0], fun)).append(fun)
+          if(sigHist[fun].changes[version]) {
+            link.addClass('changed')
+          }
+          if(version == _.first(sigHist[fun].exists)) {
+            link.addClass('introd')
+          }
           list.append(link)
           if(j < group[1].length - 1) {
            list.append(', ')
@@ -361,7 +370,7 @@ $(function() {
       }, this)
 
       fitem = $('<li>')
-      fitem.append($('<span>').addClass('divide').append("Public Struct"))
+      fitem.append($('<span>').addClass('divide').append("Structs"))
       list.append(fitem)
 
       _.each(data['types'], function(group, i) {
@@ -375,7 +384,7 @@ $(function() {
       }, this)
 
       fitem = $('<li>')
-      fitem.append($('<span>').addClass('divide').append("Private Struct"))
+      fitem.append($('<span>').addClass('divide').append("Opaque Structs"))
       list.append(fitem)
 
       _.each(data['types'], function(group, i) {
@@ -562,5 +571,6 @@ $(function() {
   $('#search-field').keyup( docurium.search )
 
   $('#version-picker').click( docurium.collapseSection )
+  $('#version').click( docurium.collapseSection )
 
 })

@@ -1,5 +1,7 @@
 TODO
 
+* changelog on all but the first version
+
 * links to example usage from example docco'd code
 
 
