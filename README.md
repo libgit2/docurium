@@ -6,18 +6,27 @@ I built it to replace the Doxygen generated documentation for the libgit2 projec
 
 # Usage
 
-Run the `cm` binary and pass it your headers directory.
+Run the `cm` binary and pass it your Docurium config file.
 
-    $ cm doc includes/
+    $ cm doc api.docurium
     * generating header based docs
       - processing limit.h
       - processing recess.h
     * output html in docs/
 
-    $ cm doc --branch=gh-pages includes/
-    * generating header based docs
-      - processing chacon.h
-    * output html in gh-pages branch at 3dc12a
+The Docurium config files looks like this:
+
+    {
+     "name":   "libgit2",
+     "github": "libgit2/libgit2",
+     "input":  "include/git2",
+     "prefix": "git_",
+     "output": "docs",
+     "legacy":  {
+        "input": {"src/git": ["v0.1.0"],
+                  "src/git2": ["v0.2.0", "v0.3.0"]}
+      }
+    }
 
 # License
 

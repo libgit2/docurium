@@ -1,15 +1,18 @@
 TODO
 
-* switch versions
-
 * show versions introduced and signature changes
 
 * links to example usage from example docco'd code
 
 
+* write directly to branch
+
+* gem-ize
+
+* add to libgit2 project
+
+
 * only update certain tags / HEAD, force full update
 
 * highlight menu item when selected
-
-* write directly to branch
 
