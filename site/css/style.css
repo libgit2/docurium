@@ -25,7 +25,7 @@ html {
   padding: 10px;
 }
 
-h3 a#version {
+h3 #version {
   display: inline;
   color: #743;
 }

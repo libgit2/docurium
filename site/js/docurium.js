@@ -571,6 +571,5 @@ $(function() {
   $('#search-field').keyup( docurium.search )
 
   $('#version-picker').click( docurium.collapseSection )
-  $('#version').click( docurium.collapseSection )
 
 })
