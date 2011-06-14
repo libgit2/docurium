@@ -40,13 +40,15 @@ The Docurium config file looks like this:
      "github": "libgit2/libgit2",
      "input":  "include/git2",
      "prefix": "git_",
-     "output": "docs",
+     "branch": "gh-pages",
      "examples": "examples",
      "legacy":  {
         "input": {"src/git": ["v0.1.0"],
                   "src/git2": ["v0.2.0", "v0.3.0"]}
       }
     }
+
+You can either have a `branch` or an `output` entry - `branch` will write your docs directly into a Git branch, `output` will write them to a subdirectory.
 
 # Installing
 

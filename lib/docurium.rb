@@ -68,8 +68,23 @@ class Docurium
       end
     end
 
-    if @options['branch']
-      write_branch
+    if br = @options['branch']
+      out "* writing to branch #{br}"
+      ref = "refs/heads/#{br}"
+      with_git_env(outdir) do
+        psha = `git rev-parse #{ref}`.chomp
+        `git add -A`
+        tsha = `git write-tree`.chomp
+        puts "\twrote tree   #{tsha}"
+        if(psha == ref)
+          csha = `echo 'generated docs' | git commit-tree #{tsha}`.chomp
+        else
+          csha = `echo 'generated docs' | git commit-tree #{tsha} -p #{psha}`.chomp
+        end
+        puts "\twrote commit #{csha}"
+        `git update-ref -m 'generated docs' #{ref} #{csha}`
+        puts "\tupdated #{br}"
+      end
     else
       final_dir = File.join(@project_dir, @options['output'] || 'docs')
       out "* output html in #{final_dir}"
@@ -145,11 +160,17 @@ class Docurium
   end
 
   def checkout(version, workdir)
+    with_git_env(workdir) do
+      `git read-tree #{version}:#{@data[:prefix]}`
+      `git checkout-index -a`
+    end
+  end
+
+  def with_git_env(workdir)
     ENV['GIT_INDEX_FILE'] = mkfile_temp
     ENV['GIT_WORK_TREE'] = workdir
     ENV['GIT_DIR'] = File.join(@project_dir, '.git')
-    `git read-tree #{version}:#{@data[:prefix]}`
-    `git checkout-index -a`
+    yield
     ENV.delete('GIT_INDEX_FILE')
     ENV.delete('GIT_WORK_TREE')
     ENV.delete('GIT_DIR')
@@ -427,11 +448,6 @@ class Docurium
     block.strip
   end
 
-  def write_branch
-    out "Writing to branch #{@branch}"
-    out "Done!"
-  end
-
   def mkdir_temp
     tf = Tempfile.new('docurium')
     tpath = tf.path
@@ -443,10 +459,9 @@ class Docurium
   def mkfile_temp
     tf = Tempfile.new('docurium-index')
     tpath = tf.path
-    tf.close
+    tf.unlink
     tpath
   end
-
 
   def copy_site(outdir)
     here = File.expand_path(File.dirname(__FILE__))

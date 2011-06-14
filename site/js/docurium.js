@@ -603,6 +603,7 @@ $(function() {
     },
 
     changelog: function(version, tname) {
+      docurium.setVersion()
       docurium.showChangeLog()
     },
 
