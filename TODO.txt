@@ -1,8 +1,6 @@
 TODO
 
-* changelog page
-
-* show unmatched params when compiling HEAD
+* show unmatched params when compiling HEAD (-w?)
 
 * links to example usage from example docco'd code
 

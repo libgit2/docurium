@@ -1,2 +1,5 @@
-gem 'json'
-gem 'version_sorter'
+source "http://rubygems.org"
+
+gemspec
+
+# vim:ft=ruby
