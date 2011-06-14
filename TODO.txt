@@ -1,17 +1,13 @@
 TODO
 
-* write directly to branch
-
 * links to example usage from example docco'd code
 
 
-* add to libgit2 project
-
+* fix to group chooser
 
 * only update certain tags / HEAD, force full update
 
 * doc other branches (specify in config file)
-
 
 * highlight menu item when selected
 
