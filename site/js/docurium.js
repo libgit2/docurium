@@ -482,6 +482,22 @@ $(function() {
       filelist.hide()
       menu.append(filelist)
 
+      // Examples List
+      if(data['examples'].length > 0) {
+        title = $('<h3><a href="#">Examples</a></h3>').click( this.collapseSection )
+        menu.append(title)
+        filelist = $('<ul>')
+        _.each(data['examples'], function(file) {
+          fname = file[0]
+          fpath = file[1]
+          flink = $('<a>').attr('href', fpath).append(fname)
+          fitem = $('<li>')
+          fitem.append(flink)
+          filelist.append(fitem)
+        }, this)
+        menu.append(filelist)
+      }
+
       list = $('#files-list')
       list.empty()
       list.append(menu)

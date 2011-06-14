@@ -1,6 +1,8 @@
 require 'json'
 require 'tempfile'
 require 'version_sorter'
+require 'rocco'
+require 'docurium/layout'
 require 'pp'
 
 class Docurium
@@ -20,7 +22,7 @@ class Docurium
     @data[:prefix] = option_version(version, 'input', '')
   end
 
-  def option_version(version, option, default)
+  def option_version(version, option, default = nil)
     if @options['legacy']
       if valhash = @options['legacy'][option]
         valhash.each do |value, versions|
@@ -47,12 +49,51 @@ class Docurium
         checkout(version, workdir)
         parse_headers
         tally_sigs(version)
+      end
+
+      tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
+      if ex = option_version(version, 'examples')
+        workdir = mkdir_temp
+        Dir.chdir(workdir) do
+          with_git_env(workdir) do
+            `git rev-parse #{version}:#{ex} 2>&1` # check that it exists
+            if $?.exitstatus == 0
+              out "  - processing examples for #{version}"
+              `git read-tree #{version}:#{ex}`
+              `git checkout-index -a`
+
+              files = []
+              Dir.glob("**/*") do |file|
+                next if !File.file?(file)
+                files << file
+              end
+              files.each do |file|
+                out "    # #{file}"
+                rocco = Rocco.new(file, files, {:language => 'c'})
+                rocco_layout = Rocco::Layout.new(rocco, tf)
+                rocco_layout.version = version
+                rf = rocco_layout.render
+                rf_path = File.basename(file).split('.')[0..-2].join('.') + '.html'
+                rel_path = "ex/#{version}/#{rf_path}"
+                rf_path = File.join(outdir, rel_path)
+                FileUtils.mkdir_p(File.dirname(rf_path))
+                File.open(rf_path, 'w+') do |f|
+                  @data[:examples] ||= []
+                  @data[:examples] << [file, rel_path]
+                  f.write(rf)
+                end
+              end
+            end
+          end
+        end
+
         if version == 'HEAD'
           show_warnings
         end
-        File.open(File.join(outdir, "#{version}.json"), 'w+') do |f|
-          f.write(@data.to_json)
-        end
+      end
+
+      File.open(File.join(outdir, "#{version}.json"), 'w+') do |f|
+        f.write(@data.to_json)
       end
     end
 
