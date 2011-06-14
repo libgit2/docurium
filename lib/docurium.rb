@@ -4,7 +4,7 @@ require 'version_sorter'
 require 'pp'
 
 class Docurium
-  Version = VERSION = '0.0.1'
+  Version = VERSION = '0.0.2'
 
   attr_accessor :branch, :output_dir, :data
 
@@ -34,18 +34,17 @@ class Docurium
   end
 
   def generate_docs
-    puts "generating docs"
+    out "* generating docs"
     outdir = mkdir_temp
     copy_site(outdir)
     versions = get_versions
     versions << 'HEAD'
     versions.each do |version|
-      puts "generating docs for version #{version}"
+      out "  - processing version #{version}"
       workdir = mkdir_temp
       Dir.chdir(workdir) do
         clear_data(version)
         checkout(version, workdir)
-        puts "parsing headers"
         parse_headers
         tally_sigs(version)
         File.open(File.join(outdir, "#{version}.json"), 'w+') do |f|
@@ -70,6 +69,7 @@ class Docurium
       write_branch
     else
       final_dir = File.join(@project_dir, @options['output'] || 'docs')
+      out "* output html in #{final_dir}"
       FileUtils.mkdir_p(final_dir)
       Dir.chdir(final_dir) do
         FileUtils.cp_r(File.join(outdir, '.'), '.') 
@@ -399,8 +399,8 @@ class Docurium
   end
 
   def write_branch
-    puts "Writing to branch #{@branch}"
-    puts "Done!"
+    out "Writing to branch #{@branch}"
+    out "Done!"
   end
 
   def mkdir_temp
@@ -420,7 +420,6 @@ class Docurium
 
 
   def copy_site(outdir)
-    puts "Copying site files to temp path (#{outdir})"
     here = File.expand_path(File.dirname(__FILE__))
     FileUtils.mkdir_p(outdir)
     Dir.chdir(outdir) do
@@ -429,7 +428,11 @@ class Docurium
   end
 
   def write_dir
-    puts "Writing to directory #{output_dir}"
-    puts "Done!"
+    out "Writing to directory #{output_dir}"
+    out "Done!"
+  end
+
+  def out(text)
+    puts text
   end
 end
