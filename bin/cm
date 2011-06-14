@@ -19,6 +19,16 @@ command :doc do |c|
   end
 end
 
+desc 'Generate Docurium config file template'
+long_desc 'Generate Docurium config file template'
+command :gen do |c|
+  c.action do |global_options,options,args|
+    file = args.first || 'api.docurium'
+    Docurium::CLI.gen(file)
+  end
+end
+
+
 pre { |global,command,options,args| true }
 
 post { |global,command,options,args| true }

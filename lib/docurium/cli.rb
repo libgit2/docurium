@@ -6,5 +6,22 @@ class Docurium
       doc.generate_docs
     end
 
+    def self.gen(file)
+
+temp = <<-TEMPLATE
+{
+ "name":   "project",
+ "github": "user/project",
+ "input":  "include/lib",
+ "prefix": "lib_",
+ "output": "docs"
+}
+TEMPLATE
+      puts "Writing to #{file}"
+      File.open(file, 'w+') do |f|
+        f.write(temp)
+      end
+    end
+
   end
 end
