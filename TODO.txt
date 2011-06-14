@@ -1,9 +1,10 @@
 TODO
 
-* links to example usage from example docco'd code
-
+* cross-link rocco code
 
 * fix to group chooser
+
+* version history for types, too
 
 * only update certain tags / HEAD, force full update
 

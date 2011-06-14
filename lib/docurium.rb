@@ -6,7 +6,7 @@ require 'docurium/layout'
 require 'pp'
 
 class Docurium
-  Version = VERSION = '0.0.2'
+  Version = VERSION = '0.0.3'
 
   attr_accessor :branch, :output_dir, :data
 
@@ -69,10 +69,22 @@ class Docurium
               end
               files.each do |file|
                 out "    # #{file}"
+
+                # highlight, roccoize and link
                 rocco = Rocco.new(file, files, {:language => 'c'})
                 rocco_layout = Rocco::Layout.new(rocco, tf)
                 rocco_layout.version = version
                 rf = rocco_layout.render
+
+                # look for function names in the examples and link
+                @data[:functions].each do |f, fdata|
+                  rf.gsub!(f) do |f|
+                    # save data for cross-link
+                    "<a href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>"
+                  end
+                end
+
+                # write example to docs directory
                 rf_path = File.basename(file).split('.')[0..-2].join('.') + '.html'
                 rel_path = "ex/#{version}/#{rf_path}"
                 rf_path = File.join(outdir, rel_path)
@@ -239,6 +251,7 @@ class Docurium
       if !rest
         group = value[:file].gsub('.h', '').gsub('/', '_')
       end
+      @data[:functions][key][:group] = group
       func[group] ||= []
       func[group] << key
       func[group].sort!
