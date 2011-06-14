@@ -195,6 +195,10 @@ h1.funcTitle small {
   background: #ffd4aa;
 }
 
+.signatures a.current {
+  border-bottom: 3px solid #933;
+}
+
 .signatures h3 {
   margin: 8px 0;
   margin-top: 0;
@@ -221,3 +225,12 @@ p.functionList a.introd {
   background: #cec;
 }
 
+.changelog li.adds a {
+  color: #393;
+}
+.changelog li.changes a {
+  color: #993;
+}
+.changelog li.deletes {
+  color: #933;
+}

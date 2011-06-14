@@ -23,12 +23,17 @@ $(function() {
     setVersionPicker: function () {
       vers = docurium.get('versions')
       $('#version-list').empty().hide()
-      _.each(vers, function(version) {
+      for(var i in vers) {
+        version = vers[i]
         vlink = $('<a>').attr('href', '#' + version).append(version).click( function() {
           $('#version-list').hide(100)
         })
         $('#version-list').append($('<li>').append(vlink))
+      }
+      vlink = $('<a>').attr('href', '#' + 'p/changelog').append("Changelog").click ( function () {
+        $('#version-list').hide(100)
       })
+      $('#version-list').append($('<li>').append(vlink))
     },
 
     setVersion: function (version) {
@@ -37,6 +42,7 @@ $(function() {
       }
       if(docurium.get('version') != version) {
         docurium.set({'version': version})
+        $('#site-title').attr('href', '#' + version)
         docurium.loadDoc()
       }
     },
@@ -163,6 +169,9 @@ $(function() {
         if(sigHist.changes[ver]) {
           link.addClass('changed')
         }
+        if(ver == docurium.get('version')) {
+          link.addClass('current')
+        }
         sigs.append(link)
       }
       content.append(sigs)
@@ -191,6 +200,66 @@ $(function() {
 
 
       this.addHotlinks()
+    },
+
+    showChangeLog: function() {
+      content = $('.content')
+      content.empty()
+      content.append($('<h1>').append("Function Changelog"))
+      // for every version, show which functions added, removed, changed - from HEAD down
+      versions = docurium.get('versions')
+      sigHist = docurium.get('signatures')
+
+      lastVer = _.first(versions)
+
+      // fill changelog struct
+      changelog = {}
+      for(var i in versions) {
+        version = versions[i]
+        changelog[version] = {'deletes': [], 'changes': [], 'adds': []}
+      }
+
+      // figure out the adds, deletes and changes
+      for(var func in sigHist) {
+        lastv = _.last(sigHist[func].exists)
+        firstv = _.first(sigHist[func].exists)
+        if (func != '__attribute__') {
+          changelog[firstv]['adds'].push(func)
+        }
+        if(lastv && (lastv != lastVer)) {
+          vi = _.indexOf(versions, lastv)
+          delv = versions[vi - 1]
+          changelog[delv]['deletes'].push(func)
+        }
+        for(var v in sigHist[func].changes) {
+          changelog[v]['changes'].push(func)
+        }
+      }
+
+      // display the data
+      for(var i in versions) {
+        version = versions[i]
+        content.append($('<h3>').append(version))
+        cl = $('<div>').addClass('changelog')
+
+        for(var type in changelog[version]) {
+          adds = changelog[version][type]
+          adds.sort()
+          addsection = $('<p>')
+          for(var j in adds) {
+            add = adds[j]
+            gname = docurium.groupOf(add)
+            if(type != 'deletes') {
+              addlink = $('<a>').attr('href', '#' + groupLink(gname, add, version)).append(add)
+            } else {
+              addlink = add
+            }
+            addsection.append($('<li>').addClass(type).append(addlink))
+          }
+          cl.append(addsection)
+        }
+        content.append(cl)
+      }
     },
 
     showType: function(data, manual) {
@@ -504,6 +573,7 @@ $(function() {
       ":version/type/:type":          "showtype",
       ":version/group/:group/:func":  "groupFun",
       ":version/search/:query":       "search",
+      "p/changelog":                  "changelog",
     },
 
     main: function(version) {
@@ -530,6 +600,10 @@ $(function() {
       docurium.setVersion(version)
       $('#search-field').attr('value', query)
       docurium.search()
+    },
+
+    changelog: function(version, tname) {
+      docurium.showChangeLog()
     },
 
   });

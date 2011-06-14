@@ -1,8 +1,11 @@
 TODO
 
-* changelog on all but the first version
+* changelog page
+
+* show unmatched params when compiling HEAD
 
 * links to example usage from example docco'd code
+
 
 
 * write directly to branch
