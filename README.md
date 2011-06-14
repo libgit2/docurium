@@ -42,9 +42,18 @@ The Docurium config file looks like this:
 
 # Screenshots
 
+## Main Page
+
 ![Main Page](https://img.skitch.com/20110614-c98pp6c9p9mn35jn4iskjim7hk.png)
 
+Each version of your app has a landing page that lists out all the functions available.  Functions that are new in that version from the previous version are highlighted in green, functions that have changed signatures are in orange.
+
+## Function Page
+
 ![Func Page](https://img.skitch.com/20110614-mdasyhip3swxtngwxrce8wqy3h.png)
+
+Each function has a page showing all the relevant info for that function including metadata extracted from Doxygen-style comments.  I also list all the versions of the library that this function is included in and in which versions the signature changed.
+
 
 # Contributing
 
