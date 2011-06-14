@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
 
   s.rubyforge_project = 'docurium'
 
-  s.add_dependency "version-sorter", "~>1.1.0"
+  s.add_dependency "version_sorter", "~>1.1.0"
   s.add_development_dependency "bundler",   "~>1.0"
 
   s.files         = `git ls-files`.split("\n")
