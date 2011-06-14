@@ -181,6 +181,23 @@ $(function() {
       flink = $('<a>').attr('target', 'github').attr('href', link).append(fdata[fname].file)
       content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
 
+      // Show where this is used in the examples
+      if(ex = fdata[fname].examples) {
+        also = $('<div>').addClass('funcEx')
+        also.append("Used in examples: ")
+        for( fname in ex ) {
+          lines = ex[fname]
+          line = $('<li>')
+          line.append($('<strong>').append(fname))
+          for( var i in lines ) {
+            flink = $('<a>').attr('href', lines[i]).append(' [' + (parseInt(i) + 1) + '] ')
+            line.append(flink)
+          }
+          also.append(line)
+        }
+        content.append(also)
+      }
+
       // Show other functions in this group
       also = $('<div>').addClass('also')
       flink = $('<a href="#" ref="' + ref.toString() + '" id="groupItem' + group[0] + '">' + group[0] + '</a>')
@@ -377,19 +394,7 @@ $(function() {
 
     groupHash: false,
     groupOf: function (func) {
-      if(!this.groupHash) {
-        this.groupHash = {}
-        data = this.get('data')
-        for(var i=0; i<data['groups'].length; i++) {
-          group = data['groups'][i][1]
-          groupName = data['groups'][i][0]
-          for(var j=0; j<group.length; j++) {
-            f = group[j]
-            this.groupHash[f] = groupName
-          }
-        }
-      }
-      return this.groupHash[func]
+      return this.get('data').functions[func].group
     },
 
     addHotlinks: function() {

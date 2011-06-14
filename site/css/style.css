@@ -184,6 +184,10 @@ h1.funcTitle small {
   padding: 10px;
 }
 
+.funcEx {
+  padding: 10px;
+}
+
 .signatures a {
   background: #ddd;
   padding: 4px;

@@ -76,18 +76,26 @@ class Docurium
                 rocco_layout.version = version
                 rf = rocco_layout.render
 
+                rf_path = File.basename(file).split('.')[0..-2].join('.') + '.html'
+                rel_path = "ex/#{version}/#{rf_path}"
+                rf_path = File.join(outdir, rel_path)
+
                 # look for function names in the examples and link
+                id_num = 0
                 @data[:functions].each do |f, fdata|
-                  rf.gsub!(f) do |f|
+                  rf.gsub!(/#{f}([^\w])/) do |fmatch|
+                    extra = $1
+                    id_num += 1
+                    name = f + '-' + id_num.to_s
                     # save data for cross-link
-                    "<a href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>"
+                    @data[:functions][f][:examples] ||= {}
+                    @data[:functions][f][:examples][file] ||= []
+                    @data[:functions][f][:examples][file] << rel_path + '#' + name
+                    "<a name=\"#{name}\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
                   end
                 end
 
                 # write example to docs directory
-                rf_path = File.basename(file).split('.')[0..-2].join('.') + '.html'
-                rel_path = "ex/#{version}/#{rf_path}"
-                rf_path = File.join(outdir, rel_path)
                 FileUtils.mkdir_p(File.dirname(rf_path))
                 File.open(rf_path, 'w+') do |f|
                   @data[:examples] ||= []
