@@ -1,19 +1,17 @@
 TODO
 
-* show unmatched params when compiling HEAD (-w?)
+* write directly to branch
 
 * links to example usage from example docco'd code
 
-
-
-* write directly to branch
-
-* gem-ize
 
 * add to libgit2 project
 
 
 * only update certain tags / HEAD, force full update
+
+* doc other branches (specify in config file)
+
 
 * highlight menu item when selected
 

@@ -20,7 +20,18 @@ Run the `cm` binary and pass it your Docurium config file.
       - processing version v0.11.0
       - processing version v0.12.0
       - processing version HEAD
+    * checking your api
+      - unmatched params in
+          git_commit_create
+          git_config_set_int
+          git_object_lookup_prefix
+      - signature changes in
+          git_index_get
+          git_repository_path
+          git_tree_entry_byindex
     * output html in docs/
+
+Docurium will tell you if you have unmatched @params entries in header docs and if you've changed signatures in functions in HEAD, just to help you know what's happening and if you've written your docs properly.
 
 The Docurium config file looks like this:
 
@@ -30,6 +41,7 @@ The Docurium config file looks like this:
      "input":  "include/git2",
      "prefix": "git_",
      "output": "docs",
+     "examples": "examples",
      "legacy":  {
         "input": {"src/git": ["v0.1.0"],
                   "src/git2": ["v0.2.0", "v0.3.0"]}

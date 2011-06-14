@@ -47,6 +47,9 @@ class Docurium
         checkout(version, workdir)
         parse_headers
         tally_sigs(version)
+        if version == 'HEAD'
+          show_warnings
+        end
         File.open(File.join(outdir, "#{version}.json"), 'w+') do |f|
           f.write(@data.to_json)
         end
@@ -74,6 +77,32 @@ class Docurium
       Dir.chdir(final_dir) do
         FileUtils.cp_r(File.join(outdir, '.'), '.') 
       end
+    end
+  end
+
+  def show_warnings
+    out '* checking your api'
+
+    # check for unmatched paramaters
+    unmatched = []
+    @data[:functions].each do |f, fdata|
+      unmatched << f if fdata[:comments] =~ /@param/
+    end
+    if unmatched.size > 0
+      out '  - unmatched params in'
+      unmatched.sort.each { |p| out ("\t" + p) }
+    end
+
+    # check for changed signatures
+    sigchanges = []
+    @sigs.each do |fun, data|
+      if data[:changes]['HEAD']
+        sigchanges << fun
+      end
+    end
+    if sigchanges.size > 0
+      out '  - signature changes in'
+      sigchanges.sort.each { |p| out ("\t" + p) }
     end
   end
 
