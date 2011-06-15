@@ -14,6 +14,7 @@ class Docurium
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
+    @groups = {}
     clear_data
   end
 
@@ -122,7 +123,8 @@ class Docurium
         :versions => versions.reverse,
         :github   => @options['github'],
         :name     => @options['name'],
-        :signatures => @sigs
+        :signatures => @sigs,
+        :groups   => @groups
       }
       File.open("project.json", 'w+') do |f|
         f.write(project.to_json)
@@ -260,6 +262,7 @@ class Docurium
         group = value[:file].gsub('.h', '').gsub('/', '_')
       end
       @data[:functions][key][:group] = group
+      @groups[key] = group
       func[group] ||= []
       func[group] << key
       func[group].sort!

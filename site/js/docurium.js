@@ -10,7 +10,7 @@ $(function() {
 
     loadVersions: function() {
       $.getJSON("project.json", function(data) {
-        docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures, 'name': data.name})
+        docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures, 'name': data.name, 'groups': data.groups})
         if(data.name) {
           $('#site-title').text(data.name + ' API')
           document.title = data.name + ' API'
@@ -100,11 +100,18 @@ $(function() {
       }
     },
 
-    showFun: function(gname, fname) {
-      id = '#groupItem' + gname
-      ref = parseInt($(id).attr('ref'))
+    getGroup: function(gname) {
+      var groups = docurium.get('data')['groups']
+      for(var i in groups) {
+        if(groups[i][0] == gname) {
+          return groups[i]
+        }
+      }
+    },
 
-      group = docurium.get('data')['groups'][ref]
+    showFun: function(gname, fname) {
+      group = docurium.getGroup(gname)
+
       fdata = docurium.get('data')['functions']
       gname = group[0]
       functions = group[1]
@@ -200,7 +207,7 @@ $(function() {
 
       // Show other functions in this group
       also = $('<div>').addClass('also')
-      flink = $('<a href="#" ref="' + ref.toString() + '" id="groupItem' + group[0] + '">' + group[0] + '</a>')
+      flink = $('<a href="#' + docurium.get('version') + '/group/' + group[0] + '">' + group[0] + '</a>')
       flink.click( docurium.showGroup )
       also.append("Also in ")
       also.append(flink)
@@ -259,14 +266,16 @@ $(function() {
         content.append($('<h3>').append(version))
         cl = $('<div>').addClass('changelog')
 
+        console.log(version)
+
         for(var type in changelog[version]) {
           adds = changelog[version][type]
           adds.sort()
           addsection = $('<p>')
           for(var j in adds) {
             add = adds[j]
-            gname = docurium.groupOf(add)
             if(type != 'deletes') {
+              gname = docurium.groupOf(add)
               addlink = $('<a>').attr('href', '#' + groupLink(gname, add, version)).append(add)
             } else {
               addlink = add
@@ -392,9 +401,8 @@ $(function() {
       return text
     },
 
-    groupHash: false,
     groupOf: function (func) {
-      return this.get('data').functions[func].group
+      return this.get('groups')[func]
     },
 
     addHotlinks: function() {
@@ -488,7 +496,7 @@ $(function() {
       menu.append(filelist)
 
       // Examples List
-      if(data['examples'].length > 0) {
+      if(data['examples'] && (data['examples'].length > 0)) {
         title = $('<h3><a href="#">Examples</a></h3>').click( this.collapseSection )
         menu.append(title)
         filelist = $('<ul>')

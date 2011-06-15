@@ -1,8 +1,7 @@
 TODO
 
-* cross-link rocco code
+* broken changelog & index page highlighting
 
-* fix to group chooser
 
 * version history for types, too
 
