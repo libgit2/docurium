@@ -6,7 +6,7 @@ require 'docurium/layout'
 require 'pp'
 
 class Docurium
-  Version = VERSION = '0.0.3'
+  Version = VERSION = '0.0.4'
 
   attr_accessor :branch, :output_dir, :data
 
