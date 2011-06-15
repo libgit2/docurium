@@ -64,7 +64,7 @@ class Docurium
               `git checkout-index -a`
 
               files = []
-              Dir.glob("**/*") do |file|
+              Dir.glob("**/*.c") do |file|
                 next if !File.file?(file)
                 files << file
               end
