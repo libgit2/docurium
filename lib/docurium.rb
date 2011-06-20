@@ -381,6 +381,8 @@ class Docurium
         if line =~ /\/\*/
           in_comment = true  
           current += 1
+        elsif current == -1
+          current += 1
         end
         data[current] ||= {:comments => '', :code => [], :line => lineno}
         data[current][:lineto] = lineno
