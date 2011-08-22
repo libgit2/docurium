@@ -438,7 +438,7 @@ class Docurium
       rawComments = block[:comments]
       comments = block[:comments]
 
-      if m = /^(.*?) ([a-z_]+)\((.*)\)/.match(code)
+      if m = /^(.*?) ([a-zA-Z_]+)\((.*)\)/.match(code)
         ret  = m[1].strip
         if r = /\((.*)\)/.match(ret) # strip macro
           ret = r[1]
