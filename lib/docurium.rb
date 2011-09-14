@@ -92,7 +92,7 @@ class Docurium
                     @data[:functions][f][:examples] ||= {}
                     @data[:functions][f][:examples][file] ||= []
                     @data[:functions][f][:examples][file] << rel_path + '#' + name
-                    "<a name=\"#{name}\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
+                    "<a name=\"#{name}\" class=\"fnlink\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
                   end
                 end
 
