@@ -417,7 +417,7 @@ class Docurium
   def extract_meta(data)
     file, brief, defgroup, ingroup = nil
     data.each do |block|
-      block[:comments].each do |comment|
+      block[:comments].each_line do |comment|
         m = []
         file  = m[1] if m = /@file (.*?)$/.match(comment)
         brief = m[1] if m = /@brief (.*?)$/.match(comment)
