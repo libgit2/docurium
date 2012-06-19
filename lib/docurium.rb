@@ -3,6 +3,7 @@ require 'tempfile'
 require 'version_sorter'
 require 'rocco'
 require 'docurium/layout'
+require 'docurium/cparser'
 require 'pp'
 
 class Docurium
@@ -190,8 +191,10 @@ class Docurium
 
   def parse_headers
     headers.each do |header|
-      parse_header(header)
+      records = parse_header(header)
+      update_globals(records)
     end
+
     @data[:groups] = group_functions
     @data[:types] = @data[:types].sort # make it an assoc array
     find_type_usage
@@ -299,220 +302,154 @@ class Docurium
     end
   end
 
-  def header_content(header_path)
-    File.readlines(header_path)
-  end
-
   def parse_header(filepath)
-    lineno = 0
-    content = header_content(filepath)
+    content = File.read(filepath) # header_content(filepath)
+    parser = Docurium::CParser.new
 
-    # look for structs and enums
-    in_block = false
-    block = ''
-    linestart = 0
-    tdef, type, name = nil
-    content.each do |line|
-      lineno += 1
-      line = line.strip
+    # break into comments and non-comments with line numbers
+    content = "/** */" + content if content[0..2] != "/**"
+    recs = []
+    lineno = 1
+    openblock = false
 
-      if line[0, 1] == '#' #preprocessor
-        if m = /\#define (.*?) (.*)/.match(line)
-          @data[:globals][m[1]] = {:value => m[2].strip, :file => filepath, :line => lineno}
-        else
+    content.split(/\/\*\*/).each do |chunk|
+      c, b = chunk.split(/[ \t]*\*\//, 2)
+      next unless c || b
+
+      lineno += c.scan("\n").length if c
+
+      # special handling for /**< ... */ inline comments or
+      # for /** ... */ inside an open block
+      if openblock || c[0] == ?<
+        c = c.sub(/^</, '').strip
+
+        so_far = recs[-1][:body]
+        last_line = so_far[ so_far.rindex("\n")+1 .. -1 ].strip.chomp(",").chomp(";")
+        if last_line.empty? && b =~ /^([^;]+)\;/ # apply to this line instead
+          last_line = $1.strip.chomp(",").chomp(";")
+        end
+
+        if !last_line.empty?
+          recs[-1][:inlines] ||= []
+          recs[-1][:inlines] << [ last_line, c ]
+          if b
+            recs[-1][:body] += b
+            lineno += b.scan("\n").length
+            openblock = false if b =~ /\}/
+          end
           next
         end
       end
 
-      if m = /^(typedef )*(struct|enum) (.*?)(\{|(\w*?);)/.match(line)
-        tdef = m[1] # typdef or nil
-        type = m[2] # struct or enum
-        name = m[3] # name or nil
-        linestart = lineno
-        name.strip! if name
-        tdef.strip! if tdef
-        if m[4] == '{'
-          # struct or enum
-          in_block = true
+      # make comment have a uniform " *" prefix if needed
+      if c !~ /\A[ \t]*\n/ && c =~ /^(\s*\*)/
+        c = $1 + c
+      end
+
+      # check for unterminated { brace (to handle inline comments later)
+      openblock = true if b =~ /\{[^\}]+\Z/
+
+      recs << {
+        :file => filepath,
+        :line => lineno + (b.start_with?("\n") ? 1 : 0),
+        :body => b,
+        :rawComments => parser.cleanup_comment(c),
+      }
+
+      lineno += b.scan("\n").length if b
+    end
+
+    # try parsers on each chunk of commented header
+    recs.each do |r|
+      r[:body].strip!
+      r[:rawComments].strip!
+      r[:lineto] = r[:line] + r[:body].scan("\n").length
+      parser.parse_declaration_block(r)
+    end
+
+    recs
+  end
+
+  def update_globals(recs)
+    wanted = {
+      :functions => %W/type value file line lineto args argline sig return group description comments/.map(&:to_sym),
+      :types => %W/type value file line lineto block tdef comments/.map(&:to_sym),
+      :globals => %W/value file line comments/.map(&:to_sym),
+      :meta => %W/brief defgroup ingroup comments/.map(&:to_sym),
+    }
+
+    file_map = {}
+
+    recs.each do |r|
+
+      # initialize filemap for this file
+      file_map[r[:file]] ||= {
+        :file => r[:file], :functions => [], :meta => {}, :lines => 0
+      }
+      if file_map[r[:file]][:lines] < r[:lineto]
+        file_map[r[:file]][:lines] = r[:lineto]
+      end
+
+      # process this type of record
+      case r[:type]
+      when :function
+        @data[:functions][r[:name]] ||= {}
+        wanted[:functions].each do |k|
+          @data[:functions][r[:name]][k] = r[k] if r.has_key?(k)
+        end
+        file_map[r[:file]][:functions] << r[:name]
+
+      when :define, :macro
+        @data[:globals][r[:decl]] ||= {}
+        wanted[:globals].each do |k|
+          @data[:globals][r[:decl]][k] = r[k] if r.has_key?(k)
+        end
+
+      when :file
+        wanted[:meta].each do |k|
+          file_map[r[:file]][:meta][k] = r[k] if r.has_key?(k)
+        end
+
+      when :enum
+        if !r[:name]
+          # Explode unnamed enum into multiple global defines
+          r[:decl].each do |n|
+            @data[:globals][n] ||= {
+              :file => r[:file], :line => r[:line],
+              :value => "", :comments => r[:comments],
+            }
+            m = /#{Regexp.quote(n)}/.match(r[:body])
+            if m
+              @data[:globals][n][:line] += m.pre_match.scan("\n").length
+              if m.post_match =~ /\s*=\s*([^,\}]+)/
+                @data[:globals][n][:value] = $1
+              end
+            end
+          end
         else
-          # single line, probably typedef
-          val = m[4].gsub(';', '').strip
-          if !name.empty?
-            name = name.gsub('*', '').strip
-            @data[:types][name] = {:tdef => tdef, :type => type, :value => val, :file => filepath, :line => lineno}
+          @data[:types][r[:name]] ||= {}
+          wanted[:types].each do |k|
+            @data[:types][r[:name]][k] = r[k] if r.has_key?(k)
           end
         end
-      elsif m = /\}(.*?);/.match(line)
-        if !m[1].strip.empty?
-          name = m[1].strip
+
+      when :struct, :fnptr
+        @data[:types][r[:name]] ||= {}
+        r[:value] ||= r[:name]
+        wanted[:types].each do |k|
+          @data[:types][r[:name]][k] = r[k] if r.has_key?(k)
         end
-        name = name.gsub('*', '').strip
-        @data[:types][name] = {:block => block, :tdef => tdef, :type => type, :value => val, :file => filepath, :line => linestart, :lineto => lineno}
-        in_block = false
-        block = ''
-      elsif in_block
-        block += line + "\n"
-      end
-    end
-    
-    in_comment = false
-    in_block = false
-    current = -1
-    data = []
-    lineno = 0
-    # look for functions
-    content.each do |line|
-      lineno += 1
-      line = line.strip
-      next if line.size == 0
-      next if line[0, 1] == '#'
-      in_block = true if line =~ /\{/
-      if m = /(.*?)\/\*(.*?)\*\//.match(line)
-        code = m[1]
-        comment = m[2]
-        current += 1
-        data[current] ||= {:comments => clean_comment(comment), :code => [code], :line => lineno}
-      elsif m = /(.*?)\/\/(.*?)/.match(line)
-        code = m[1]
-        comment = m[2]
-        current += 1
-        data[current] ||= {:comments => clean_comment(comment), :code => [code], :line => lineno}
+        if r[:type] == :fnptr
+          @data[:types][r[:name]][:type] = "function pointer"
+        end
+
       else
-        if line =~ /\/\*/
-          in_comment = true  
-          current += 1
-        elsif current == -1
-          current += 1
-        end
-        data[current] ||= {:comments => '', :code => [], :line => lineno}
-        data[current][:lineto] = lineno
-        if in_comment
-          data[current][:comments] += clean_comment(line) + "\n"
-        else
-          data[current][:code] << line
-        end
-        if (m = /(.*?);$/.match(line)) && (data[current][:code].size > 0) && !in_block
-          current += 1
-        end
-        in_comment = false if line =~ /\*\//
-        in_block = false if line =~ /\}/
+        # Anything else we want to record?
       end
+
     end
-    data.compact!
-    meta  = extract_meta(data)
-    funcs = extract_functions(filepath, data)
-    @data[:files] << {:file => filepath, :meta => meta, :functions => funcs, :lines => lineno}
-  end
 
-  def clean_comment(comment)
-    comment = comment.gsub(/^\/\//, '')
-    comment = comment.gsub(/^\/\**/, '')
-    comment = comment.gsub(/^\**/, '')
-    comment = comment.gsub(/^[\w\*]*\//, '')
-    comment
-  end
-
-  # go through all the comment blocks and extract:
-  #  @file, @brief, @defgroup and @ingroup
-  def extract_meta(data)
-    file, brief, defgroup, ingroup = nil
-    data.each do |block|
-      block[:comments].each_line do |comment|
-        m = []
-        file  = m[1] if m = /@file (.*?)$/.match(comment)
-        brief = m[1] if m = /@brief (.*?)$/.match(comment)
-        defgroup = m[1] if m = /@defgroup (.*?)$/.match(comment)
-        ingroup  = m[1] if m = /@ingroup (.*?)$/.match(comment)
-      end
-    end
-    {:file => file, :brief => brief, :defgroup => defgroup, :ingroup => ingroup}
-  end
-
-  def extract_functions(file, data)
-    @data[:functions]
-    funcs = []
-    data.each do |block|
-      ignore = false
-      code = block[:code].join(" ")
-      code = code.gsub(/\{(.*)\}/, '') # strip inline code
-      rawComments = block[:comments]
-      comments = block[:comments]
-
-      if m = /^(.*?) ([a-zA-Z_]+)\((.*)\)/.match(code)
-        ret  = m[1].strip
-        if r = /\((.*)\)/.match(ret) # strip macro
-          ret = r[1]
-        end
-        fun  = m[2].strip
-        origArgs = m[3].strip
-
-        # replace ridiculous syntax
-        args = origArgs.gsub(/(\w+) \(\*(.*?)\)\(([^\)]*)\)/) do |m|
-          type, name = $1, $2
-          cast = $3.gsub(',', '###')
-          "#{type}(*)(#{cast}) #{name}" 
-        end
-
-        args = args.split(',').map do |arg|
-          argarry = arg.split(' ')
-          var = argarry.pop
-          type = argarry.join(' ').gsub('###', ',') + ' '
-
-          ## split pointers off end of type or beg of name
-          var.gsub!('*') do |m|
-            type += '*'
-            ''
-          end
-          desc = ''
-          comments = comments.gsub(/\@param #{Regexp.escape(var)} ([^@]*)/m) do |m|
-            desc = $1.gsub("\n", ' ').gsub("\t", ' ').strip
-            ''
-          end
-          ## TODO: parse comments to extract data about args
-          {:type => type.strip, :name => var, :comment => desc}
-        end
-
-        sig = args.map do |arg|
-          arg[:type].to_s
-        end.join('::')
-
-        return_comment = ''
-        comments.gsub!(/\@return ([^@]*)/m) do |m|
-          return_comment = $1.gsub("\n", ' ').gsub("\t", ' ').strip
-          ''
-        end
-
-        comments = strip_block(comments)
-        comment_lines = comments.split("\n\n")
-
-        desc = ''
-        if comments.size > 0
-          desc = comment_lines.shift.split("\n").map { |e| e.strip }.join(' ')
-          comments = comment_lines.join("\n\n").strip
-        end
-
-        next if fun == 'defined'
-        @data[:functions][fun] = {
-          :description => desc,
-          :return => {:type => ret, :comment => return_comment},
-          :args => args,
-          :argline => origArgs,
-          :file => file,
-          :line => block[:line],
-          :lineto => block[:lineto],
-          :comments => comments,
-          :sig => sig,
-          :rawComments => rawComments
-        }
-        funcs << fun
-      end
-    end
-    funcs
-  end
-
-  # TODO: rolled this back, want to strip the first few spaces, not everything
-  def strip_block(block)
-    block.strip
+    @data[:files] << file_map.values
   end
 
   def mkdir_temp
