@@ -357,5 +357,71 @@ class Docurium
       # if we detected something, call a parser for that type of thing
       method("parse_#{d[:type]}").call(d) if d[:type]
     end
+
+    # Parse a chunk of text as a header file
+    def parse_text(filename, content)
+      # break into comments and non-comments with line numbers
+      content = "/** */" + content if content[0..2] != "/**"
+      recs = []
+      lineno = 1
+      openblock = false
+
+      content.split(/\/\*\*/).each do |chunk|
+        c, b = chunk.split(/[ \t]*\*\//, 2)
+        next unless c || b
+
+        lineno += c.scan("\n").length if c
+
+        # special handling for /**< ... */ inline comments or
+        # for /** ... */ inside an open block
+        if openblock || c[0] == ?<
+          c = c.sub(/^</, '').strip
+
+          so_far = recs[-1][:body]
+          last_line = so_far[ so_far.rindex("\n")+1 .. -1 ].strip.chomp(",").chomp(";")
+          if last_line.empty? && b =~ /^([^;]+)\;/ # apply to this line instead
+            last_line = $1.strip.chomp(",").chomp(";")
+          end
+
+          if !last_line.empty?
+            recs[-1][:inlines] ||= []
+            recs[-1][:inlines] << [ last_line, c ]
+            if b
+              recs[-1][:body] += b
+              lineno += b.scan("\n").length
+              openblock = false if b =~ /\}/
+            end
+            next
+          end
+        end
+
+        # make comment have a uniform " *" prefix if needed
+        if c !~ /\A[ \t]*\n/ && c =~ /^(\s*\*)/
+          c = $1 + c
+        end
+
+        # check for unterminated { brace (to handle inline comments later)
+        openblock = true if b =~ /\{[^\}]+\Z/
+
+        recs << {
+          :file => filename,
+          :line => lineno + (b.start_with?("\n") ? 1 : 0),
+          :body => b,
+          :rawComments => cleanup_comment(c),
+        }
+
+        lineno += b.scan("\n").length if b
+      end
+
+      # try parsers on each chunk of commented header
+      recs.each do |r|
+        r[:body].strip!
+        r[:rawComments].strip!
+        r[:lineto] = r[:line] + r[:body].scan("\n").length
+        parse_declaration_block(r)
+      end
+
+      recs
+    end
   end
 end

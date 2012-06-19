@@ -303,71 +303,9 @@ class Docurium
   end
 
   def parse_header(filepath)
-    content = File.read(filepath) # header_content(filepath)
+    content = File.read(filepath)
     parser = Docurium::CParser.new
-
-    # break into comments and non-comments with line numbers
-    content = "/** */" + content if content[0..2] != "/**"
-    recs = []
-    lineno = 1
-    openblock = false
-
-    content.split(/\/\*\*/).each do |chunk|
-      c, b = chunk.split(/[ \t]*\*\//, 2)
-      next unless c || b
-
-      lineno += c.scan("\n").length if c
-
-      # special handling for /**< ... */ inline comments or
-      # for /** ... */ inside an open block
-      if openblock || c[0] == ?<
-        c = c.sub(/^</, '').strip
-
-        so_far = recs[-1][:body]
-        last_line = so_far[ so_far.rindex("\n")+1 .. -1 ].strip.chomp(",").chomp(";")
-        if last_line.empty? && b =~ /^([^;]+)\;/ # apply to this line instead
-          last_line = $1.strip.chomp(",").chomp(";")
-        end
-
-        if !last_line.empty?
-          recs[-1][:inlines] ||= []
-          recs[-1][:inlines] << [ last_line, c ]
-          if b
-            recs[-1][:body] += b
-            lineno += b.scan("\n").length
-            openblock = false if b =~ /\}/
-          end
-          next
-        end
-      end
-
-      # make comment have a uniform " *" prefix if needed
-      if c !~ /\A[ \t]*\n/ && c =~ /^(\s*\*)/
-        c = $1 + c
-      end
-
-      # check for unterminated { brace (to handle inline comments later)
-      openblock = true if b =~ /\{[^\}]+\Z/
-
-      recs << {
-        :file => filepath,
-        :line => lineno + (b.start_with?("\n") ? 1 : 0),
-        :body => b,
-        :rawComments => parser.cleanup_comment(c),
-      }
-
-      lineno += b.scan("\n").length if b
-    end
-
-    # try parsers on each chunk of commented header
-    recs.each do |r|
-      r[:body].strip!
-      r[:rawComments].strip!
-      r[:lineto] = r[:line] + r[:body].scan("\n").length
-      parser.parse_declaration_block(r)
-    end
-
-    recs
+    parser.parse_text(filepath, content)
   end
 
   def update_globals(recs)
