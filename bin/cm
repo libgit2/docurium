@@ -6,7 +6,7 @@ require 'gli'
 require 'docurium'
 require 'docurium/cli'
 
-include GLI
+include GLI::App
 
 version Docurium::Version
 
@@ -38,4 +38,4 @@ on_error do |exception|
   puts exception.backtrace
 end
 
-exit GLI.run(ARGV)
+exit run(ARGV)
