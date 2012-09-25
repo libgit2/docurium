@@ -17,6 +17,7 @@ Gem::Specification.new do |s|
   s.add_dependency "version_sorter", "~>1.1.0"
   s.add_dependency "mustache", ">= 0.99.4"
   s.add_dependency "rocco", "= 0.7.0"
+  s.add_dependency "gli"
   s.add_development_dependency "bundler",   "~>1.0"
 
   s.files         = `git ls-files`.split("\n")
