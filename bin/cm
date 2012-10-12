@@ -38,4 +38,4 @@ on_error do |exception|
   puts exception.backtrace
 end
 
-exit GLI.run(ARGV)
+exit run(ARGV)

@@ -387,7 +387,7 @@ class Docurium
 
     end
 
-    @data[:files] << file_map.values
+    @data[:files] << file_map.values[0]
   end
 
   def mkdir_temp

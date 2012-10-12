@@ -59,7 +59,7 @@ class Docurium
         d[:tdef] = nil
       elsif d[:body] =~ /\A\#\s*define\s+(\w+)/
         names = []
-        d[:body].scan(/\#\s*define\s+(\w+)/) { |m| names << m.to_s }
+        d[:body].scan(/\#\s*define\s+(\w+)/) { |m| names << m[0].to_s }
         d[:tdef] = nil
         names.uniq!
         if names.length == 1
