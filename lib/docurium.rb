@@ -44,75 +44,68 @@ class Docurium
     out "* generating docs"
     outdir = mkdir_temp
     copy_site(outdir)
+    output_index = Rugged::Index.new
+    write_site(output_index)
     versions = get_versions
     versions << 'HEAD'
     versions.each do |version|
       out "  - processing version #{version}"
       index = @repo.index
       index.clear
-      workdir = mkdir_temp
-      Dir.chdir(workdir) do
-        clear_data(version)
-        read_tree(index, version)
-        checkout(version, workdir)
-        parse_headers
-        #parse_headers(index)
-        tally_sigs(version)
-      end
+      clear_data(version)
+      read_subtree(index, version, @data[:prefix])
+      parse_headers(index)
+      tally_sigs(version)
 
       tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
       if ex = option_version(version, 'examples')
-        workdir = mkdir_temp
-        Dir.chdir(workdir) do
-          with_git_env(workdir) do
-            `git rev-parse #{version}:#{ex} 2>&1` # check that it exists
-            if $?.exitstatus == 0
-              out "  - processing examples for #{version}"
-              `git read-tree #{version}:#{ex}`
-              `git checkout-index -a`
+        if subtree = find_subtree(version, ex) # check that it exists
+          index.read_tree(subtree)
+          out "  - processing examples for #{version}"
 
-              files = []
-              Dir.glob("**/*.c") do |file|
-                next if !File.file?(file)
-                files << file
-              end
-              files.each do |file|
-                out "    # #{file}"
+          files = []
+          index.each do |entry|
+            next unless entry[:path].match(/\.c$/)
+            files << entry[:path]
+          end
 
-                # highlight, roccoize and link
-                rocco = Rocco.new(file, files, {:language => 'c'})
-                rocco_layout = Rocco::Layout.new(rocco, tf)
-                rocco_layout.version = version
-                rf = rocco_layout.render
+          files.each do |file|
+            out "    # #{file}"
 
-                rf_path = File.basename(file).split('.')[0..-2].join('.') + '.html'
-                rel_path = "ex/#{version}/#{rf_path}"
-                rf_path = File.join(outdir, rel_path)
+            # highlight, roccoize and link
+            rocco = Rocco.new(file, files, {:language => 'c'}) do
+              ientry = index[file]
+              blob = @repo.lookup(ientry[:oid])
+              blob.content
+            end
+            rocco_layout = Rocco::Layout.new(rocco, tf)
+            rocco_layout.version = version
+            rf = rocco_layout.render
 
-                # look for function names in the examples and link
-                id_num = 0
-                @data[:functions].each do |f, fdata|
-                  rf.gsub!(/#{f}([^\w])/) do |fmatch|
-                    extra = $1
-                    id_num += 1
-                    name = f + '-' + id_num.to_s
-                    # save data for cross-link
-                    @data[:functions][f][:examples] ||= {}
-                    @data[:functions][f][:examples][file] ||= []
-                    @data[:functions][f][:examples][file] << rel_path + '#' + name
-                    "<a name=\"#{name}\" class=\"fnlink\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
-                  end
-                end
+            rf_path = File.basename(file).split('.')[0..-2].join('.') + '.html'
+            rel_path = "ex/#{version}/#{rf_path}"
 
-                # write example to docs directory
-                FileUtils.mkdir_p(File.dirname(rf_path))
-                File.open(rf_path, 'w+') do |f|
-                  @data[:examples] ||= []
-                  @data[:examples] << [file, rel_path]
-                  f.write(rf)
-                end
+            # look for function names in the examples and link
+            id_num = 0
+            @data[:functions].each do |f, fdata|
+              rf.gsub!(/#{f}([^\w])/) do |fmatch|
+                extra = $1
+                id_num += 1
+                name = f + '-' + id_num.to_s
+                # save data for cross-link
+                @data[:functions][f][:examples] ||= {}
+                @data[:functions][f][:examples][file] ||= []
+                @data[:functions][f][:examples][file] << rel_path + '#' + name
+                "<a name=\"#{name}\" class=\"fnlink\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
               end
             end
+
+            # write example to the repo
+            sha = @repo.write(rf, :blob)
+            output_index.add(:path => rel_path, :oid => sha, :mode => 0100644)
+
+            @data[:examples] ||= []
+            @data[:examples] << [file, rel_path]
           end
         end
 
@@ -121,9 +114,8 @@ class Docurium
         end
       end
 
-      File.open(File.join(outdir, "#{version}.json"), 'w+') do |f|
-        f.write(@data.to_json)
-      end
+      sha = @repo.write(@data.to_json, :blob)
+      output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
     end
 
     Dir.chdir(outdir) do
@@ -142,23 +134,20 @@ class Docurium
     if br = @options['branch']
       out "* writing to branch #{br}"
       refname = "refs/heads/#{br}"
-      with_git_env(outdir) do
-        `git add -A`
-        tsha = `git write-tree`.chomp
-        puts "\twrote tree   #{tsha}"
-        ref = Rugged::Reference.lookup(@repo, refname)
-        user = { :name => @repo.config['user.name'], :email => @repo.config['user.email'], :time => Time.now }
-        options = {}
-        options[:tree] = tsha
-        options[:author] = user
-        options[:committer] = user
-        options[:message] = 'generated docs'
-        options[:parents] = ref ? [ref.target] : []
-        options[:update_ref] = refname
-        csha = Rugged::Commit.create(@repo, options)
-        puts "\twrote commit #{csha}"
-        puts "\tupdated #{br}"
-      end
+      tsha = output_index.write_tree(@repo)
+      puts "\twrote tree   #{tsha}"
+      ref = Rugged::Reference.lookup(@repo, refname)
+      user = { :name => @repo.config['user.name'], :email => @repo.config['user.email'], :time => Time.now }
+      options = {}
+      options[:tree] = tsha
+      options[:author] = user
+      options[:committer] = user
+      options[:message] = 'generated docs'
+      options[:parents] = ref ? [ref.target] : []
+      options[:update_ref] = refname
+      csha = Rugged::Commit.create(@repo, options)
+      puts "\twrote commit #{csha}"
+      puts "\tupdated #{br}"
     else
       final_dir = File.join(@project_dir, @options['output'] || 'docs')
       out "* output html in #{final_dir}"
@@ -201,20 +190,9 @@ class Docurium
     VersionSorter.sort(tags)
   end
 
-  def parse_headers(index = nil)
-    if(index.nil?) # ruby won't let me overload
-      parse_headers_old
-    else
-      headers(index).each do |header|
-        records = parse_header(index, header)
-        update_globals(records)
-      end
-    end
-  end
-
-  def parse_headers_old
-    headers.each do |header|
-      records = parse_header(header)
+  def parse_headers(index)
+    headers(index).each do |header|
+      records = parse_header(index, header)
       update_globals(records)
     end
 
@@ -240,7 +218,7 @@ class Docurium
     end
   end
 
-  def read_tree(index, version)
+  def find_subtree(version, path)
     tree = nil
     if version == 'HEAD'
       tree = @repo.lookup(@repo.head.target).tree
@@ -253,26 +231,17 @@ class Docurium
       tree = trg.tree
     end
 
-    subtree_entry = tree.path(@data[:prefix])
-    tree = @repo.lookup(subtree_entry[:oid])
-    index.read_tree(tree)
-  end
-
-  def checkout(version, workdir)
-    with_git_env(workdir) do
-      `git read-tree #{version}:#{@data[:prefix]}`
-      `git checkout-index -a`
+    begin
+      tree_entry = tree.path(path)
+      @repo.lookup(tree_entry[:oid])
+    rescue Rugged::TreeError
+      nil
     end
   end
 
-  def with_git_env(workdir)
-    ENV['GIT_INDEX_FILE'] = mkfile_temp
-    ENV['GIT_WORK_TREE'] = workdir
-    ENV['GIT_DIR'] = File.join(@project_dir, '.git')
-    yield
-    ENV.delete('GIT_INDEX_FILE')
-    ENV.delete('GIT_WORK_TREE')
-    ENV.delete('GIT_DIR')
+  def read_subtree(index, version, path)
+    tree = find_subtree(version, path)
+    index.read_tree(tree)
   end
 
   def valid_config(file)
@@ -308,23 +277,10 @@ class Docurium
   end
 
   def headers(index = nil)
-    if(index.nil?)
-      headers_old
-    else
-      h = []
-      index.each do |entry|
-        next unless entry[:path].match(/\.h$/)
-        h << entry[:path]
-      end
-      h
-    end
-  end
-
-  def headers_old
     h = []
-    Dir.glob(File.join('**/*.h')).each do |header|
-      next if !File.file?(header)
-      h << header
+    index.each do |entry|
+      next unless entry[:path].match(/\.h$/)
+      h << entry[:path]
     end
     h
   end
@@ -460,6 +416,29 @@ class Docurium
     tpath = tf.path
     tf.unlink
     tpath
+  end
+
+  def add_dir_to_index(index, dir)
+    Dir.new(dir).each do |filename|
+      next if [".", ".."].include? filename
+      name = File.join(dir, filename)
+      puts "name is #{name}"
+      if File.directory? name
+        add_dir_to_index(index, name)
+      else
+        puts filename
+      end
+      #content = File.read(filename)
+      #sha = @repo.write(rf, :blob)
+      #output_index.add(:path => rel_path, :oid => sha, :mode => 0100644)
+    end
+  end
+
+  def write_site(index)
+    here = File.expand_path(File.dirname(__FILE__))
+    dirname = File.join(here, '..', 'site')
+    dirname = File.realpath(dirname)
+    add_dir_to_index(index, dirname)
   end
 
   def copy_site(outdir)
