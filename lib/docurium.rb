@@ -56,6 +56,7 @@ class Docurium
         read_tree(index, version)
         checkout(version, workdir)
         parse_headers
+        #parse_headers(index)
         tally_sigs(version)
       end
 
@@ -200,7 +201,18 @@ class Docurium
     VersionSorter.sort(tags)
   end
 
-  def parse_headers
+  def parse_headers(index = nil)
+    if(index.nil?) # ruby won't let me overload
+      parse_headers_old
+    else
+      headers(index).each do |header|
+        records = parse_header(index, header)
+        update_globals(records)
+      end
+    end
+  end
+
+  def parse_headers_old
     headers.each do |header|
       records = parse_header(header)
       update_globals(records)
@@ -295,7 +307,20 @@ class Docurium
     func.to_a.sort
   end
 
-  def headers
+  def headers(index = nil)
+    if(index.nil?)
+      headers_old
+    else
+      h = []
+      index.each do |entry|
+        next unless entry[:path].match(/\.h$/)
+        h << entry[:path]
+      end
+      h
+    end
+  end
+
+  def headers_old
     h = []
     Dir.glob(File.join('**/*.h')).each do |header|
       next if !File.file?(header)
@@ -323,7 +348,18 @@ class Docurium
     end
   end
 
-  def parse_header(filepath)
+  def parse_header(index = nil, path = nil)
+    if(path.nil?) # index is then really the filepath
+      parse_header_old(index)
+    else
+      id = index[path][:oid]
+      blob = @repo.lookup(id)
+      parser = Docurium::CParser.new
+      parser.parse_text(path, blob.content)
+    end
+  end
+
+  def parse_header_old(filepath)
     content = File.read(filepath)
     parser = Docurium::CParser.new
     parser.parse_text(filepath, content)
