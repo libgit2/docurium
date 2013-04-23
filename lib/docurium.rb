@@ -5,6 +5,7 @@ require 'rocco'
 require 'docurium/layout'
 require 'docurium/cparser'
 require 'pp'
+require 'rugged'
 
 class Docurium
   Version = VERSION = '0.0.5'
@@ -16,6 +17,8 @@ class Docurium
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
     @groups = {}
+    repo_path = Rugged::Repository.discover('.')
+    @repo = Rugged::Repository.new(repo_path)
     clear_data
   end
 
@@ -186,7 +189,9 @@ class Docurium
   end
 
   def get_versions
-    VersionSorter.sort(git('tag').split("\n"))
+    tags = []
+    @repo.tags.each { |tag| tags << tag.gsub(%r(^refs/tags/), '') }
+    VersionSorter.sort(tags)
   end
 
   def parse_headers
@@ -215,14 +220,6 @@ class Docurium
       @sigs[fun_name][:exists] << version
       @lastsigs[fun_name] = fun_data[:sig]
     end
-  end
-
-  def git(command)
-    out = ''
-    Dir.chdir(@project_dir) do
-      out = `git #{command}`
-    end
-    out.strip
   end
 
   def checkout(version, workdir)
