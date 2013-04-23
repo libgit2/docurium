@@ -42,8 +42,6 @@ class Docurium
 
   def generate_docs
     out "* generating docs"
-    outdir = mkdir_temp
-    copy_site(outdir)
     output_index = Rugged::Index.new
     write_site(output_index)
     versions = get_versions
@@ -400,21 +398,6 @@ class Docurium
     @data[:files] << file_map.values[0]
   end
 
-  def mkdir_temp
-    tf = Tempfile.new('docurium')
-    tpath = tf.path
-    tf.unlink
-    FileUtils.mkdir_p(tpath)
-    tpath
-  end
-
-  def mkfile_temp
-    tf = Tempfile.new('docurium-index')
-    tpath = tf.path
-    tf.unlink
-    tpath
-  end
-
   def add_dir_to_index(index, prefix, dir)
     Dir.new(dir).each do |filename|
       next if [".", ".."].include? filename
@@ -435,19 +418,6 @@ class Docurium
     dirname = File.join(here, '..', 'site')
     dirname = File.realpath(dirname)
     add_dir_to_index(index, dirname + '/', dirname)
-  end
-
-  def copy_site(outdir)
-    here = File.expand_path(File.dirname(__FILE__))
-    FileUtils.mkdir_p(outdir)
-    Dir.chdir(outdir) do
-      FileUtils.cp_r(File.join(here, '..', 'site', '.'), '.') 
-    end
-  end
-
-  def write_dir
-    out "Writing to directory #{output_dir}"
-    out "Done!"
   end
 
   def out(text)
