@@ -137,19 +137,22 @@ class Docurium
 
     if br = @options['branch']
       out "* writing to branch #{br}"
-      ref = "refs/heads/#{br}"
+      refname = "refs/heads/#{br}"
       with_git_env(outdir) do
-        psha = `git rev-parse #{ref}`.chomp
         `git add -A`
         tsha = `git write-tree`.chomp
         puts "\twrote tree   #{tsha}"
-        if(psha == ref)
-          csha = `echo 'generated docs' | git commit-tree #{tsha}`.chomp
-        else
-          csha = `echo 'generated docs' | git commit-tree #{tsha} -p #{psha}`.chomp
-        end
+        ref = Rugged::Reference.lookup(@repo, refname)
+        user = { :name => @repo.config['user.name'], :email => @repo.config['user.email'], :time => Time.now }
+        options = {}
+        options[:tree] = tsha
+        options[:author] = user
+        options[:committer] = user
+        options[:message] = 'generated docs'
+        options[:parents] = ref ? [ref.target] : []
+        options[:update_ref] = refname
+        csha = Rugged::Commit.create(@repo, options)
         puts "\twrote commit #{csha}"
-        `git update-ref -m 'generated docs' #{ref} #{csha}`
         puts "\tupdated #{br}"
       end
     else
