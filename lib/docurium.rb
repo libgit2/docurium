@@ -48,9 +48,12 @@ class Docurium
     versions << 'HEAD'
     versions.each do |version|
       out "  - processing version #{version}"
+      index = @repo.index
+      index.clear
       workdir = mkdir_temp
       Dir.chdir(workdir) do
         clear_data(version)
+        read_tree(index, version)
         checkout(version, workdir)
         parse_headers
         tally_sigs(version)
@@ -223,6 +226,24 @@ class Docurium
       @sigs[fun_name][:exists] << version
       @lastsigs[fun_name] = fun_data[:sig]
     end
+  end
+
+  def read_tree(index, version)
+    tree = nil
+    if version == 'HEAD'
+      tree = @repo.lookup(@repo.head.target).tree
+    else
+      trg = @repo.lookup(Rugged::Reference.lookup(@repo, "refs/tags/#{version}").target)
+      if(trg.class == Rugged::Tag)
+        trg = trg.target
+      end
+
+      tree = trg.tree
+    end
+
+    subtree_entry = tree.path(@data[:prefix])
+    tree = @repo.lookup(subtree_entry[:oid])
+    index.read_tree(tree)
   end
 
   def checkout(version, workdir)
