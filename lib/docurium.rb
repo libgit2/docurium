@@ -144,12 +144,7 @@ class Docurium
       puts "\twrote commit #{csha}"
       puts "\tupdated #{br}"
     else
-      final_dir = File.join(@project_dir, @options['output'] || 'docs')
-      out "* output html in #{final_dir}"
-      FileUtils.mkdir_p(final_dir)
-      Dir.chdir(final_dir) do
-        FileUtils.cp_r(File.join(outdir, '.'), '.') 
-      end
+      raise "This version only supports writing to a branch"
     end
   end
 
