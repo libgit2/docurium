@@ -118,18 +118,15 @@ class Docurium
       output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
     end
 
-    Dir.chdir(outdir) do
-      project = {
-        :versions => versions.reverse,
-        :github   => @options['github'],
-        :name     => @options['name'],
-        :signatures => @sigs,
-        :groups   => @groups
-      }
-      File.open("project.json", 'w+') do |f|
-        f.write(project.to_json)
-      end
-    end
+    project = {
+      :versions => versions.reverse,
+      :github   => @options['github'],
+      :name     => @options['name'],
+      :signatures => @sigs,
+      :groups   => @groups
+    }
+    sha = @repo.write(project.to_json, :blob)
+    output_index.add(:path => "project.json", :oid => sha, :mode => 0100644)
 
     if br = @options['branch']
       out "* writing to branch #{br}"
@@ -418,19 +415,18 @@ class Docurium
     tpath
   end
 
-  def add_dir_to_index(index, dir)
+  def add_dir_to_index(index, prefix, dir)
     Dir.new(dir).each do |filename|
       next if [".", ".."].include? filename
       name = File.join(dir, filename)
-      puts "name is #{name}"
       if File.directory? name
-        add_dir_to_index(index, name)
+        add_dir_to_index(index, prefix, name)
       else
-        puts filename
+        rel_path = name.gsub(prefix, '')
+        content = File.read(name)
+        sha = @repo.write(content, :blob)
+        index.add(:path => rel_path, :oid => sha, :mode => 0100644)
       end
-      #content = File.read(filename)
-      #sha = @repo.write(rf, :blob)
-      #output_index.add(:path => rel_path, :oid => sha, :mode => 0100644)
     end
   end
 
@@ -438,7 +434,7 @@ class Docurium
     here = File.expand_path(File.dirname(__FILE__))
     dirname = File.join(here, '..', 'site')
     dirname = File.realpath(dirname)
-    add_dir_to_index(index, dirname)
+    add_dir_to_index(index, dirname + '/', dirname)
   end
 
   def copy_site(outdir)
