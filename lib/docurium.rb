@@ -8,7 +8,7 @@ require 'pp'
 require 'rugged'
 
 class Docurium
-  Version = VERSION = '0.0.5'
+  Version = VERSION = '0.1.0'
 
   attr_accessor :branch, :output_dir, :data
 
