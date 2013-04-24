@@ -154,9 +154,8 @@ $(function() {
       content.append(retdiv)
 
       // Show Non-Parsed Function Comments
-      if (fdata[fname]['comments']) {
-        content.append($('<pre>').append(fdata[fname]['comments']))
-      }
+      if (fdata[fname]['comments'])
+        content.append($('<div>').append(fdata[fname]['comments']))
 
       // Show Function Signature
       ex = $('<code>').addClass('params')
@@ -382,7 +381,11 @@ $(function() {
         argsText = '( ' + fdata[f]['argline'] + ' )'
         link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
         $('.content').append($('<h2>').append(link).append($('<small>').append(argsText)))
-        $('.content').append($('<pre>').append(fdata[f]['rawComments']))
+        description = fdata[f]['description']
+	if(fdata[f]['comments'])
+		description += "\n\n" + fdata[f]['comments']
+
+	$('.content').append($('<div>').addClass('description').append(description))
       }
       return false
     },

@@ -2,12 +2,14 @@ require 'json'
 require 'tempfile'
 require 'version_sorter'
 require 'rocco'
+require 'docurium/version'
 require 'docurium/layout'
+require 'docurium/cparser'
 require 'pp'
+require 'rugged'
+require 'redcarpet'
 
 class Docurium
-  Version = VERSION = '0.0.5'
-
   attr_accessor :branch, :output_dir, :data
 
   def initialize(config_file)
@@ -15,6 +17,8 @@ class Docurium
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
     @groups = {}
+    repo_path = Rugged::Repository.discover('.')
+    @repo = Rugged::Repository.new(repo_path)
     clear_data
   end
 
@@ -38,73 +42,68 @@ class Docurium
 
   def generate_docs
     out "* generating docs"
-    outdir = mkdir_temp
-    copy_site(outdir)
+    output_index = Rugged::Index.new
+    write_site(output_index)
     versions = get_versions
     versions << 'HEAD'
     versions.each do |version|
       out "  - processing version #{version}"
-      workdir = mkdir_temp
-      Dir.chdir(workdir) do
-        clear_data(version)
-        checkout(version, workdir)
-        parse_headers
-        tally_sigs(version)
-      end
+      index = @repo.index
+      index.clear
+      clear_data(version)
+      read_subtree(index, version, @data[:prefix])
+      parse_headers(index)
+      tally_sigs(version)
 
       tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
       if ex = option_version(version, 'examples')
-        workdir = mkdir_temp
-        Dir.chdir(workdir) do
-          with_git_env(workdir) do
-            `git rev-parse #{version}:#{ex} 2>&1` # check that it exists
-            if $?.exitstatus == 0
-              out "  - processing examples for #{version}"
-              `git read-tree #{version}:#{ex}`
-              `git checkout-index -a`
+        if subtree = find_subtree(version, ex) # check that it exists
+          index.read_tree(subtree)
+          out "  - processing examples for #{version}"
 
-              files = []
-              Dir.glob("**/*.c") do |file|
-                next if !File.file?(file)
-                files << file
-              end
-              files.each do |file|
-                out "    # #{file}"
+          files = []
+          index.each do |entry|
+            next unless entry[:path].match(/\.c$/)
+            files << entry[:path]
+          end
 
-                # highlight, roccoize and link
-                rocco = Rocco.new(file, files, {:language => 'c'})
-                rocco_layout = Rocco::Layout.new(rocco, tf)
-                rocco_layout.version = version
-                rf = rocco_layout.render
+          files.each do |file|
+            out "    # #{file}"
 
-                rf_path = File.basename(file).split('.')[0..-2].join('.') + '.html'
-                rel_path = "ex/#{version}/#{rf_path}"
-                rf_path = File.join(outdir, rel_path)
+            # highlight, roccoize and link
+            rocco = Rocco.new(file, files, {:language => 'c'}) do
+              ientry = index[file]
+              blob = @repo.lookup(ientry[:oid])
+              blob.content
+            end
+            rocco_layout = Rocco::Layout.new(rocco, tf)
+            rocco_layout.version = version
+            rf = rocco_layout.render
 
-                # look for function names in the examples and link
-                id_num = 0
-                @data[:functions].each do |f, fdata|
-                  rf.gsub!(/#{f}([^\w])/) do |fmatch|
-                    extra = $1
-                    id_num += 1
-                    name = f + '-' + id_num.to_s
-                    # save data for cross-link
-                    @data[:functions][f][:examples] ||= {}
-                    @data[:functions][f][:examples][file] ||= []
-                    @data[:functions][f][:examples][file] << rel_path + '#' + name
-                    "<a name=\"#{name}\" class=\"fnlink\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
-                  end
-                end
+            rf_path = File.basename(file).split('.')[0..-2].join('.') + '.html'
+            rel_path = "ex/#{version}/#{rf_path}"
 
-                # write example to docs directory
-                FileUtils.mkdir_p(File.dirname(rf_path))
-                File.open(rf_path, 'w+') do |f|
-                  @data[:examples] ||= []
-                  @data[:examples] << [file, rel_path]
-                  f.write(rf)
-                end
+            # look for function names in the examples and link
+            id_num = 0
+            @data[:functions].each do |f, fdata|
+              rf.gsub!(/#{f}([^\w])/) do |fmatch|
+                extra = $1
+                id_num += 1
+                name = f + '-' + id_num.to_s
+                # save data for cross-link
+                @data[:functions][f][:examples] ||= {}
+                @data[:functions][f][:examples][file] ||= []
+                @data[:functions][f][:examples][file] << rel_path + '#' + name
+                "<a name=\"#{name}\" class=\"fnlink\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
               end
             end
+
+            # write example to the repo
+            sha = @repo.write(rf, :blob)
+            output_index.add(:path => rel_path, :oid => sha, :mode => 0100644)
+
+            @data[:examples] ||= []
+            @data[:examples] << [file, rel_path]
           end
         end
 
@@ -113,49 +112,37 @@ class Docurium
         end
       end
 
-      File.open(File.join(outdir, "#{version}.json"), 'w+') do |f|
-        f.write(@data.to_json)
-      end
+      sha = @repo.write(@data.to_json, :blob)
+      output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
     end
 
-    Dir.chdir(outdir) do
-      project = {
-        :versions => versions.reverse,
-        :github   => @options['github'],
-        :name     => @options['name'],
-        :signatures => @sigs,
-        :groups   => @groups
-      }
-      File.open("project.json", 'w+') do |f|
-        f.write(project.to_json)
-      end
-    end
+    project = {
+      :versions => versions.reverse,
+      :github   => @options['github'],
+      :name     => @options['name'],
+      :signatures => @sigs,
+      :groups   => @groups
+    }
+    sha = @repo.write(project.to_json, :blob)
+    output_index.add(:path => "project.json", :oid => sha, :mode => 0100644)
 
-    if br = @options['branch']
-      out "* writing to branch #{br}"
-      ref = "refs/heads/#{br}"
-      with_git_env(outdir) do
-        psha = `git rev-parse #{ref}`.chomp
-        `git add -A`
-        tsha = `git write-tree`.chomp
-        puts "\twrote tree   #{tsha}"
-        if(psha == ref)
-          csha = `echo 'generated docs' | git commit-tree #{tsha}`.chomp
-        else
-          csha = `echo 'generated docs' | git commit-tree #{tsha} -p #{psha}`.chomp
-        end
-        puts "\twrote commit #{csha}"
-        `git update-ref -m 'generated docs' #{ref} #{csha}`
-        puts "\tupdated #{br}"
-      end
-    else
-      final_dir = File.join(@project_dir, @options['output'] || 'docs')
-      out "* output html in #{final_dir}"
-      FileUtils.mkdir_p(final_dir)
-      Dir.chdir(final_dir) do
-        FileUtils.cp_r(File.join(outdir, '.'), '.') 
-      end
-    end
+    br = @options['branch']
+    out "* writing to branch #{br}"
+    refname = "refs/heads/#{br}"
+    tsha = output_index.write_tree(@repo)
+    puts "\twrote tree   #{tsha}"
+    ref = Rugged::Reference.lookup(@repo, refname)
+    user = { :name => @repo.config['user.name'], :email => @repo.config['user.email'], :time => Time.now }
+    options = {}
+    options[:tree] = tsha
+    options[:author] = user
+    options[:committer] = user
+    options[:message] = 'generated docs'
+    options[:parents] = ref ? [ref.target] : []
+    options[:update_ref] = refname
+    csha = Rugged::Commit.create(@repo, options)
+    puts "\twrote commit #{csha}"
+    puts "\tupdated #{br}"
   end
 
   def show_warnings
@@ -185,13 +172,17 @@ class Docurium
   end
 
   def get_versions
-    VersionSorter.sort(git('tag').split("\n"))
+    tags = []
+    @repo.tags.each { |tag| tags << tag.gsub(%r(^refs/tags/), '') }
+    VersionSorter.sort(tags)
   end
 
-  def parse_headers
-    headers.each do |header|
-      parse_header(header)
+  def parse_headers(index)
+    headers(index).each do |header|
+      records = parse_header(index, header)
+      update_globals(records)
     end
+
     @data[:groups] = group_functions
     @data[:types] = @data[:types].sort # make it an assoc array
     find_type_usage
@@ -214,29 +205,30 @@ class Docurium
     end
   end
 
-  def git(command)
-    out = ''
-    Dir.chdir(@project_dir) do
-      out = `git #{command}`
+  def find_subtree(version, path)
+    tree = nil
+    if version == 'HEAD'
+      tree = @repo.lookup(@repo.head.target).tree
+    else
+      trg = @repo.lookup(Rugged::Reference.lookup(@repo, "refs/tags/#{version}").target)
+      if(trg.class == Rugged::Tag)
+        trg = trg.target
+      end
+
+      tree = trg.tree
     end
-    out.strip
+
+    begin
+      tree_entry = tree.path(path)
+      @repo.lookup(tree_entry[:oid])
+    rescue Rugged::TreeError
+      nil
+    end
   end
 
-  def checkout(version, workdir)
-    with_git_env(workdir) do
-      `git read-tree #{version}:#{@data[:prefix]}`
-      `git checkout-index -a`
-    end
-  end
-
-  def with_git_env(workdir)
-    ENV['GIT_INDEX_FILE'] = mkfile_temp
-    ENV['GIT_WORK_TREE'] = workdir
-    ENV['GIT_DIR'] = File.join(@project_dir, '.git')
-    yield
-    ENV.delete('GIT_INDEX_FILE')
-    ENV.delete('GIT_WORK_TREE')
-    ENV.delete('GIT_DIR')
+  def read_subtree(index, version, path)
+    tree = find_subtree(version, path)
+    index.read_tree(tree)
   end
 
   def valid_config(file)
@@ -245,7 +237,7 @@ class Docurium
     @project_dir = File.dirname(fpath)
     @config_file = File.basename(fpath)
     @options = JSON.parse(File.read(fpath))
-    true
+    !!@options['branch']
   end
 
   def group_functions
@@ -271,11 +263,11 @@ class Docurium
     func.to_a.sort
   end
 
-  def headers
+  def headers(index = nil)
     h = []
-    Dir.glob(File.join('**/*.h')).each do |header|
-      next if !File.file?(header)
-      h << header
+    index.each do |entry|
+      next unless entry[:path].match(/\.h$/)
+      h << entry[:path]
     end
     h
   end
@@ -299,248 +291,123 @@ class Docurium
     end
   end
 
-  def header_content(header_path)
-    File.readlines(header_path)
+  def parse_header(index, path)
+    id = index[path][:oid]
+    blob = @repo.lookup(id)
+    parser = Docurium::CParser.new
+    parser.parse_text(path, blob.content)
   end
 
-  def parse_header(filepath)
-    lineno = 0
-    content = header_content(filepath)
+  def update_globals(recs)
+    wanted = {
+      :functions => %W/type value file line lineto args argline sig return group description comments/.map(&:to_sym),
+      :types => %W/type value file line lineto block tdef comments/.map(&:to_sym),
+      :globals => %W/value file line comments/.map(&:to_sym),
+      :meta => %W/brief defgroup ingroup comments/.map(&:to_sym),
+    }
 
-    # look for structs and enums
-    in_block = false
-    block = ''
-    linestart = 0
-    tdef, type, name = nil
-    content.each do |line|
-      lineno += 1
-      line = line.strip
+    file_map = {}
 
-      if line[0, 1] == '#' #preprocessor
-        if m = /\#define (.*?) (.*)/.match(line)
-          @data[:globals][m[1]] = {:value => m[2].strip, :file => filepath, :line => lineno}
-        else
-          next
-        end
+    md = Redcarpet::Markdown.new Redcarpet::Render::HTML, :no_intra_emphasis => true
+    recs.each do |r|
+
+      # initialize filemap for this file
+      file_map[r[:file]] ||= {
+        :file => r[:file], :functions => [], :meta => {}, :lines => 0
+      }
+      if file_map[r[:file]][:lines] < r[:lineto]
+        file_map[r[:file]][:lines] = r[:lineto]
       end
 
-      if m = /^(typedef )*(struct|enum) (.*?)(\{|(\w*?);)/.match(line)
-        tdef = m[1] # typdef or nil
-        type = m[2] # struct or enum
-        name = m[3] # name or nil
-        linestart = lineno
-        name.strip! if name
-        tdef.strip! if tdef
-        if m[4] == '{'
-          # struct or enum
-          in_block = true
+      # process this type of record
+      case r[:type]
+      when :function
+        @data[:functions][r[:name]] ||= {}
+        wanted[:functions].each do |k|
+          next unless r.has_key? k
+          conents = nil
+          if k == :description || k == :comments
+            contents = md.render r[k]
+          else
+            contents = r[k]
+          end
+          @data[:functions][r[:name]][k] = contents
+        end
+        file_map[r[:file]][:functions] << r[:name]
+
+      when :define, :macro
+        @data[:globals][r[:decl]] ||= {}
+        wanted[:globals].each do |k|
+          @data[:globals][r[:decl]][k] = r[k] if r.has_key?(k)
+        end
+
+      when :file
+        wanted[:meta].each do |k|
+          file_map[r[:file]][:meta][k] = r[k] if r.has_key?(k)
+        end
+
+      when :enum
+        if !r[:name]
+          # Explode unnamed enum into multiple global defines
+          r[:decl].each do |n|
+            @data[:globals][n] ||= {
+              :file => r[:file], :line => r[:line],
+              :value => "", :comments => r[:comments],
+            }
+            m = /#{Regexp.quote(n)}/.match(r[:body])
+            if m
+              @data[:globals][n][:line] += m.pre_match.scan("\n").length
+              if m.post_match =~ /\s*=\s*([^,\}]+)/
+                @data[:globals][n][:value] = $1
+              end
+            end
+          end
         else
-          # single line, probably typedef
-          val = m[4].gsub(';', '').strip
-          if !name.empty?
-            name = name.gsub('*', '').strip
-            @data[:types][name] = {:tdef => tdef, :type => type, :value => val, :file => filepath, :line => lineno}
+          @data[:types][r[:name]] ||= {}
+          wanted[:types].each do |k|
+            @data[:types][r[:name]][k] = r[k] if r.has_key?(k)
           end
         end
-      elsif m = /\}(.*?);/.match(line)
-        if !m[1].strip.empty?
-          name = m[1].strip
+
+      when :struct, :fnptr
+        @data[:types][r[:name]] ||= {}
+        r[:value] ||= r[:name]
+        wanted[:types].each do |k|
+          @data[:types][r[:name]][k] = r[k] if r.has_key?(k)
         end
-        name = name.gsub('*', '').strip
-        @data[:types][name] = {:block => block, :tdef => tdef, :type => type, :value => val, :file => filepath, :line => linestart, :lineto => lineno}
-        in_block = false
-        block = ''
-      elsif in_block
-        block += line + "\n"
-      end
-    end
-    
-    in_comment = false
-    in_block = false
-    current = -1
-    data = []
-    lineno = 0
-    # look for functions
-    content.each do |line|
-      lineno += 1
-      line = line.strip
-      next if line.size == 0
-      next if line[0, 1] == '#'
-      in_block = true if line =~ /\{/
-      if m = /(.*?)\/\*(.*?)\*\//.match(line)
-        code = m[1]
-        comment = m[2]
-        current += 1
-        data[current] ||= {:comments => clean_comment(comment), :code => [code], :line => lineno}
-      elsif m = /(.*?)\/\/(.*?)/.match(line)
-        code = m[1]
-        comment = m[2]
-        current += 1
-        data[current] ||= {:comments => clean_comment(comment), :code => [code], :line => lineno}
+        if r[:type] == :fnptr
+          @data[:types][r[:name]][:type] = "function pointer"
+        end
+
       else
-        if line =~ /\/\*/
-          in_comment = true  
-          current += 1
-        elsif current == -1
-          current += 1
-        end
-        data[current] ||= {:comments => '', :code => [], :line => lineno}
-        data[current][:lineto] = lineno
-        if in_comment
-          data[current][:comments] += clean_comment(line) + "\n"
-        else
-          data[current][:code] << line
-        end
-        if (m = /(.*?);$/.match(line)) && (data[current][:code].size > 0) && !in_block
-          current += 1
-        end
-        in_comment = false if line =~ /\*\//
-        in_block = false if line =~ /\}/
+        # Anything else we want to record?
+      end
+
+    end
+
+    @data[:files] << file_map.values[0]
+  end
+
+  def add_dir_to_index(index, prefix, dir)
+    Dir.new(dir).each do |filename|
+      next if [".", ".."].include? filename
+      name = File.join(dir, filename)
+      if File.directory? name
+        add_dir_to_index(index, prefix, name)
+      else
+        rel_path = name.gsub(prefix, '')
+        content = File.read(name)
+        sha = @repo.write(content, :blob)
+        index.add(:path => rel_path, :oid => sha, :mode => 0100644)
       end
     end
-    data.compact!
-    meta  = extract_meta(data)
-    funcs = extract_functions(filepath, data)
-    @data[:files] << {:file => filepath, :meta => meta, :functions => funcs, :lines => lineno}
   end
 
-  def clean_comment(comment)
-    comment = comment.gsub(/^\/\//, '')
-    comment = comment.gsub(/^\/\**/, '')
-    comment = comment.gsub(/^\**/, '')
-    comment = comment.gsub(/^[\w\*]*\//, '')
-    comment
-  end
-
-  # go through all the comment blocks and extract:
-  #  @file, @brief, @defgroup and @ingroup
-  def extract_meta(data)
-    file, brief, defgroup, ingroup = nil
-    data.each do |block|
-      block[:comments].each_line do |comment|
-        m = []
-        file  = m[1] if m = /@file (.*?)$/.match(comment)
-        brief = m[1] if m = /@brief (.*?)$/.match(comment)
-        defgroup = m[1] if m = /@defgroup (.*?)$/.match(comment)
-        ingroup  = m[1] if m = /@ingroup (.*?)$/.match(comment)
-      end
-    end
-    {:file => file, :brief => brief, :defgroup => defgroup, :ingroup => ingroup}
-  end
-
-  def extract_functions(file, data)
-    @data[:functions]
-    funcs = []
-    data.each do |block|
-      ignore = false
-      code = block[:code].join(" ")
-      code = code.gsub(/\{(.*)\}/, '') # strip inline code
-      rawComments = block[:comments]
-      comments = block[:comments]
-
-      if m = /^(.*?) ([a-zA-Z_]+)\((.*)\)/.match(code)
-        ret  = m[1].strip
-        if r = /\((.*)\)/.match(ret) # strip macro
-          ret = r[1]
-        end
-        fun  = m[2].strip
-        origArgs = m[3].strip
-
-        # replace ridiculous syntax
-        args = origArgs.gsub(/(\w+) \(\*(.*?)\)\(([^\)]*)\)/) do |m|
-          type, name = $1, $2
-          cast = $3.gsub(',', '###')
-          "#{type}(*)(#{cast}) #{name}" 
-        end
-
-        args = args.split(',').map do |arg|
-          argarry = arg.split(' ')
-          var = argarry.pop
-          type = argarry.join(' ').gsub('###', ',') + ' '
-
-          ## split pointers off end of type or beg of name
-          var.gsub!('*') do |m|
-            type += '*'
-            ''
-          end
-          desc = ''
-          comments = comments.gsub(/\@param #{Regexp.escape(var)} ([^@]*)/m) do |m|
-            desc = $1.gsub("\n", ' ').gsub("\t", ' ').strip
-            ''
-          end
-          ## TODO: parse comments to extract data about args
-          {:type => type.strip, :name => var, :comment => desc}
-        end
-
-        sig = args.map do |arg|
-          arg[:type].to_s
-        end.join('::')
-
-        return_comment = ''
-        comments.gsub!(/\@return ([^@]*)/m) do |m|
-          return_comment = $1.gsub("\n", ' ').gsub("\t", ' ').strip
-          ''
-        end
-
-        comments = strip_block(comments)
-        comment_lines = comments.split("\n\n")
-
-        desc = ''
-        if comments.size > 0
-          desc = comment_lines.shift.split("\n").map { |e| e.strip }.join(' ')
-          comments = comment_lines.join("\n\n").strip
-        end
-
-        next if fun == 'defined'
-        @data[:functions][fun] = {
-          :description => desc,
-          :return => {:type => ret, :comment => return_comment},
-          :args => args,
-          :argline => origArgs,
-          :file => file,
-          :line => block[:line],
-          :lineto => block[:lineto],
-          :comments => comments,
-          :sig => sig,
-          :rawComments => rawComments
-        }
-        funcs << fun
-      end
-    end
-    funcs
-  end
-
-  # TODO: rolled this back, want to strip the first few spaces, not everything
-  def strip_block(block)
-    block.strip
-  end
-
-  def mkdir_temp
-    tf = Tempfile.new('docurium')
-    tpath = tf.path
-    tf.unlink
-    FileUtils.mkdir_p(tpath)
-    tpath
-  end
-
-  def mkfile_temp
-    tf = Tempfile.new('docurium-index')
-    tpath = tf.path
-    tf.unlink
-    tpath
-  end
-
-  def copy_site(outdir)
+  def write_site(index)
     here = File.expand_path(File.dirname(__FILE__))
-    FileUtils.mkdir_p(outdir)
-    Dir.chdir(outdir) do
-      FileUtils.cp_r(File.join(here, '..', 'site', '.'), '.') 
-    end
-  end
-
-  def write_dir
-    out "Writing to directory #{output_dir}"
-    out "Done!"
+    dirname = File.join(here, '..', 'site')
+    dirname = File.realpath(dirname)
+    add_dir_to_index(index, dirname + '/', dirname)
   end
 
   def out(text)

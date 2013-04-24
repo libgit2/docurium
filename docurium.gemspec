@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
-require 'docurium'
+require 'docurium/version'
 
 Gem::Specification.new do |s|
   s.name        = "docurium"
@@ -17,6 +17,9 @@ Gem::Specification.new do |s|
   s.add_dependency "version_sorter", "~>1.1.0"
   s.add_dependency "mustache", ">= 0.99.4"
   s.add_dependency "rocco", "= 0.7.0"
+  s.add_dependency "gli", "~>2.5"
+  s.add_dependency "rugged", "~>0.18.b1"
+  s.add_dependency "redcarpet", "~>2.2.2"
   s.add_development_dependency "bundler",   "~>1.0"
 
   s.files         = `git ls-files`.split("\n")
