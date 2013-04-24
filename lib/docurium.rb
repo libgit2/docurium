@@ -2,14 +2,13 @@ require 'json'
 require 'tempfile'
 require 'version_sorter'
 require 'rocco'
+require 'docurium/version'
 require 'docurium/layout'
 require 'docurium/cparser'
 require 'pp'
 require 'rugged'
 
 class Docurium
-  Version = VERSION = '0.1.0'
-
   attr_accessor :branch, :output_dir, :data
 
   def initialize(config_file)
