@@ -385,7 +385,7 @@ $(function() {
 	if(fdata[f]['comments'])
 		description += "\n\n" + fdata[f]['comments']
 
-	$('.content').append($('<div>').append(description))
+	$('.content').append($('<div>').addClass('description').append(description))
       }
       return false
     },
