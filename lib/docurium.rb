@@ -298,12 +298,6 @@ class Docurium
     parser.parse_text(path, blob.content)
   end
 
-  def parse_header_old(filepath)
-    content = File.read(filepath)
-    parser = Docurium::CParser.new
-    parser.parse_text(filepath, content)
-  end
-
   def update_globals(recs)
     wanted = {
       :functions => %W/type value file line lineto args argline sig return group description comments/.map(&:to_sym),
