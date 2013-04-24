@@ -7,6 +7,7 @@ require 'docurium/layout'
 require 'docurium/cparser'
 require 'pp'
 require 'rugged'
+require 'redcarpet'
 
 class Docurium
   attr_accessor :branch, :output_dir, :data
@@ -313,6 +314,7 @@ class Docurium
 
     file_map = {}
 
+    md = Redcarpet::Markdown.new Redcarpet::Render::HTML, :no_intra_emphasis => true
     recs.each do |r|
 
       # initialize filemap for this file
@@ -328,7 +330,14 @@ class Docurium
       when :function
         @data[:functions][r[:name]] ||= {}
         wanted[:functions].each do |k|
-          @data[:functions][r[:name]][k] = r[k] if r.has_key?(k)
+          next unless r.has_key? k
+          conents = nil
+          if k == :description || k == :comments
+            contents = md.render r[k]
+          else
+            contents = r[k]
+          end
+          @data[:functions][r[:name]][k] = contents
         end
         file_map[r[:file]][:functions] << r[:name]
 
