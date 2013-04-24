@@ -126,26 +126,23 @@ class Docurium
     sha = @repo.write(project.to_json, :blob)
     output_index.add(:path => "project.json", :oid => sha, :mode => 0100644)
 
-    if br = @options['branch']
-      out "* writing to branch #{br}"
-      refname = "refs/heads/#{br}"
-      tsha = output_index.write_tree(@repo)
-      puts "\twrote tree   #{tsha}"
-      ref = Rugged::Reference.lookup(@repo, refname)
-      user = { :name => @repo.config['user.name'], :email => @repo.config['user.email'], :time => Time.now }
-      options = {}
-      options[:tree] = tsha
-      options[:author] = user
-      options[:committer] = user
-      options[:message] = 'generated docs'
-      options[:parents] = ref ? [ref.target] : []
-      options[:update_ref] = refname
-      csha = Rugged::Commit.create(@repo, options)
-      puts "\twrote commit #{csha}"
-      puts "\tupdated #{br}"
-    else
-      raise "This version only supports writing to a branch"
-    end
+    br = @options['branch']
+    out "* writing to branch #{br}"
+    refname = "refs/heads/#{br}"
+    tsha = output_index.write_tree(@repo)
+    puts "\twrote tree   #{tsha}"
+    ref = Rugged::Reference.lookup(@repo, refname)
+    user = { :name => @repo.config['user.name'], :email => @repo.config['user.email'], :time => Time.now }
+    options = {}
+    options[:tree] = tsha
+    options[:author] = user
+    options[:committer] = user
+    options[:message] = 'generated docs'
+    options[:parents] = ref ? [ref.target] : []
+    options[:update_ref] = refname
+    csha = Rugged::Commit.create(@repo, options)
+    puts "\twrote commit #{csha}"
+    puts "\tupdated #{br}"
   end
 
   def show_warnings
@@ -240,7 +237,7 @@ class Docurium
     @project_dir = File.dirname(fpath)
     @config_file = File.basename(fpath)
     @options = JSON.parse(File.read(fpath))
-    true
+    !!@options['branch']
   end
 
   def group_functions
