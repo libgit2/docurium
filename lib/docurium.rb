@@ -290,15 +290,11 @@ class Docurium
     end
   end
 
-  def parse_header(index = nil, path = nil)
-    if(path.nil?) # index is then really the filepath
-      parse_header_old(index)
-    else
-      id = index[path][:oid]
-      blob = @repo.lookup(id)
-      parser = Docurium::CParser.new
-      parser.parse_text(path, blob.content)
-    end
+  def parse_header(index, path)
+    id = index[path][:oid]
+    blob = @repo.lookup(id)
+    parser = Docurium::CParser.new
+    parser.parse_text(path, blob.content)
   end
 
   def parse_header_old(filepath)
