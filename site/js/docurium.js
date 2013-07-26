@@ -169,17 +169,19 @@ $(function() {
       sigs = $('<div>').addClass('signatures')
       sigs.append($('<h3>').append("versions"))
       sigHist = docurium.get('signatures')[fname]
+      var list = $('<ul>')
       for(var i in sigHist.exists) {
         ver = sigHist.exists[i]
-        link = $('<a>').attr('href', '#' + groupLink(gname, fname, ver)).append(ver)
+        link = $('<li>').append($('<a>').attr('href', '#' + groupLink(gname, fname, ver)).append(ver))
         if(sigHist.changes[ver]) {
           link.addClass('changed')
         }
         if(ver == docurium.get('version')) {
           link.addClass('current')
         }
-        sigs.append(link)
+        list.append(link)
       }
+      sigs.append(list)
       content.append(sigs)
 
       // Link to Function Def on GitHub
