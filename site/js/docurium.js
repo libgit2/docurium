@@ -67,7 +67,7 @@ $(function() {
 
     showIndexPage: function() {
       version = docurium.get('version')
-      ws.saveLocation(version)
+      ws.navigate(version)
 
       data = docurium.get('data')
       content = $('.content')
@@ -298,7 +298,7 @@ $(function() {
       tname = tdata[0]
       data = tdata[1]
 
-      ws.saveLocation(typeLink(tname))
+      ws.navigate(typeLink(tname))
 
       content = $('.content')
       content.empty()
@@ -351,7 +351,7 @@ $(function() {
       fdata = docurium.get('data')['functions']
       gname = group[0]
 
-      ws.saveLocation(groupLink(gname));
+      ws.navigate(groupLink(gname));
 
       functions = group[1]
       $('.content').empty()
@@ -541,7 +541,7 @@ $(function() {
       }
       this.searchResults = []
 
-      ws.saveLocation(searchLink(value))
+      ws.navigate(searchLink(value))
 
       data = docurium.get('data')
 
@@ -596,7 +596,7 @@ $(function() {
 
   })
 
-  var Workspace = Backbone.Controller.extend({
+  var Workspace = Backbone.Router.extend({
 
     routes: {
       "":                             "main",
