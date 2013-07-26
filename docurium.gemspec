@@ -6,9 +6,9 @@ Gem::Specification.new do |s|
   s.name        = "docurium"
   s.version     = Docurium::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ["Scott Chacon"]
-  s.email       = ["schacon@gmail.com"]
-  s.homepage    = "http://github.com/schacon/docurium"
+  s.authors     = ["Carlos Martín Nieto", "Scott Chacon"]
+  s.email       = ["cmn@dwim.me", "schacon@gmail.com"]
+  s.homepage    = "https://github.com/libgit2/docurium"
   s.summary     = "A simpler, prettier Doxygen replacement."
   s.description = s.summary
 
