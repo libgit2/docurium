@@ -408,6 +408,10 @@ class Docurium
     dirname = File.join(here, '..', 'site')
     dirname = File.realpath(dirname)
     add_dir_to_index(index, dirname + '/', dirname)
+    if favicon = @options['favicon']
+      sha = @repo.write(File.read(favicon), :blob)
+      index.add(:path => 'favicon.png', :oid => sha, :mode => 0100644)
+    end
   end
 
   def out(text)
