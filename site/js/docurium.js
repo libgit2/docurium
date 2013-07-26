@@ -65,9 +65,9 @@ $(function() {
       return false
     },
 
-    showIndexPage: function() {
+    showIndexPage: function(replace) {
       version = docurium.get('version')
-      ws.navigate(version)
+      ws.navigate(version, {replace: replace})
 
       data = docurium.get('data')
       content = $('.content')
@@ -612,7 +612,9 @@ $(function() {
 
     main: function(version) {
       docurium.setVersion(version)
-      docurium.showIndexPage()
+      // when asking for '/', replace with 'HEAD' instead of redirecting
+      var replace = version == undefined
+      docurium.showIndexPage(replace)
     },
 
     group: function(version, gname) {
