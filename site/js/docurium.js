@@ -537,7 +537,7 @@ $(function() {
 
     search: function(data) {
       var searchResults = []
-      var value = $('#search-field').attr('value')
+      var value = $('#search-field').val()
       if (value.length < 3) {
         return false
       }
@@ -634,7 +634,7 @@ $(function() {
 
     search: function(version, query) {
       docurium.setVersion(version)
-      $('#search-field').attr('value', query)
+      $('#search-field').val(query)
       docurium.search()
     },
 
