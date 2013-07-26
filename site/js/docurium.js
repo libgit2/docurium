@@ -538,9 +538,12 @@ $(function() {
     search: function(data) {
       var searchResults = []
       var value = $('#search-field').val()
+
       if (value.length < 3) {
-        return false
+        docurium.showIndexPage(false)
+        return
       }
+
       this.searchResults = []
 
       ws.navigate(searchLink(value))
