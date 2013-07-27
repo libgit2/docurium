@@ -80,7 +80,8 @@ class Docurium
             rocco_layout.version = version
             rf = rocco_layout.render
 
-            rf_path = File.basename(file).split('.')[0..-2].join('.') + '.html'
+            extlen = -(File.extname(file).length + 1)
+            rf_path = file[0..extlen] + '.html'
             rel_path = "ex/#{version}/#{rf_path}"
 
             # look for function names in the examples and link
