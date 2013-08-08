@@ -47,7 +47,7 @@ class Docurium
 
       # Return the format that docurium expects
       {
-        :sig = sig,
+        :sig => sig,
         :line => extent.start.line,
         :lineto => extent.end.line,
         :args => args,
