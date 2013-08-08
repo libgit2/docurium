@@ -27,22 +27,62 @@ class Docurium
       comment = cursor.comment
       extent = cursor.extent
 
+      cmt = extract_function_comment(cursor)
+
       args = children(cursor).map do |arg|
         {
-          :name => arg.displayName
-          :type => arg.type.spelling
+          :name => arg.displayName,
+          :type => arg.type.spelling,
+          :comment => cmt[:args][arg.displayName],
         }
       end
 
+      ret = {
+        :type => cursor.result_type.spelling,
+        :comment => cmt[:return]
+      }
+
+      # generate function signature
+      sig = d[:args].map { |a| a[:type].to_s }.join('::')
+
+      # Return the format that docurium expects
       {
+        :sig = sig,
         :line => extent.start.line,
         :lineto => extent.end.line,
         :args => args,
+        :return => ret,
       }
     end
 
     def extract_function_comment(comment)
-      text = comment.text
+      subject = comment.child.text
+      desc = comment.find_all { |cmt| cmt.kind == :comment_paragraph }
+      long = (desc.drop(1).map do |para|
+                para.text
+              end).join("\n")
+
+      args = {}
+      (comment.find_all { |cmt| cmd.kind == :comment_param_command }).each do |param|
+        args[param.displayName] = param.comment.strip
+      end
+
+      ret = nil
+      comment.each do |block|
+        next unless :comment_block_command
+        next unless block.name != "return"
+
+        ret = block.paragraph.text
+
+        break
+      end
+
+      {
+        :description => subject,
+        :comments => long,
+        :args => args,
+        :return => ret,
+      }
     end
 
     def children(cursor)
