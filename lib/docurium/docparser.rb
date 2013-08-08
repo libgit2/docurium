@@ -1,5 +1,5 @@
 require 'ffi/clang'
-import FFI::Clang
+include FFI::Clang
 
 class Docurium
   class DocParser
