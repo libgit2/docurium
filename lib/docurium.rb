@@ -4,7 +4,7 @@ require 'version_sorter'
 require 'rocco'
 require 'docurium/version'
 require 'docurium/layout'
-require 'docurium/cparser'
+require 'docurium/docparser'
 require 'pp'
 require 'rugged'
 require 'redcarpet'
@@ -187,8 +187,15 @@ class Docurium
   end
 
   def parse_headers(index)
-    headers(index).each do |header|
-      records = parse_header(index, header)
+    headers = index.map { |e| e[:path] }.grep(/\.h$/)
+
+    files = headers.map do |file|
+      [file, @repo.lookup(index[file][:oid]).content]
+    end
+
+    parser = DocParser.new
+    headers.each do |header|
+      records = parser.parse_file(header, files)
       update_globals(records)
     end
 
@@ -272,15 +279,6 @@ class Docurium
     func.to_a.sort
   end
 
-  def headers(index = nil)
-    h = []
-    index.each do |entry|
-      next unless entry[:path].match(/\.h$/)
-      h << entry[:path]
-    end
-    h
-  end
-
   def find_type_usage
     # go through all the functions and see where types are used and returned
     # store them in the types data
@@ -298,13 +296,6 @@ class Docurium
         end
       end
     end
-  end
-
-  def parse_header(index, path)
-    id = index[path][:oid]
-    blob = @repo.lookup(id)
-    parser = Docurium::CParser.new
-    parser.parse_text(path, blob.content)
   end
 
   def update_globals(recs)
