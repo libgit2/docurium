@@ -31,9 +31,9 @@ class Docurium
 
       args = children(cursor).map do |arg|
         {
-          :name => arg.displayName,
+          :name => arg.display_name,
           :type => arg.type.spelling,
-          :comment => cmt[:args][arg.displayName],
+          :comment => cmt[:args][arg.display_name],
         }
       end
 
@@ -64,7 +64,7 @@ class Docurium
 
       args = {}
       (comment.find_all { |cmt| cmd.kind == :comment_param_command }).each do |param|
-        args[param.displayName] = param.comment.strip
+        args[param.display_name] = param.comment.strip
       end
 
       ret = nil
