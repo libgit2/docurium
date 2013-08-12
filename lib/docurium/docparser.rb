@@ -18,7 +18,9 @@ class Docurium
 
         case cursor.kind
         when :cursor_function
-          recs << extract_function(cursor)
+          rec = extract_function(cursor)
+          rec[:file] = filename
+          recs << rec
         end
 
         :continue
@@ -51,6 +53,10 @@ class Docurium
 
       # Return the format that docurium expects
       {
+        :type => :function,
+        :name => cursor.spelling,
+        :description => cmt[:description],
+        :comments => cmt[:comments],
         :sig => sig,
         :line => extent.start.line,
         :lineto => extent.end.line,
