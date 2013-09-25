@@ -143,7 +143,7 @@ class Docurium
         :line => extent.start.line,
         :lineto => extent.end.line,
         :block => block,
-        :decl => ["foo"], #FIXME
+        :decl => values,
       }
     end
 
