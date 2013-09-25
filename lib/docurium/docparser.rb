@@ -15,17 +15,26 @@ class Docurium
         location = cursor.location
         next :continue unless location.file == filename
         next :continue if cursor.comment.kind == :comment_null
+        next :continue if cursor.spelling == ""
 
         case cursor.kind
         when :cursor_function
           rec = extract_function(cursor)
           rec[:file] = filename
           recs << rec
-        when :cursor_enum
+        when :cursor_enum_decl
+          puts "raw enum #{cursor.spelling}, #{filename}"
           rec = extract_enum(cursor)
           rec[:file] = filename
           recs << rec
         when :cursor_typdef
+          child = cursor.child
+          if child.kind == :cursor_enum_decl
+            rec extract_enum(child)
+            rec[:file] = filename
+            rec[:name] = cursor.spelling
+            recs << rec
+          end
           # A couple of levels deep we can get to the enum and we
           # should be able to extract it with the above function
         end
@@ -61,6 +70,7 @@ class Docurium
       # generate function signature
       sig = args.map { |a| a[:type].to_s }.join('::')
 
+      puts cursor.display_name
       # Return the format that docurium expects
       {
         :type => :function,
@@ -72,6 +82,7 @@ class Docurium
         :lineto => extent.end.line,
         :args => args,
         :return => ret,
+        :argline => cursor.display_name
       }
     end
 
@@ -109,20 +120,21 @@ class Docurium
       extent = cursor.extent
       comment = cursor.comment.child
       subject = comment.child.text
-      desc = comment.find_all { |cmt | cmd.kind == :comment_paragraph }
+      desc = comment.find_all { |cmt | cmt.kind == :comment_paragraph }
       long = (desc.drop(1).map do |para|
                 para.text
               end).join("\n")
 
       #return the docurium object
-      puts "have enum, named #{cursor.spelling}, #{cursor.displayName}"
+      puts "enum name #{cursor.spelling}, #{subject} }"
       {
         :type => :enum,
-        #:name => cursor.spelling,
+        :name => cursor.spelling,
         :description => subject,
         :comments => long,
         :line => extent.start.line,
         :lineto => extent.end.line,
+        :decl => ["foo"], #FIXME
       }
     end
 
