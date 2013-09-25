@@ -22,7 +22,12 @@ class Docurium
           rec[:file] = filename
           recs << rec
         when :cursor_enum
-          extract_enum(cursor)
+          rec = extract_enum(cursor)
+          rec[:file] = filename
+          recs << rec
+        when :cursor_typdef
+          # A couple of levels deep we can get to the enum and we
+          # should be able to extract it with the above function
         end
 
         :continue
@@ -37,13 +42,16 @@ class Docurium
 
       cmt = extract_function_comment(comment)
 
-      args = children(cursor).map do |arg|
+      # clang gives us CXCursor_FirstAttr as the first one, so we need
+      # to skip it
+      args = children(cursor).drop(1).map do |arg|
         {
           :name => arg.display_name,
           :type => arg.type.spelling,
           :comment => cmt[:args][arg.display_name],
         }
       end
+      args = args.reject { |arg| arg[:comment].nil? }
 
       ret = {
         :type => cursor.result_type.spelling,
@@ -82,7 +90,7 @@ class Docurium
       ret = nil
       comment.each do |block|
         next unless block.kind == :comment_block_command
-        next unless block.name != "return"
+        next unless block.name == "return"
 
         ret = block.paragraph.text
 
@@ -99,9 +107,20 @@ class Docurium
 
     def extract_enum(cursor)
       extent = cursor.extent
+      comment = cursor.comment.child
+      subject = comment.child.text
+      desc = comment.find_all { |cmt | cmd.kind == :comment_paragraph }
+      long = (desc.drop(1).map do |para|
+                para.text
+              end).join("\n")
 
       #return the docurium object
+      puts "have enum, named #{cursor.spelling}, #{cursor.displayName}"
       {
+        :type => :enum,
+        #:name => cursor.spelling,
+        :description => subject,
+        :comments => long,
         :line => extent.start.line,
         :lineto => extent.end.line,
       }
