@@ -27,10 +27,12 @@ class Docurium
           rec = extract_enum(cursor)
           rec[:file] = filename
           recs << rec
-        when :cursor_typdef
-          child = cursor.child
+        when :cursor_typedef_decl
+          child = nil
+          cursor.visit_children { |c| child = c; :break }
+          puts "typedef of #{child.kind}"
           if child.kind == :cursor_enum_decl
-            rec extract_enum(child)
+            rec = extract_enum(child)
             rec[:file] = filename
             rec[:name] = cursor.spelling
             recs << rec
@@ -118,15 +120,21 @@ class Docurium
 
     def extract_enum(cursor)
       extent = cursor.extent
-      comment = cursor.comment.child
+      comment = cursor.comment
       subject = comment.child.text
-      desc = comment.find_all { |cmt | cmt.kind == :comment_paragraph }
-      long = (desc.drop(1).map do |para|
+      desc = comment.find_all { |cmt| cmt.kind == :comment_paragraph }
+      long = (desc.map do |para|
                 para.text
               end).join("\n")
 
+      values = []
+      cursor.visit_children do |cchild, cparent|
+        values << cchild.spelling
+        :continue
+      end
+
+      block = values.join("\n")
       #return the docurium object
-      puts "enum name #{cursor.spelling}, #{subject} }"
       {
         :type => :enum,
         :name => cursor.spelling,
@@ -134,6 +142,7 @@ class Docurium
         :comments => long,
         :line => extent.start.line,
         :lineto => extent.end.line,
+        :block => block,
         :decl => ["foo"], #FIXME
       }
     end
