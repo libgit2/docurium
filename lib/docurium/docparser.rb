@@ -4,7 +4,7 @@ include FFI::Clang
 class Docurium
   class DocParser
     # Entry point for this parser
-    # Parse `name` out of the hash `files`
+    # Parse `filename` out of the hash `files`
     def parse_file(filename, files)
 
       tu = Index.new.parse_translation_unit(filename, nil, unsaved_files(files))
@@ -21,6 +21,8 @@ class Docurium
           rec = extract_function(cursor)
           rec[:file] = filename
           recs << rec
+        when :cursor_enum
+          extract_enum(cursor)
         end
 
         :continue
@@ -92,6 +94,16 @@ class Docurium
         :comments => long,
         :args => args,
         :return => ret,
+      }
+    end
+
+    def extract_enum(cursor)
+      extent = cursor.extent
+
+      #return the docurium object
+      {
+        :line => extent.start.line,
+        :lineto => extent.end.line,
       }
     end
 
