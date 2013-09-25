@@ -353,7 +353,7 @@ class Docurium
           r[:decl].each do |n|
             @data[:globals][n] ||= {
               :file => r[:file], :line => r[:line],
-              :value => "", :comments => r[:comments],
+              :value => "", :comments => md.render(r[:comments]),
             }
             m = /#{Regexp.quote(n)}/.match(r[:body])
             if m
@@ -363,10 +363,16 @@ class Docurium
               end
             end
           end
-        else
+        else # enum has name
           @data[:types][r[:name]] ||= {}
           wanted[:types].each do |k|
-            @data[:types][r[:name]][k] = r[k] if r.has_key?(k)
+            next unless r.has_key? k
+            if k == :comments
+              contents = md.render r[k]
+            else
+              contents = r[k]
+            end
+            @data[:types][r[:name]][k] = contents
           end
         end
 
