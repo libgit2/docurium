@@ -6,12 +6,13 @@ class Docurium
     # Entry point for this parser
     # Parse `filename` out of the hash `files`
     def parse_file(filename, files)
-
-      tu = Index.new.parse_translation_unit(filename, nil, unsaved_files(files))
+      puts "called for #{filename}"
+      tu = Index.new.parse_translation_unit(filename, ["-Igit2"], unsaved_files(files), {:detailed_preprocessing_record => 1})
       cursor = tu.cursor
 
       recs = []
       cursor.visit_children do |cursor, parent|
+        puts "visiting #{cursor.kind} - #{cursor.spelling}"
         location = cursor.location
         next :continue unless location.file == filename
         next :continue if cursor.comment.kind == :comment_null
@@ -19,26 +20,60 @@ class Docurium
 
         case cursor.kind
         when :cursor_function
+          puts "have function"
           rec = extract_function(cursor)
           rec[:file] = filename
           recs << rec
         when :cursor_enum_decl
-          puts "raw enum #{cursor.spelling}, #{filename}"
           rec = extract_enum(cursor)
+          rec[:file] = filename
+          recs << rec
+        when :cursor_struct
+          puts "raw struct"
+          rec = extract_struct(cursor)
           rec[:file] = filename
           recs << rec
         when :cursor_typedef_decl
           child = nil
           cursor.visit_children { |c| child = c; :break }
-          puts "typedef of #{child.kind}"
-          if child.kind == :cursor_enum_decl
+          rec = {}
+          puts "have typedef #{child.kind}, #{filename}, #{cursor.extent.start.line}"
+          case child.kind
+          when :cursor_typeref
+            puts "pure typedef, #{cursor.spelling}"
+            extent = cursor.extent
+            rec = {
+              :type => :typedef,
+              :name => cursor.spelling,
+              :line => extent.start.line,
+              :lineto => extent.end.line,
+            }
+          when :cursor_enum_decl
             rec = extract_enum(child)
-            rec[:file] = filename
-            rec[:name] = cursor.spelling
-            recs << rec
+          when :cursor_struct
+            puts "typed struct, #{cursor.spelling}"
+            rec = extract_struct(child)
+          when :cursor_parm_decl
+      puts "have parm #{cursor.spelling}, #{cursor.display_name}"
+            extent = child.extent
+            
+            rec = {
+              :line => extent.start.line,
+              :lineto => extent.end.line,
+              :decl => cursor.spelling,
+            }
+            rec.merge! extract_comments(cursor)
+          else
+            raise "No idea how to handle #{child.kind}"
           end
+          rec[:file] = filename
+          rec[:name] = cursor.spelling
+          rec[:tdef] = cursor.spelling
+          recs << rec
           # A couple of levels deep we can get to the enum and we
           # should be able to extract it with the above function
+        else
+          raise "No idea how to deal with #{cursor.kind}"
         end
 
         :continue
@@ -51,6 +86,7 @@ class Docurium
       comment = cursor.comment
       extent = cursor.extent
 
+      puts "looking at function #{cursor.spelling}, #{cursor.display_name}"
       cmt = extract_function_comment(comment)
 
       # clang gives us CXCursor_FirstAttr as the first one, so we need
@@ -147,6 +183,51 @@ class Docurium
       }
     end
 
+    def extract_struct(cursor)
+      extent = cursor.extent
+      comment = cursor.comment
+      puts " comment #{comment.kind}, child #{comment.child.kind}"
+      subject = comment.child.text
+      puts " subject #{subject}"
+      desc = comment.find_all { |cmt| cmt.kind == :comment_paragraph }
+      long = (desc.map do |para|
+                para.text
+              end).join("\n")
+
+      values = []
+      cursor.visit_children do |cchild, cparent|
+        values << cchild.spelling
+        :continue
+      end
+
+      puts "struct values #{values}"
+
+      {
+        :type => :struct,
+        :name => cursor.spelling,
+        :description => subject,
+        :comments => long,
+        :line => extent.start.line,
+        :lineto => extent.end.line,
+        :decl => values,
+      }
+    end
+
+    # For standard comment types
+    def extract_comments(cursor)
+      comment = cursor.comment
+      subject = comment.child.text
+      desc = comment.find_all { |cmt| cmt.kind == :comment_paragraph }
+      long = (desc.map do |para|
+                para.text
+              end).join("\n")
+
+      {
+        :subject => subject,
+        :long => long,
+      }
+    end
+
     def children(cursor)
       list = []
       cursor.visit_children do |ccursor, cparent|
@@ -159,7 +240,7 @@ class Docurium
 
     def unsaved_files(files)
       files.map do |name, content|
-        UnsavedFile.new(name, content)
+        UnsavedFile.new("git2/#{name}", content)
       end
     end
 

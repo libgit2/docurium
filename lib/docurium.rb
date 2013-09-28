@@ -195,7 +195,7 @@ class Docurium
 
     parser = DocParser.new
     headers.each do |header|
-      records = parser.parse_file(header, files)
+      records = parser.parse_file("git2/#{header}", files)
       update_globals(records)
     end
 
