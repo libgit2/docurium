@@ -55,7 +55,6 @@ class Docurium
       case child.kind
       when :cursor_typeref
         puts "pure typedef, #{cursor.spelling}"
-        extent = cursor.extent
         rec = {
           :type => :typedef,
           :name => cursor.spelling,
@@ -67,17 +66,24 @@ class Docurium
         rec = extract_struct(child)
       when :cursor_parm_decl
         puts "have parm #{cursor.spelling}, #{cursor.display_name}"
-        extent = child.extent
+        subject, desc = extract_subject_desc(cursor.comment)
         rec = {
           :decl => cursor.spelling,
+          :subject => subject,
+          :comments => desc,
         }
-        rec.merge! extract_comments(cursor)
       else
         raise "No idea how to handle #{child.kind}"
       end
       rec[:name] = cursor.spelling
       rec[:tdef] = cursor.spelling
       rec
+    end
+
+    def extract_subject_desc(comment)
+      subject = comment.child.text
+      desc = (comment.find_all { |cmt| cmt.kind == :comment_paragraph }).map(&:text).join("\n")
+      return subject, desc
     end
 
     def extract_function(cursor)
@@ -120,11 +126,7 @@ class Docurium
     end
 
     def extract_function_comment(comment)
-      subject = comment.child.text
-      desc = comment.find_all { |cmt| cmt.kind == :comment_paragraph }
-      long = (desc.drop(1).map do |para|
-                para.text
-              end).join("\n")
+      subject, desc = extract_subject_desc(comment)
 
       args = {}
       (comment.find_all { |cmt| cmt.kind == :comment_param_command }).each do |param|
@@ -143,19 +145,14 @@ class Docurium
 
       {
         :description => subject,
-        :comments => long,
+        :comments => desc,
         :args => args,
         :return => ret,
       }
     end
 
     def extract_enum(cursor)
-      comment = cursor.comment
-      subject = comment.child.text
-      desc = comment.find_all { |cmt| cmt.kind == :comment_paragraph }
-      long = (desc.map do |para|
-                para.text
-              end).join("\n")
+      subject, desc = extract_subject_desc(cursor.comment)
 
       values = []
       cursor.visit_children do |cchild, cparent|
@@ -169,21 +166,14 @@ class Docurium
         :type => :enum,
         :name => cursor.spelling,
         :description => subject,
-        :comments => long,
+        :comments => desc,
         :block => block,
         :decl => values,
       }
     end
 
     def extract_struct(cursor)
-      comment = cursor.comment
-      puts " comment #{comment.kind}, child #{comment.child.kind}"
-      subject = comment.child.text
-      puts " subject #{subject}"
-      desc = comment.find_all { |cmt| cmt.kind == :comment_paragraph }
-      long = (desc.map do |para|
-                para.text
-              end).join("\n")
+      subject, desc = extract_subject_desc(cursor.comment)
 
       values = []
       cursor.visit_children do |cchild, cparent|
@@ -197,23 +187,8 @@ class Docurium
         :type => :struct,
         :name => cursor.spelling,
         :description => subject,
-        :comments => long,
+        :comments => desc,
         :decl => values,
-      }
-    end
-
-    # For standard comment types
-    def extract_comments(cursor)
-      comment = cursor.comment
-      subject = comment.child.text
-      desc = comment.find_all { |cmt| cmt.kind == :comment_paragraph }
-      long = (desc.map do |para|
-                para.text
-              end).join("\n")
-
-      {
-        :subject => subject,
-        :long => long,
       }
     end
 
