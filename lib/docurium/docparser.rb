@@ -18,8 +18,11 @@ class Docurium
         next :continue if cursor.comment.kind == :comment_null
         next :continue if cursor.spelling == ""
 
+        extent = cursor.extent
         rec = {
           :file => filename,
+          :line => extent.start.line,
+          :lineto => extent.end.line,
         }
 
         case cursor.kind
@@ -56,8 +59,6 @@ class Docurium
         rec = {
           :type => :typedef,
           :name => cursor.spelling,
-          :line => extent.start.line,
-          :lineto => extent.end.line,
         }
       when :cursor_enum_decl
         rec = extract_enum(child)
@@ -68,8 +69,6 @@ class Docurium
         puts "have parm #{cursor.spelling}, #{cursor.display_name}"
         extent = child.extent
         rec = {
-          :line => extent.start.line,
-          :lineto => extent.end.line,
           :decl => cursor.spelling,
         }
         rec.merge! extract_comments(cursor)
@@ -83,7 +82,6 @@ class Docurium
 
     def extract_function(cursor)
       comment = cursor.comment
-      extent = cursor.extent
 
       puts "looking at function #{cursor.spelling}, #{cursor.display_name}"
       cmt = extract_function_comment(comment)
@@ -115,8 +113,6 @@ class Docurium
         :description => cmt[:description],
         :comments => cmt[:comments],
         :sig => sig,
-        :line => extent.start.line,
-        :lineto => extent.end.line,
         :args => args,
         :return => ret,
         :argline => cursor.display_name # FIXME: create a real argline
@@ -154,7 +150,6 @@ class Docurium
     end
 
     def extract_enum(cursor)
-      extent = cursor.extent
       comment = cursor.comment
       subject = comment.child.text
       desc = comment.find_all { |cmt| cmt.kind == :comment_paragraph }
@@ -175,15 +170,12 @@ class Docurium
         :name => cursor.spelling,
         :description => subject,
         :comments => long,
-        :line => extent.start.line,
-        :lineto => extent.end.line,
         :block => block,
         :decl => values,
       }
     end
 
     def extract_struct(cursor)
-      extent = cursor.extent
       comment = cursor.comment
       puts " comment #{comment.kind}, child #{comment.child.kind}"
       subject = comment.child.text
@@ -206,8 +198,6 @@ class Docurium
         :name => cursor.spelling,
         :description => subject,
         :comments => long,
-        :line => extent.start.line,
-        :lineto => extent.end.line,
         :decl => values,
       }
     end
