@@ -7,7 +7,8 @@ class Docurium
     # Parse `filename` out of the hash `files`
     def parse_file(filename, files)
       puts "called for #{filename}"
-      tu = Index.new.parse_translation_unit(filename, ["-Igit2"], unsaved_files(files), {:detailed_preprocessing_record => 1})
+      tu = Index.new.parse_translation_unit(filename, nil, unsaved_files(files), {:detailed_preprocessing_record => 1})
+      #tu = Index.new.parse_translation_unit(filename, ["-Igit2"], unsaved_files(files), {:detailed_preprocessing_record => 1})
       cursor = tu.cursor
 
       recs = []
@@ -23,6 +24,7 @@ class Docurium
           :file => filename,
           :line => extent.start.line,
           :lineto => extent.end.line,
+          :tdef => nil,
         }
 
         case cursor.kind
@@ -50,33 +52,36 @@ class Docurium
     def extract_typedef(cursor)
       child = nil
       cursor.visit_children { |c| child = c; :break }
-      rec = {}
+      rec = {
+        :tdef => :typedef,
+      }
       puts "have typedef #{child.kind}, #{cursor.extent.start.line}"
       case child.kind
       when :cursor_typeref
         puts "pure typedef, #{cursor.spelling}"
-        rec = {
-          :type => :typedef,
-          :name => cursor.spelling,
-        }
+        if child.type.kind == :type_record
+          rec[:type] = :struct
+          rec[:block] = ""
+        else
+          raise "typede of unhandled #{child.type.kind}"
+        end
       when :cursor_enum_decl
-        rec = extract_enum(child)
+        rec.merge! extract_enum(child)
       when :cursor_struct
         puts "typed struct, #{cursor.spelling}"
-        rec = extract_struct(child)
+        rec.merge! extract_struct(child)
       when :cursor_parm_decl
         puts "have parm #{cursor.spelling}, #{cursor.display_name}"
         subject, desc = extract_subject_desc(cursor.comment)
-        rec = {
-          :decl => cursor.spelling,
-          :subject => subject,
-          :comments => desc,
-        }
+        rec[:decl] = cursor.spelling
+        rec[:description] = subject
+        rec[:comments] = desc
       else
         raise "No idea how to handle #{child.kind}"
       end
+      # let's make sure we override the empty name the extract
+      # functions stored
       rec[:name] = cursor.spelling
-      rec[:tdef] = cursor.spelling
       rec
     end
 
@@ -177,19 +182,22 @@ class Docurium
 
       values = []
       cursor.visit_children do |cchild, cparent|
-        values << cchild.spelling
+        values << "#{cchild.type.spelling} #{cchild.spelling}"
         :continue
       end
 
-      puts "struct values #{values}"
+      puts "struct value #{values}"
 
-      {
+      rec = {
         :type => :struct,
         :name => cursor.spelling,
         :description => subject,
         :comments => desc,
         :decl => values,
       }
+
+      rec[:block] = values.join("\n") unless values.empty?
+      rec
     end
 
     def children(cursor)
