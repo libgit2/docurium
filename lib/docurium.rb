@@ -299,6 +299,8 @@ class Docurium
   end
 
   def update_globals(recs)
+    return if recs.empty?
+
     wanted = {
       :functions => %W/type value file line lineto args argline sig return group description comments/.map(&:to_sym),
       :types => %W/decl type value file line lineto block tdef comments/.map(&:to_sym),
