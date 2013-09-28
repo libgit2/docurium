@@ -18,68 +18,67 @@ class Docurium
         next :continue if cursor.comment.kind == :comment_null
         next :continue if cursor.spelling == ""
 
+        rec = {
+          :file => filename,
+        }
+
         case cursor.kind
         when :cursor_function
           puts "have function"
-          rec = extract_function(cursor)
-          rec[:file] = filename
-          recs << rec
+          rec.merge! extract_function(cursor)
         when :cursor_enum_decl
-          rec = extract_enum(cursor)
-          rec[:file] = filename
-          recs << rec
+          rec.merge! extract_enum(cursor)
         when :cursor_struct
           puts "raw struct"
-          rec = extract_struct(cursor)
-          rec[:file] = filename
-          recs << rec
+          rec.merge! extract_struct(cursor)
         when :cursor_typedef_decl
-          child = nil
-          cursor.visit_children { |c| child = c; :break }
-          rec = {}
-          puts "have typedef #{child.kind}, #{filename}, #{cursor.extent.start.line}"
-          case child.kind
-          when :cursor_typeref
-            puts "pure typedef, #{cursor.spelling}"
-            extent = cursor.extent
-            rec = {
-              :type => :typedef,
-              :name => cursor.spelling,
-              :line => extent.start.line,
-              :lineto => extent.end.line,
-            }
-          when :cursor_enum_decl
-            rec = extract_enum(child)
-          when :cursor_struct
-            puts "typed struct, #{cursor.spelling}"
-            rec = extract_struct(child)
-          when :cursor_parm_decl
-      puts "have parm #{cursor.spelling}, #{cursor.display_name}"
-            extent = child.extent
-            
-            rec = {
-              :line => extent.start.line,
-              :lineto => extent.end.line,
-              :decl => cursor.spelling,
-            }
-            rec.merge! extract_comments(cursor)
-          else
-            raise "No idea how to handle #{child.kind}"
-          end
-          rec[:file] = filename
-          rec[:name] = cursor.spelling
-          rec[:tdef] = cursor.spelling
-          recs << rec
-          # A couple of levels deep we can get to the enum and we
-          # should be able to extract it with the above function
+          rec.merge! extract_typedef(cursor)
         else
           raise "No idea how to deal with #{cursor.kind}"
         end
 
+        recs << rec
         :continue
       end
 
       recs
+    end
+
+    def extract_typedef(cursor)
+      child = nil
+      cursor.visit_children { |c| child = c; :break }
+      rec = {}
+      puts "have typedef #{child.kind}, #{cursor.extent.start.line}"
+      case child.kind
+      when :cursor_typeref
+        puts "pure typedef, #{cursor.spelling}"
+        extent = cursor.extent
+        rec = {
+          :type => :typedef,
+          :name => cursor.spelling,
+          :line => extent.start.line,
+          :lineto => extent.end.line,
+        }
+      when :cursor_enum_decl
+        rec = extract_enum(child)
+      when :cursor_struct
+        puts "typed struct, #{cursor.spelling}"
+        rec = extract_struct(child)
+      when :cursor_parm_decl
+        puts "have parm #{cursor.spelling}, #{cursor.display_name}"
+        extent = child.extent
+        rec = {
+          :line => extent.start.line,
+          :lineto => extent.end.line,
+          :decl => cursor.spelling,
+        }
+        rec.merge! extract_comments(cursor)
+      else
+        raise "No idea how to handle #{child.kind}"
+      end
+      rec[:name] = cursor.spelling
+      rec[:tdef] = cursor.spelling
+      rec
     end
 
     def extract_function(cursor)
@@ -120,7 +119,7 @@ class Docurium
         :lineto => extent.end.line,
         :args => args,
         :return => ret,
-        :argline => cursor.display_name
+        :argline => cursor.display_name # FIXME: create a real argline
       }
     end
 
