@@ -7,14 +7,22 @@ class Docurium
     # Parse `filename` out of the hash `files`
     def parse_file(filename, files)
       puts "called for #{filename}"
+
       tu = Index.new.parse_translation_unit(filename, nil, unsaved_files(files), {:detailed_preprocessing_record => 1})
       #tu = Index.new.parse_translation_unit(filename, ["-Igit2"], unsaved_files(files), {:detailed_preprocessing_record => 1})
       cursor = tu.cursor
 
       recs = []
       cursor.visit_children do |cursor, parent|
-        puts "visiting #{cursor.kind} - #{cursor.spelling}"
+        #puts "visiting #{cursor.kind} - #{cursor.spelling}"
         location = cursor.location
+        next :continue if location.file == nil
+        puts "for file #{location.file} #{cursor.kind} #{cursor.spelling} #{cursor.comment.kind}"
+        cursor.visit_children do |c|
+          puts "  child #{c.kind}, #{c.spelling}, #{c.comment.kind}"
+          :continue
+        end
+
         next :continue unless location.file == filename
         next :continue if cursor.comment.kind == :comment_null
         next :continue if cursor.spelling == ""
@@ -212,7 +220,11 @@ class Docurium
 
     def unsaved_files(files)
       files.map do |name, content|
-        UnsavedFile.new("git2/#{name}", content)
+        fixed = content.gsub(/GIT_EXTERN\((.*?)\)/, '\1')
+        if name == "attr.h"
+          puts fixed
+        end
+        UnsavedFile.new(name, fixed)
       end
     end
 
