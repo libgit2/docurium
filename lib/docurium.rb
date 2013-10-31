@@ -9,6 +9,10 @@ require 'pp'
 require 'rugged'
 require 'redcarpet'
 
+# Markdown expects the old redcarpet compat API, so let's tell it what
+# to use
+Rocco::Markdown = RedcarpetCompat
+
 class Docurium
   attr_accessor :branch, :output_dir, :data
 
