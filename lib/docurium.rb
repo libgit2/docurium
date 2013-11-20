@@ -343,7 +343,12 @@ class Docurium
       when :define, :macro
         @data[:globals][r[:decl]] ||= {}
         wanted[:globals].each do |k|
-          @data[:globals][r[:decl]][k] = r[k] if r.has_key?(k)
+          next unless r.has_key? k
+          if k == :description || k == :comments
+            @data[:globals][r[:decl]][k] = md.render r[k]
+          else
+            @data[:globals][r[:decl]][k] = r[k]
+          end
         end
 
       when :file
@@ -384,7 +389,12 @@ class Docurium
         @data[:types][r[:name]] ||= {}
         r[:value] ||= r[:name]
         wanted[:types].each do |k|
-          @data[:types][r[:name]][k] = r[k] if r.has_key?(k)
+          next unless r.has_key? k
+          if k == :comments
+            @data[:types][r[:name]][k] = md.render r[k]
+          else
+            @data[:types][r[:name]][k] = r[k]
+          end
         end
         if r[:type] == :fnptr
           @data[:types][r[:name]][:type] = "function pointer"
