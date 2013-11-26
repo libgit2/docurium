@@ -11,6 +11,7 @@ Gem::Specification.new do |s|
   s.homepage    = "https://github.com/libgit2/docurium"
   s.summary     = "A simpler, prettier Doxygen replacement."
   s.description = s.summary
+  s.license     = 'MIT'
 
   s.rubyforge_project = 'docurium'
 
