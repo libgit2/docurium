@@ -11,8 +11,7 @@ Gem::Specification.new do |s|
   s.homepage    = "https://github.com/libgit2/docurium"
   s.summary     = "A simpler, prettier Doxygen replacement."
   s.description = s.summary
-
-  s.rubyforge_project = 'docurium'
+  s.license = 'MIT'
 
   s.add_dependency "version_sorter", "~>1.1.0"
   s.add_dependency "mustache", ">= 0.99.4"
