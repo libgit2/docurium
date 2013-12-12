@@ -21,19 +21,18 @@ $(function() {
     },
 
     setVersionPicker: function () {
+      hideVersionList = function() { $('#version-list').hide(100) }
       vers = docurium.get('versions')
-      $('#version-list').empty().hide()
-      for(var i in vers) {
-        version = vers[i]
-        vlink = $('<a>').attr('href', '#' + version).append(version).click( function() {
-          $('#version-list').hide(100)
-        })
-        $('#version-list').append($('<li>').append(vlink))
-      }
-      vlink = $('<a>').attr('href', '#' + 'p/changelog').append("Changelog").click ( function () {
-        $('#version-list').hide(100)
+      list = $('<ul>').attr('id', 'version-list').hide()
+      // add each of the versions first
+      vers.forEach(function(version) {
+        vlink = $('<a>').attr('href', '#' + version).append(version).click(hideVersionList)
+        list.append($('<li>').append(vlink))
       })
-      $('#version-list').append($('<li>').append(vlink))
+      // and then put the link to the ChangeLog at the end
+      vlink = $('<a>').attr('href', '#p/changelog').append("Changelog").click(hideVersionList)
+      list.append($('<li>').append(vlink))
+      $('#version-list').replaceWith(list)
     },
 
     setVersion: function (version) {
@@ -70,20 +69,16 @@ $(function() {
       ws.navigate(version, {replace: replace})
 
       data = docurium.get('data')
-      content = $('.content')
-      content.empty()
-
+      content = $('<div>').addClass('content')
       content.append($('<h1>').append("Public API Functions"))
 
       sigHist = docurium.get('signatures')
 
-      // Function Groups
-      for (var i in data['groups']) {
-        group = data['groups'][i]
+      // Function Group
+      data.groups.forEach(function(group) {
         content.append($('<h2>').addClass('funcGroup').append(group[0]))
         list = $('<p>').addClass('functionList')
-        for(var j in group[1]) {
-          fun = group[1][j]
+	links = group[1].map(function(fun) {
           link = $('<a>').attr('href', '#' + groupLink(group[0], fun)).append(fun)
           if(sigHist[fun].changes[version]) {
             link.addClass('changed')
@@ -91,22 +86,27 @@ $(function() {
           if(version == _.first(sigHist[fun].exists)) {
             link.addClass('introd')
           }
-          list.append(link)
-          if(j < group[1].length - 1) {
-           list.append(', ')
-          }
-        }
-        content.append(list)
-      }
+	  return link
+	})
+
+	// intersperse commas between each function
+	for(var i = 0; i < links.length - 1; i++) {
+	  list.append(links[i])
+	  list.append(", ")
+	}
+	list.append(_.last(links))
+
+	content.append(list)
+      })
+
+      $('.content').replaceWith(content)
     },
 
     getGroup: function(gname) {
       var groups = docurium.get('data')['groups']
-      for(var i in groups) {
-        if(groups[i][0] == gname) {
-          return groups[i]
-        }
-      }
+      return _.find(groups, function(g) {
+	return g[0] == gname
+      })
     },
 
     showFun: function(gname, fname) {
@@ -117,8 +117,7 @@ $(function() {
       functions = group[1]
 
       document.body.scrollTop = document.documentElement.scrollTop = 0;
-      content = $('.content')
-      content.empty()
+      content = $('<div>').addClass('content')
 
       // Show Function Name
       content.append($('<h1>').addClass('funcTitle').append(fname))
@@ -128,15 +127,13 @@ $(function() {
 
       // Show Function Arguments
       argtable = $('<table>').addClass('funcTable')
-      args = fdata[fname]['args']
-      for(var i=0; i<args.length; i++) {
-        arg = args[i]
+      fdata[fname]['args'].forEach(function(arg) {
         row = $('<tr>')
         row.append($('<td>').attr('valign', 'top').attr('nowrap', true).append(this.hotLink(arg.type)))
         row.append($('<td>').attr('valign', 'top').addClass('var').append(arg.name))
         row.append($('<td>').addClass('comment').append(arg.comment))
         argtable.append(row)
-      }
+      }, this)
       content.append(argtable)
 
       // Show Function Return Value
@@ -224,13 +221,12 @@ $(function() {
       }
       content.append(also)
 
-
+      $('.content').replaceWith(content)
       this.addHotlinks()
     },
 
     showChangeLog: function() {
-      content = $('.content')
-      content.empty()
+      content = $('<div>').addClass('content')
       content.append($('<h1>').append("Function Changelog"))
       // for every version, show which functions added, removed, changed - from HEAD down
       versions = docurium.get('versions')
@@ -288,6 +284,8 @@ $(function() {
         }
         content.append(cl)
       }
+
+      $('.content').replaceWith(content)
     },
 
     showType: function(data, manual) {
@@ -304,8 +302,7 @@ $(function() {
       ws.navigate(typeLink(tname))
       document.body.scrollTop = document.documentElement.scrollTop = 0;
 
-      content = $('.content')
-      content.empty()
+      content = $('<div>').addClass('content')
       content.append($('<h1>').addClass('funcTitle').append(tname).append($("<small>").append(data.type)))
 
       content.append($('<p>').append(data.value))
@@ -346,6 +343,7 @@ $(function() {
       flink = $('<a>').attr('target', 'github').attr('href', link).append(data.file)
       content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
 
+      $('.content').replaceWith(content)
       return false
     },
 
@@ -364,8 +362,8 @@ $(function() {
       document.body.scrollTop = document.documentElement.scrollTop = 0;
 
       functions = group[1]
-      $('.content').empty()
-      $('.content').append($('<h1>').append(gname + ' functions'))
+      content = $('<div>').addClass('content')
+      content.append($('<h1>').append(gname + ' functions'))
 
       table = $('<table>').addClass('methods')
       for(i=0; i<functions.length; i++) {
@@ -384,19 +382,21 @@ $(function() {
         row.append(argtd)
         table.append(row)
       }
-      $('.content').append(table)
+      content.append(table)
 
       for(var i=0; i<functions.length; i++) {
         f = functions[i]
         argsText = '( ' + fdata[f]['argline'] + ' )'
         link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
-        $('.content').append($('<h2>').append(link).append($('<small>').append(argsText)))
+        content.append($('<h2>').append(link).append($('<small>').append(argsText)))
         description = fdata[f]['description']
 	if(fdata[f]['comments'])
 		description += "\n\n" + fdata[f]['comments']
 
-	$('.content').append($('<div>').addClass('description').append(description))
+	content.append($('<div>').addClass('description').append(description))
       }
+
+      $('.content').replaceWith(content)
       return false
     },
 
@@ -525,8 +525,7 @@ $(function() {
       }
 
       list = $('#files-list')
-      list.empty()
-      list.append(menu)
+      list.html(menu)
     },
 
     github_file: function(file, line, lineto) {
@@ -559,8 +558,7 @@ $(function() {
       data = docurium.get('data')
 
       // look for functions (name, comment, argline)
-      for (var name in data.functions) {
-        f = data.functions[name]
+      _.forEach(data.functions, function(f, name) {
         if (name.search(value) > -1) {
           gname = docurium.groupOf(name)
           var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
@@ -573,27 +571,23 @@ $(function() {
             searchResults.push(['fun-' + name, flink, f.argline])
           }
         }
-      }
-      for (var i in data.types) {
-        var type = data.types[i]
+      })
+      data.types.forEach(function(type) {
         name = type[0]
         if (name.search(value) > -1) {
           var link = $('<a>').attr('href', '#' + typeLink(name)).append(name)
           searchResults.push(['type-' + name, link, type[1].type])
         }
-      }
+      })
 
       // look for types
       // look for files
-      content = $('.content')
-      content.empty()
-
+      content = $('<div>').addClass('content')
       content.append($('<h1>').append("Search Results"))
       table = $("<table>")
       var shown = {}
-      for (var i in searchResults) {
+      searchResults.forEach(function(result) {
         row = $("<tr>")
-        result = searchResults[i]
         if (!shown[result[0]]) {
           link = result[1]
           match = result[2]
@@ -602,9 +596,9 @@ $(function() {
           table.append(row)
           shown[result[0]] = true
         }
-      }
+      })
       content.append(table)
-
+      $('.content').replaceWith(content)
     }
 
   })
