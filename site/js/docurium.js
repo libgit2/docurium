@@ -53,8 +53,11 @@ $(function() {
         context: this,
         dataType: 'json',
         success: function(data){
+	  // use data as a proxy for whether we've started the history
+	  hadData = this.get('data') != undefined
           this.set({'data': data})
-          Backbone.history.start()
+	  if (!hadData)
+	    Backbone.history.start()
         }
       })
     },
