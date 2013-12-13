@@ -566,45 +566,40 @@ $(function() {
 
       // look for functions (name, comment, argline)
       _.forEach(data.functions, function(f, name) {
+	gname = docurium.groupOf(name)
+	// look in the function name first
         if (name.search(value) > -1) {
-          gname = docurium.groupOf(name)
           var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
-          searchResults.push(['fun-' + name, flink, 'function'])
+	  searchResults.push({link: flink, match: 'function'})
+	  return
         }
-        if (f.argline) {
-          if (f.argline.search(value) > -1) {
-            gname = docurium.groupOf(name)
-            var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
-            searchResults.push(['fun-' + name, flink, f.argline])
-          }
-        }
-      })
-      data.types.forEach(function(type) {
-        name = type[0]
-        if (name.search(value) > -1) {
-          var link = $('<a>').attr('href', '#' + typeLink(name)).append(name)
-          searchResults.push(['type-' + name, link, type[1].type])
+
+	// if we didn't find it there, let's look in the argline
+        if (f.argline && f.argline.search(value) > -1) {
+          var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
+          searchResults.push({link: flink, match: f.argline})
         }
       })
 
       // look for types
+      data.types.forEach(function(type) {
+        name = type[0]
+        if (name.search(value) > -1) {
+          var link = $('<a>').attr('href', '#' + typeLink(name)).append(name)
+          searchResults.push({link: link, match: type[1].type})
+        }
+      })
+
       // look for files
       content = $('<div>').addClass('content')
       content.append($('<h1>').append("Search Results"))
-      table = $("<table>")
-      var shown = {}
-      searchResults.forEach(function(result) {
-        row = $("<tr>")
-        if (!shown[result[0]]) {
-          link = result[1]
-          match = result[2]
-          row.append($('<td>').append(link))
-          row.append($('<td>').append(match))
-          table.append(row)
-          shown[result[0]] = true
-        }
+      rows = _.map(searchResults, function(result) {
+	return $('<tr>').append(
+	  $('<td>').append(result.link),
+	  $('<td>').append(result.match))
       })
-      content.append(table)
+
+      content.append($('<table>').append(rows))
       $('.content').replaceWith(content)
     }
 
