@@ -9,7 +9,7 @@ $(function() {
     },
 
     loadVersions: function() {
-      $.getJSON("project.json", function(data) {
+      $.getJSON("project.json").then(function(data) {
         docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures, 'name': data.name, 'groups': data.groups})
         if(data.name) {
           $('#site-title').text(data.name + ' API')
@@ -48,17 +48,12 @@ $(function() {
 
     loadDoc: function() {
       version = this.get('version')
-      $.ajax({
-        url: version + '.json',
-        context: this,
-        dataType: 'json',
-        success: function(data){
-	  // use data as a proxy for whether we've started the history
-	  hadData = this.get('data') != undefined
-          this.set({'data': data})
-	  if (!hadData)
-	    Backbone.history.start()
-        }
+      $.getJSON(version + '.json').then(function(data) {
+	// use data as a proxy for whether we've started the history
+	hadData = docurium.get('data') != undefined
+        docurium.set({'data': data})
+	if (!hadData)
+	  Backbone.history.start()
       })
     },
 
