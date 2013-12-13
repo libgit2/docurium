@@ -209,19 +209,23 @@ $(function() {
 
       // Show other functions in this group
       also = $('<div>').addClass('also')
-      flink = $('<a href="#' + docurium.get('version') + '/group/' + group[0] + '">' + group[0] + '</a>')
-      flink.click( docurium.showGroup )
+      flink = $('<a>')
+	.attr('href', '#' + docurium.get('version') + '/group'/ + group[0])
+	.append(group[0])
+      flink.click(docurium.showGroup)
+
       also.append("Also in ")
       also.append(flink)
       also.append(" group: <br/>")
 
-      for(i=0; i<functions.length; i++) {
-        f = functions[i]
-        d = fdata[f]
-        link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
-        also.append(link)
+      links = _.map(functions, function(f) {
+        return $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
+      })
+      for (i = 0; i < links.length-1; i++) {
+	also.append(links[i])
         also.append(', ')
       }
+      also.append(_.last(links))
       content.append(also)
 
       $('.content').replaceWith(content)
