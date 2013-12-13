@@ -297,7 +297,7 @@ $(function() {
 
     showType: function(data, manual) {
       if(manual) {
-        id = '#typeItem' + domSafe(manual)
+        id = '#typeItem' + manual
         ref = parseInt($(id).attr('ref'))
       } else {
         ref = parseInt($(this).attr('ref'))
@@ -415,7 +415,7 @@ $(function() {
         typeName = type[0]
         typeData = type[1]
         re = new RegExp(typeName + ' ', 'gi');
-        link = '<a ref="' + i.toString() + '" class="typeLink' + domSafe(typeName) + '" href="#">' + typeName + '</a> '
+        link = '<a ref="' + i.toString() + '" class="typeLink' + typeName + '" href="#">' + typeName + '</a> '
         text = text.replace(re, link)
       }
       return text
@@ -430,27 +430,27 @@ $(function() {
       for(var i=0; i<types.length; i++) {
         type = types[i]
         typeName = type[0]
-        className = '.typeLink' + domSafe(typeName)
+        className = '.typeLink' + typeName
         $(className).click( this.showType )
       }
     },
 
     refreshView: function() {
       data = this.get('data')
+      menu = $('<li>')
 
       // Function Groups
-      menu = $('<li>')
       title = $('<h3><a href="#">Functions</a></h3>').click( this.collapseSection )
       menu.append(title)
-      list = $('<ul>')
-      _.each(data['groups'], function(group, i) {
-        flink = $('<a href="#" ref="' + i.toString() + '" id="groupItem' + group[0] + '">' + group[0] + ' &nbsp;<small>(' + group[1].length + ')</small></a>')
-        flink.click( this.showGroup )
-        fitem = $('<li>')
-        fitem.append(flink)
-        list.append(fitem)
+
+      links = _.map(data['groups'], function(group, i) {
+        flink = $('<a>').attr('href', '#').attr('ref', i).attr('id', 'groupItem'+group[0])
+        flink.append(group[0], '&nbsp;', $('<small>').append('(' + group[1].length + ')'))
+	flink.click(this.showGroup)
+	return $('<li>').append(flink)
       }, this)
-      menu.append(list)
+
+      menu.append($('<ul>').append(links))
 
       // Types
       title = $('<h3><a href="#">Types</a></h3>').click( this.collapseSection )
@@ -461,78 +461,70 @@ $(function() {
       fitem.append($('<span>').addClass('divide').append("Enums"))
       list.append(fitem)
 
-      _.each(data['types'], function(group, i) {
-        if(group[1]['block'] && group[1]['type'] == 'enum') {
-          flink = $('<a href="#" ref="' + i.toString() + '" id="typeItem' + domSafe(group[0]) + '">' + group[0]  + '</a>')
-          flink.click( this.showType )
-          fitem = $('<li>')
-          fitem.append(flink)
-          list.append(fitem)
-        }
-      }, this)
+      var linkItem = function(group, i) {
+	flink = $('<a>').attr('href', '#').attr('ref', i).attr('id', 'typeItem'+group[0])
+	flink.append(group[0])
+	flink.click(this.showType)
+	return $('<li>').append(flink)
+      }
+
+      enums = _.map(_.filter(data['types'], function(group) {
+	return group[1]['block'] && group[1]['type'] == 'enum';
+      }), linkItem, this)
+
+      list.append(enums)
 
       fitem = $('<li>')
       fitem.append($('<span>').addClass('divide').append("Structs"))
       list.append(fitem)
 
-      _.each(data['types'], function(group, i) {
-        if(group[1]['block'] && group[1]['type'] != 'enum') {
-          flink = $('<a href="#" ref="' + i.toString() + '" id="typeItem' + domSafe(group[0]) + '">' + group[0]  + '</a>')
-          flink.click( this.showType )
-          fitem = $('<li>')
-          fitem.append(flink)
-          list.append(fitem)
-        }
-      }, this)
+      structs = _.map(_.filter(data['types'], function(group) {
+	return group[1]['block'] && group[1]['type'] != 'enum'
+      }), linkItem, this)
+
+      list.append(structs)
 
       fitem = $('<li>')
       fitem.append($('<span>').addClass('divide').append("Opaque Structs"))
       list.append(fitem)
 
-      _.each(data['types'], function(group, i) {
-        if(!group[1]['block']) {
-          flink = $('<a href="#" ref="' + i.toString() + '" id="typeItem' + domSafe(group[0]) + '">' + group[0]  + '</a>')
-          flink.click( this.showType )
-          fitem = $('<li>')
-          fitem.append(flink)
-          list.append(fitem)
-        }
-      }, this)
+      opaques = _.map(_.filter(data['types'], function(group) {
+	return !group[1]['block']
+      }), linkItem, this)
+
+      list.append(opaques)
       list.hide()
       menu.append(list)
 
       // File Listing
       title = $('<h3><a href="#">Files</a></h3>').click( this.collapseSection )
       menu.append(title)
-      filelist = $('<ul>')
-      _.each(data['files'], function(file) {
-        url = this.github_file(file['file'])
-        flink = $('<a target="github" href="' + url + '">' + file['file'] + '</a>')
-        fitem = $('<li>')
-        fitem.append(flink)
-        filelist.append(fitem)
+
+      files = _.map(data['files'], function(file) {
+	url = this.github_file(file['file'])
+	flink = $('<a>').attr('target', 'github').attr('href', url).append(file['file'])
+	return $('<li>').append(flink)
       }, this)
-      filelist.hide()
-      menu.append(filelist)
+
+      menu.append($('<ul>').hide().append(files))
+
 
       // Examples List
       if(data['examples'] && (data['examples'].length > 0)) {
         title = $('<h3><a href="#">Examples</a></h3>').click( this.collapseSection )
         menu.append(title)
-        filelist = $('<ul>')
-        _.each(data['examples'], function(file) {
+
+	examples = _.map(data['examples'], function(file) {
           fname = file[0]
           fpath = file[1]
           flink = $('<a>').attr('href', fpath).append(fname)
-          fitem = $('<li>')
-          fitem.append(flink)
-          filelist.append(fitem)
-        }, this)
-        menu.append(filelist)
+          return $('<li>').append(flink)
+	})
+
+	menu.append($('<ul>').append(examples))
       }
 
-      list = $('#files-list')
-      list.html(menu)
+      $('#files-list').html(menu)
     },
 
     github_file: function(file, line, lineto) {
@@ -672,11 +664,6 @@ $(function() {
     return docurium.get('version') + "/search/" + tname
   }
 
-  function domSafe(str) {
-    return str.replace('_', '-')
-  }
-
-    
   window.docurium = new Docurium
   window.ws = new Workspace
 
