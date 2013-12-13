@@ -536,8 +536,8 @@ $(function() {
     },
 
     github_file: function(file, line, lineto) {
-      url = "https://github.com/" + docurium.get('github')
-      url += "/blob/" + docurium.get('version') + '/' + data.prefix + '/' + file
+      url = ['https://github.com', docurium.get('github'),
+	     'blob', docurium.get('version'), data.prefix, file].join('/')
       if(line) {
         url += '#L' + line.toString()
         if(lineto) {
@@ -546,6 +546,7 @@ $(function() {
       } else {
         url += '#files'
       }
+
       return url
     },
 
