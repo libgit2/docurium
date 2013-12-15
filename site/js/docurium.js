@@ -244,48 +244,44 @@ $(function() {
       }
 
       // figure out the adds, deletes and changes
-      for(var func in sigHist) {
-        lastv = _.last(sigHist[func].exists)
-        firstv = _.first(sigHist[func].exists)
-        if (func != '__attribute__') {
-          changelog[firstv]['adds'].push(func)
-        }
-        if(lastv && (lastv != lastVer)) {
-          vi = _.indexOf(versions, lastv)
-          delv = versions[vi - 1]
-          changelog[delv]['deletes'].push(func)
-        }
-        for(var v in sigHist[func].changes) {
-          changelog[v]['changes'].push(func)
-        }
-      }
+      _.forEach(sigHist, function(func, fname) {
+	lastv = _.last(func.exists)
+	firstv = _.first(func.exists)
+	changelog[firstv]['adds'].push(fname)
 
-      // display the data
-      for(var i in versions) {
-        version = versions[i]
+	// figure out where it was deleted or changed
+	if (lastv && (lastv != lastVer)) {
+	  vi = _.indexOf(versions,lastv)
+	  delv = versions[vi-1]
+	  changelog[delv]['deletes'].push(fname)
+
+	  _.forEach(func.changes, function(_, v) {
+	    changelog[v]['changes'].push(fname)
+	  })
+	}
+      })
+
+      _.forEach(versions, function(version) {
         content.append($('<h3>').append(version))
         cl = $('<div>').addClass('changelog')
 
-        console.log(version)
-
-        for(var type in changelog[version]) {
-          adds = changelog[version][type]
+        _.forEach(changelog[version], function(adds, type) {
           adds.sort()
-          addsection = $('<p>')
-          for(var j in adds) {
-            add = adds[j]
-            if(type != 'deletes') {
-              gname = docurium.groupOf(add)
-              addlink = $('<a>').attr('href', '#' + groupLink(gname, add, version)).append(add)
-            } else {
-              addlink = add
-            }
-            addsection.append($('<li>').addClass(type).append(addlink))
-          }
-          cl.append(addsection)
-        }
+          elements = _.map(_.map(adds, function(add) {
+            if (type == 'deletes')
+              return add // no link, as it doesn't exist anymore
+
+            gname = docurium.groupOf(add)
+            return  $('<a>').attr('href', '#' + groupLink(gname, add, version)).append(add)
+          }), function(link) {
+            return $('<li>').addClass(type).append(link)
+          })
+
+          cl.append($('<p>').append(elements))
+        })
+
         content.append(cl)
-      }
+      })
 
       $('.content').replaceWith(content)
     },
