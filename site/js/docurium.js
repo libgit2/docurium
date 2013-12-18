@@ -554,14 +554,14 @@ $(function() {
 	// look in the function name first
         if (name.search(value) > -1) {
           var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
-	  searchResults.push({link: flink, match: 'function'})
+	  searchResults.push({link: flink, match: 'function', navigate: groupLink(gname, name)})
 	  return
         }
 
 	// if we didn't find it there, let's look in the argline
         if (f.argline && f.argline.search(value) > -1) {
           var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
-          searchResults.push({link: flink, match: f.argline})
+          searchResults.push({link: flink, match: f.argline, navigate: groupLink(gname, name)})
         }
       })
 
@@ -570,11 +570,16 @@ $(function() {
         name = type[0]
         if (name.search(value) > -1) {
           var link = $('<a>').attr('href', '#' + typeLink(name)).append(name)
-          searchResults.push({link: link, match: type[1].type})
+          searchResults.push({link: link, match: type[1].type, navigate: typeLink(name)})
         }
       })
 
-      // look for files
+      // if we have a single result, show that page
+      if (searchResults.length == 1) {
+         ws.navigate(searchResults[0].navigate, {trigger: true, replace: true})
+         return
+      }
+
       content = $('<div>').addClass('content')
       content.append($('<h1>').append("Search Results"))
       rows = _.map(searchResults, function(result) {
