@@ -228,6 +228,7 @@ $(function() {
     },
 
     showChangeLog: function() {
+      template = _.template($('#changelog-item-template').html())
       content = $('<div>').addClass('content')
       content.append($('<h1>').append("Function Changelog"))
       // for every version, show which functions added, removed, changed - from HEAD down
@@ -265,20 +266,17 @@ $(function() {
         content.append($('<h3>').append(version))
         cl = $('<div>').addClass('changelog')
 
-        _.forEach(changelog[version], function(adds, type) {
-          adds.sort()
-          elements = _.map(_.map(adds, function(add) {
-            if (type == 'deletes')
-              return add // no link, as it doesn't exist anymore
+	deletes = changelog[version]['deletes']
+	deletes.sort()
 
-            gname = docurium.groupOf(add)
-            return  $('<a>').attr('href', '#' + groupLink(gname, add, version)).append(add)
-          }), function(link) {
-            return $('<li>').addClass(type).append(link)
-          })
+	additions = changelog[version]['adds']
+	additions.sort()
+	adds = _.map(additions, function(add) {
+          gname = docurium.groupOf(add)
+	  return {link: groupLink(gname, add, version), text: add}
+	})
 
-          cl.append($('<p>').append(elements))
-        })
+	cl.append(template({dels: deletes, adds: adds}))
 
         content.append(cl)
       })
