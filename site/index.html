@@ -13,6 +13,7 @@
     <script src="js/backbone.js" type="text/javascript"></script> 
     <script src="js/docurium.js" type="text/javascript"></script> 
 
+    <!-- Changelog -->
     <script type="text/template" id="changelog-item-template">
       <p>
 	<ul>
@@ -39,6 +40,17 @@
       </div>
       <% }) %>
     </script>
+
+    <!-- Version picker -->
+    <script type="text/template" id="version-picker-template">
+      <ul id="version-list">
+	<% _.each(versions, function(version) { %>
+	<li><a href="#<%= version %>"><%= version %></a></li>
+	<% }) %>
+	<li><a href="#p/changelog">Changelog</a></li>
+      </ul>
+    </script>
+
   </head>
 
   <body class="documentation">

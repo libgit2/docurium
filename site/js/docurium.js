@@ -23,15 +23,10 @@ $(function() {
     setVersionPicker: function () {
       hideVersionList = function() { $('#version-list').hide(100) }
       vers = docurium.get('versions')
-      list = $('<ul>').attr('id', 'version-list').hide()
-      // add each of the versions first
-      vers.forEach(function(version) {
-        vlink = $('<a>').attr('href', '#' + version).append(version).click(hideVersionList)
-        list.append($('<li>').append(vlink))
-      })
-      // and then put the link to the ChangeLog at the end
-      vlink = $('<a>').attr('href', '#p/changelog').append("Changelog").click(hideVersionList)
-      list.append($('<li>').append(vlink))
+      template = _.template($('#version-picker-template').html())
+      // make sure this is a jquery object so we can use click()
+      list = $(template({versions: vers})).hide()
+      $('a', list).click(hideVersionList)
       $('#version-list').replaceWith(list)
     },
 
