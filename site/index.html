@@ -29,6 +29,16 @@
 	</ul>
       </p>
     </script>
+
+    <script type="text/template" id="changelog-template">
+      <h1>Function Changelog</h1>
+      <% _.each(versions, function(version) { %>
+      <h3><%= version.title %></h3>
+      <div class="changelog">
+	<%= version.listing %>
+      </div>
+      <% }) %>
+    </script>
   </head>
 
   <body class="documentation">

@@ -228,9 +228,9 @@ $(function() {
     },
 
     showChangeLog: function() {
-      template = _.template($('#changelog-item-template').html())
-      content = $('<div>').addClass('content')
-      content.append($('<h1>').append("Function Changelog"))
+      template = _.template($('#changelog-template').html())
+      itemTemplate = _.template($('#changelog-item-template').html())
+
       // for every version, show which functions added, removed, changed - from HEAD down
       versions = docurium.get('versions')
       sigHist = docurium.get('signatures')
@@ -262,10 +262,7 @@ $(function() {
 	}
       })
 
-      _.forEach(versions, function(version) {
-        content.append($('<h3>').append(version))
-        cl = $('<div>').addClass('changelog')
-
+      vers = _.map(versions, function(version) {
 	deletes = changelog[version]['deletes']
 	deletes.sort()
 
@@ -276,12 +273,10 @@ $(function() {
 	  return {link: groupLink(gname, add, version), text: add}
 	})
 
-	cl.append(template({dels: deletes, adds: adds}))
-
-        content.append(cl)
+	return {title: version, listing: itemTemplate({dels: deletes, adds: adds})}
       })
 
-      $('.content').replaceWith(content)
+      $('.content').html(template({versions: vers}))
     },
 
     showType: function(data, manual) {
