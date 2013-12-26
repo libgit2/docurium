@@ -54,6 +54,65 @@
   </head>
 
   <body class="documentation">
+
+    <script type="text/template" id="file-list-template">
+     <li>
+       <h3><a href="#">Functions</a></h3>
+       <ul>
+	 <% _.each(funs, function(fun, i) { %>
+	 <li>
+	   <a href="#" ref="<%= i %>" class="group" id="groupItem<%= fun.name %>">
+	   <%= fun.name %>&nbsp;<small>(<%= fun.num %>)</small>
+	   </a>
+	 </li>
+	 <% }) %>
+       </ul>
+     </li>
+     <li>
+       <h3><a href="#">Types</a></h3>
+       <ul>
+	 <li><span class="divide">Enums</span></li>
+	 <% _.each(enums, function(enm, i) { %>
+	 <li>
+	   <a href="#" ref="<%= i %>" class="type", id="typeItem<%= enm %>"><%= enm %></a>
+	 </li>
+	 <% }) %>
+	 <li><span class="divide">Structs</span></li>
+	 <% _.each(structs, function(struct, i) { %>
+	 <li>
+	   <a href="#" ref="<%= i %>" class="type", id="typeItem<%= struct %>"><%= struct %></a>
+	 </li>
+	 <% }) %>
+	 <li><span class="divide">Opaque Structs</span></li>
+	 <% _.each(opaques, function(opaque, i) { %>
+	 <li>
+	   <a href="#" ref="<%= i %>" class="type", id="typeItem<%= opaque %>"><%= opaque %></a>
+	 </li>
+	 <% }) %>
+       </ul>
+     </li>
+     <li>
+       <h3><a href="#">Files</a></h3>
+       <ul>
+	 <% _.each(files, function(file) { %>
+	 <li>
+	   <a target="github" href="<%= file.url %>"><%= file.name %></a>
+	 </li>
+	 <% }) %>
+       </ul>
+     </li>
+     <li>
+       <h3><a href="#">Examples</a></h3>
+       <ul>
+	 <% _.each(examples, function(example) { %>
+	 <li>
+	   <a href="<%= example.path %>"><%= example.name %></a>
+	 </li>
+	 <% }) %>
+       </ul>
+     </li>
+    </script>
+
     <div id="not-footer">
     <div id="header-wrapper">
       <div id="header">

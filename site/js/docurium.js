@@ -415,94 +415,52 @@ $(function() {
     },
 
     refreshView: function() {
+      template = _.template($('#file-list-template').html())
       data = this.get('data')
-      menu = $('<li>')
 
-      // Function Groups
-      title = $('<h3><a href="#">Functions</a></h3>').click( this.collapseSection )
-      menu.append(title)
-
-      links = _.map(data['groups'], function(group, i) {
-        flink = $('<a>').attr('href', '#').attr('ref', i).attr('id', 'groupItem'+group[0])
-        flink.append(group[0], '&nbsp;', $('<small>').append('(' + group[1].length + ')'))
-	flink.click(this.showGroup)
-	return $('<li>').append(flink)
-      }, this)
-
-      menu.append($('<ul>').append(links))
+      // Function groups
+      funs = _.map(data['groups'], function(group, i) {
+	return {name: group[0], num: group[1].length}
+      })
 
       // Types
-      title = $('<h3><a href="#">Types</a></h3>').click( this.collapseSection )
-      menu.append(title)
-      list = $('<ul>')
-
-      fitem = $('<li>')
-      fitem.append($('<span>').addClass('divide').append("Enums"))
-      list.append(fitem)
-
-      var linkItem = function(group, i) {
-	flink = $('<a>').attr('href', '#').attr('ref', i).attr('id', 'typeItem'+group[0])
-	flink.append(group[0])
-	flink.click(this.showType)
-	return $('<li>').append(flink)
+      var getName = function(group) {
+	return group[0]
       }
 
-      enums = _.map(_.filter(data['types'], function(group) {
+      enums = _.filter(data['types'], function(group) {
 	return group[1]['block'] && group[1]['type'] == 'enum';
-      }), linkItem, this)
+      }).map(getName)
 
-      list.append(enums)
-
-      fitem = $('<li>')
-      fitem.append($('<span>').addClass('divide').append("Structs"))
-      list.append(fitem)
-
-      structs = _.map(_.filter(data['types'], function(group) {
+      structs = _.filter(data['types'], function(group) {
 	return group[1]['block'] && group[1]['type'] != 'enum'
-      }), linkItem, this)
+      }).map(getName)
 
-      list.append(structs)
-
-      fitem = $('<li>')
-      fitem.append($('<span>').addClass('divide').append("Opaque Structs"))
-      list.append(fitem)
-
-      opaques = _.map(_.filter(data['types'], function(group) {
+      opaques = _.filter(data['types'], function(group) {
 	return !group[1]['block']
-      }), linkItem, this)
-
-      list.append(opaques)
-      list.hide()
-      menu.append(list)
+      }).map(getName)
 
       // File Listing
-      title = $('<h3><a href="#">Files</a></h3>').click( this.collapseSection )
-      menu.append(title)
-
       files = _.map(data['files'], function(file) {
 	url = this.github_file(file['file'])
-	flink = $('<a>').attr('target', 'github').attr('href', url).append(file['file'])
-	return $('<li>').append(flink)
+	return {url: url, name: file['file']}
       }, this)
 
-      menu.append($('<ul>').hide().append(files))
-
-
       // Examples List
+      examples = []
       if(data['examples'] && (data['examples'].length > 0)) {
-        title = $('<h3><a href="#">Examples</a></h3>').click( this.collapseSection )
-        menu.append(title)
-
 	examples = _.map(data['examples'], function(file) {
-          fname = file[0]
-          fpath = file[1]
-          flink = $('<a>').attr('href', fpath).append(fname)
-          return $('<li>').append(flink)
+	  return {name: file[0], path: file[1]}
 	})
-
-	menu.append($('<ul>').append(examples))
       }
 
+      menu = $(template({funs: funs, enums: enums, structs: structs, opaques: opaques,
+			 files: files, examples: examples}))
+
+      $('a.group', menu).click(this.showGroup)
+      $('a.type', menu).click(this.showType)
+      $('h3', menu).click(this.collapseSection)
+     
       $('#files-list').html(menu)
     },
 
