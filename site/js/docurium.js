@@ -77,6 +77,65 @@ $(function() {
     }
   })
 
+  var ChangelogView = Backbone.View.extend({
+    template: _.template($('#changelog-template').html()),
+
+    itemTemplate: _.template($('#changelog-item-template').html()),
+
+    initialize: function() {
+      // for every version, show which functions added, removed, changed - from HEAD down
+      var versions = this.model.get('versions')
+      var sigHist = this.model.get('signatures')
+
+      var lastVer = _.first(versions)
+
+      // fill changelog struct
+      var changelog = {}
+      for(var i in versions) {
+        var version = versions[i]
+        changelog[version] = {'deletes': [], 'changes': [], 'adds': []}
+      }
+
+      // figure out the adds, deletes and changes
+      _.forEach(sigHist, function(func, fname) {
+	var lastv = _.last(func.exists)
+	var firstv = _.first(func.exists)
+	changelog[firstv]['adds'].push(fname)
+
+	// figure out where it was deleted or changed
+	if (lastv && (lastv != lastVer)) {
+	  var vi = _.indexOf(versions,lastv)
+	  var delv = versions[vi-1]
+	  changelog[delv]['deletes'].push(fname)
+
+	  _.forEach(func.changes, function(_, v) {
+	    changelog[v]['changes'].push(fname)
+	  })
+	}
+      })
+
+      var vers = _.map(versions, function(version) {
+	var deletes = changelog[version]['deletes']
+	deletes.sort()
+
+	var additions = changelog[version]['adds']
+	additions.sort()
+	var adds = _.map(additions, function(add) {
+          var gname = this.model.groupOf(add)
+	  return {link: groupLink(gname, add, version), text: add}
+	}, this)
+
+	return {title: version, listing: this.itemTemplate({dels: deletes, adds: adds})}
+      }, this)
+
+      this.html = this.template({versions: vers})
+    },
+
+    render: function() {
+      $('.content').html(this.html)
+    }
+  })
+
   // our document model - stores the datastructure generated from docurium
   var Docurium = Backbone.Model.extend({
 
@@ -298,58 +357,6 @@ $(function() {
 
       $('.content').replaceWith(content)
       this.addHotlinks()
-    },
-
-    showChangeLog: function() {
-      template = _.template($('#changelog-template').html())
-      itemTemplate = _.template($('#changelog-item-template').html())
-
-      // for every version, show which functions added, removed, changed - from HEAD down
-      versions = docurium.get('versions')
-      sigHist = docurium.get('signatures')
-
-      lastVer = _.first(versions)
-
-      // fill changelog struct
-      changelog = {}
-      for(var i in versions) {
-        version = versions[i]
-        changelog[version] = {'deletes': [], 'changes': [], 'adds': []}
-      }
-
-      // figure out the adds, deletes and changes
-      _.forEach(sigHist, function(func, fname) {
-	lastv = _.last(func.exists)
-	firstv = _.first(func.exists)
-	changelog[firstv]['adds'].push(fname)
-
-	// figure out where it was deleted or changed
-	if (lastv && (lastv != lastVer)) {
-	  vi = _.indexOf(versions,lastv)
-	  delv = versions[vi-1]
-	  changelog[delv]['deletes'].push(fname)
-
-	  _.forEach(func.changes, function(_, v) {
-	    changelog[v]['changes'].push(fname)
-	  })
-	}
-      })
-
-      vers = _.map(versions, function(version) {
-	deletes = changelog[version]['deletes']
-	deletes.sort()
-
-	additions = changelog[version]['adds']
-	additions.sort()
-	adds = _.map(additions, function(add) {
-          gname = docurium.groupOf(add)
-	  return {link: groupLink(gname, add, version), text: add}
-	})
-
-	return {title: version, listing: itemTemplate({dels: deletes, adds: adds})}
-      })
-
-      $('.content').html(template({versions: vers}))
     },
 
     showType: function(data, manual) {
@@ -609,8 +616,13 @@ $(function() {
     },
 
     changelog: function(version, tname) {
+      // let's wait to process it until it's asked, and let's only do
+      // it once
+      if (this.changelogView == undefined) {
+	this.changelogView = new ChangelogView({model: docurium})
+      }
       docurium.setVersion()
-      docurium.showChangeLog()
+      this.changelogView.render()
     },
 
   });
@@ -643,5 +655,4 @@ $(function() {
   $('#search-field').keyup( docurium.search )
 
   $('#version-picker').click( docurium.collapseSection )
-
 })
