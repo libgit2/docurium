@@ -195,11 +195,7 @@ $(function() {
     loadDoc: function() {
       version = this.get('version')
       $.getJSON(version + '.json').then(function(data) {
-	// use data as a proxy for whether we've started the history
-	hadData = docurium.get('data') != undefined
-        docurium.set({'data': data})
-	if (!hadData)
-	  Backbone.history.start()
+        docurium.set({data: data})
       })
     },
 
@@ -662,6 +658,7 @@ $(function() {
 
   window.docurium = new Docurium
   window.ws = new Workspace
+  docurium.once('change:data', function() {Backbone.history.start()})
 
   var fileListView = new FileListView({model: window.docurium})
   var versionView = new VersionView({model: window.docurium})
