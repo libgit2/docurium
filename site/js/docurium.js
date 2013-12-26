@@ -1,4 +1,69 @@
 $(function() {
+  var FileListView = Backbone.View.extend({
+    el: $('#files-list'),
+    template:  _.template($('#file-list-template').html()),
+
+    initialize: function() {
+      this.listenTo(this.model, 'change:data', this.render)
+    },
+
+    render: function() {
+      data = this.model.get('data')
+
+      // Function groups
+      funs = _.map(data['groups'], function(group, i) {
+	return {name: group[0], num: group[1].length}
+      })
+
+      // Types
+      var getName = function(type) {
+	return {ref: type.ref, name: type.type[0]}
+      }
+
+      // We need to keep the original index around in order to show
+      // the right one when clicking on the link
+      var types = _.map(data['types'], function(type, i) {
+	return {ref: i, type: type}
+      })
+
+      enums = types.filter(function(type) {
+	return type.type[1]['block'] && type.type[1]['type'] == 'enum';
+      }).map(getName)
+
+      structs = types.filter(function(type) {
+	return type.type[1]['block'] && type.type[1]['type'] != 'enum'
+      }).map(getName)
+
+      opaques = types.filter(function(type) {
+	return !type.type[1]['block']
+      }).map(getName)
+
+      // File Listing
+      files = _.map(data['files'], function(file) {
+	url = this.github_file(file['file'])
+	return {url: url, name: file['file']}
+      }, this.model)
+
+      // Examples List
+      examples = []
+      if(data['examples'] && (data['examples'].length > 0)) {
+	examples = _.map(data['examples'], function(file) {
+	  return {name: file[0], path: file[1]}
+	})
+      }
+
+      menu = $(this.template({funs: funs, enums: enums, structs: structs, opaques: opaques,
+			 files: files, examples: examples}))
+
+      $('a.group', menu).click(this.model.showGroup)
+      $('a.type', menu).click(this.model.showType)
+      $('h3', menu).click(this.model.collapseSection)
+
+      this.$el.html(menu)
+      return this
+    },
+  })
+
   // our document model - stores the datastructure generated from docurium
   var Docurium = Backbone.Model.extend({
 
@@ -414,62 +479,6 @@ $(function() {
       }
     },
 
-    refreshView: function() {
-      template = _.template($('#file-list-template').html())
-      data = this.get('data')
-
-      // Function groups
-      funs = _.map(data['groups'], function(group, i) {
-	return {name: group[0], num: group[1].length}
-      })
-
-      // Types
-      var getName = function(type) {
-	return {ref: type.ref, name: type.type[0]}
-      }
-
-      // We need to keep the original index around in order to show
-      // the right one when clicking on the link
-      var types = _.map(data['types'], function(type, i) {
-	return {ref: i, type: type}
-      })
-
-      enums = types.filter(function(type) {
-	return type.type[1]['block'] && type.type[1]['type'] == 'enum';
-      }).map(getName)
-
-      structs = types.filter(function(type) {
-	return type.type[1]['block'] && type.type[1]['type'] != 'enum'
-      }).map(getName)
-
-      opaques = types.filter(function(type) {
-	return !type.type[1]['block']
-      }).map(getName)
-
-      // File Listing
-      files = _.map(data['files'], function(file) {
-	url = this.github_file(file['file'])
-	return {url: url, name: file['file']}
-      }, this)
-
-      // Examples List
-      examples = []
-      if(data['examples'] && (data['examples'].length > 0)) {
-	examples = _.map(data['examples'], function(file) {
-	  return {name: file[0], path: file[1]}
-	})
-      }
-
-      menu = $(template({funs: funs, enums: enums, structs: structs, opaques: opaques,
-			 files: files, examples: examples}))
-
-      $('a.group', menu).click(this.showGroup)
-      $('a.type', menu).click(this.showType)
-      $('h3', menu).click(this.collapseSection)
-     
-      $('#files-list').html(menu)
-    },
-
     github_file: function(file, line, lineto) {
       url = ['https://github.com', docurium.get('github'),
 	     'blob', docurium.get('version'), data.prefix, file].join('/')
@@ -618,9 +627,8 @@ $(function() {
   docurium.bind('change:version', function(model, version) {
     $('#version').text(version)
   })
-  docurium.bind('change:data', function(model, data) {
-    model.refreshView()
-  })
+
+  var fileListView = new FileListView({model: window.docurium})
 
   $('#search-field').keyup( docurium.search )
 
