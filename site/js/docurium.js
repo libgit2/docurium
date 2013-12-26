@@ -187,6 +187,7 @@ $(function() {
 
     initialize: function() {
       this.loadVersions()
+      this.bind('change:version', this.loadDoc)
     },
 
     loadVersions: function() {
@@ -200,10 +201,7 @@ $(function() {
       if(!version) {
         version = _.first(docurium.get('versions'))
       }
-      if(docurium.get('version') != version) {
-        docurium.set({'version': version})
-        docurium.loadDoc()
-      }
+      docurium.set({version: version})
     },
 
     loadDoc: function() {
