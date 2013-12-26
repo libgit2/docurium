@@ -72,21 +72,21 @@
        <h3><a href="#">Types</a></h3>
        <ul>
 	 <li><span class="divide">Enums</span></li>
-	 <% _.each(enums, function(enm, i) { %>
+	 <% _.each(enums, function(e) { %>
 	 <li>
-	   <a href="#" ref="<%= i %>" class="type", id="typeItem<%= enm %>"><%= enm %></a>
+	   <a href="#" ref="<%= e.ref %>" class="type", id="typeItem<%= e.name %>"><%= e.name %></a>
 	 </li>
 	 <% }) %>
 	 <li><span class="divide">Structs</span></li>
-	 <% _.each(structs, function(struct, i) { %>
+	 <% _.each(structs, function(s) { %>
 	 <li>
-	   <a href="#" ref="<%= i %>" class="type", id="typeItem<%= struct %>"><%= struct %></a>
+	   <a href="#" ref="<%= s.ref %>" class="type", id="typeItem<%= s.name %>"><%= s.name %></a>
 	 </li>
 	 <% }) %>
 	 <li><span class="divide">Opaque Structs</span></li>
-	 <% _.each(opaques, function(opaque, i) { %>
+	 <% _.each(opaques, function(o) { %>
 	 <li>
-	   <a href="#" ref="<%= i %>" class="type", id="typeItem<%= opaque %>"><%= opaque %></a>
+	   <a href="#" ref="<%= o.ref %>" class="type", id="typeItem<%= o.name %>"><%= o.name %></a>
 	 </li>
 	 <% }) %>
        </ul>

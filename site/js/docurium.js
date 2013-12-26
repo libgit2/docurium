@@ -424,20 +424,26 @@ $(function() {
       })
 
       // Types
-      var getName = function(group) {
-	return group[0]
+      var getName = function(type) {
+	return {ref: type.ref, name: type.type[0]}
       }
 
-      enums = _.filter(data['types'], function(group) {
-	return group[1]['block'] && group[1]['type'] == 'enum';
+      // We need to keep the original index around in order to show
+      // the right one when clicking on the link
+      var types = _.map(data['types'], function(type, i) {
+	return {ref: i, type: type}
+      })
+
+      enums = types.filter(function(type) {
+	return type.type[1]['block'] && type.type[1]['type'] == 'enum';
       }).map(getName)
 
-      structs = _.filter(data['types'], function(group) {
-	return group[1]['block'] && group[1]['type'] != 'enum'
+      structs = types.filter(function(type) {
+	return type.type[1]['block'] && type.type[1]['type'] != 'enum'
       }).map(getName)
 
-      opaques = _.filter(data['types'], function(group) {
-	return !group[1]['block']
+      opaques = types.filter(function(type) {
+	return !type.type[1]['block']
       }).map(getName)
 
       // File Listing
