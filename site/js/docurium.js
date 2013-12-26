@@ -76,12 +76,24 @@ $(function() {
 
     initialize: function() {
       this.listenTo(this.model, 'change:version', this.render)
+      this.listenTo(this.model, 'change:name', this.renderName)
+      this.title = $('#site-title')
     },
 
     render: function() {
       var version = this.model.get('version')
       this.$el.text(version)
-    }
+      this.title.attr('href', '#' + version)
+      return this
+    },
+
+    renderName: function() {
+      var name = this.model.get('name')
+      var title = name + ' API'
+      this.title.text(title)
+      document.title = title
+      return this
+    },
   })
 
   var ChangelogView = Backbone.View.extend({
@@ -155,10 +167,6 @@ $(function() {
     loadVersions: function() {
       $.getJSON("project.json").then(function(data) {
         docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures, 'name': data.name, 'groups': data.groups})
-        if(data.name) {
-          $('#site-title').text(data.name + ' API')
-          document.title = data.name + ' API'
-        }
         docurium.setVersionPicker()
         docurium.setVersion()
       })
@@ -180,7 +188,6 @@ $(function() {
       }
       if(docurium.get('version') != version) {
         docurium.set({'version': version})
-        $('#site-title').attr('href', '#' + version)
         docurium.loadDoc()
       }
     },
