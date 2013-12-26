@@ -96,6 +96,31 @@ $(function() {
     },
   })
 
+  var VersionPickerView = Backbone.View.extend({
+    el: $('#version-list'),
+
+    template: _.template($('#version-picker-template').html()),
+
+    initialize: function() {
+      this.listenTo(this.model, 'change:versions', this.render)
+    },
+
+    events: {
+      'click': 'hideList',
+    },
+
+    hideList: function() {
+      this.$el.hide(100)
+    },
+
+    render: function() {
+      var vers = this.model.get('versions')
+      list = this.template({versions: vers})
+      this.$el.hide().html(list)
+      return this
+    },
+  })
+
   var ChangelogView = Backbone.View.extend({
     template: _.template($('#changelog-template').html()),
 
@@ -167,19 +192,8 @@ $(function() {
     loadVersions: function() {
       $.getJSON("project.json").then(function(data) {
         docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures, 'name': data.name, 'groups': data.groups})
-        docurium.setVersionPicker()
         docurium.setVersion()
       })
-    },
-
-    setVersionPicker: function () {
-      hideVersionList = function() { $('#version-list').hide(100) }
-      vers = docurium.get('versions')
-      template = _.template($('#version-picker-template').html())
-      // make sure this is a jquery object so we can use click()
-      list = $(template({versions: vers})).hide()
-      $('a', list).click(hideVersionList)
-      $('#version-list').replaceWith(list)
     },
 
     setVersion: function (version) {
@@ -662,6 +676,7 @@ $(function() {
 
   var fileListView = new FileListView({model: window.docurium})
   var versionView = new VersionView({model: window.docurium})
+  var versionPickerView = new VersionPickerView({model: window.docurium})
 
   $('#search-field').keyup( docurium.search )
 

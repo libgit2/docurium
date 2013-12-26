@@ -43,12 +43,10 @@
 
     <!-- Version picker -->
     <script type="text/template" id="version-picker-template">
-      <ul id="version-list">
-	<% _.each(versions, function(version) { %>
-	<li><a href="#<%= version %>"><%= version %></a></li>
-	<% }) %>
-	<li><a href="#p/changelog">Changelog</a></li>
-      </ul>
+      <% _.each(versions, function(version) { %>
+      <li><a href="#<%= version %>"><%= version %></a></li>
+      <% }) %>
+      <li><a href="#p/changelog">Changelog</a></li>
     </script>
 
   </head>
