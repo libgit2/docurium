@@ -1,7 +1,10 @@
 $(function() {
   var FileListView = Backbone.View.extend({
     el: $('#files-list'),
+
     template:  _.template($('#file-list-template').html()),
+
+    typeTemplate: _.template($('#type-list-template').html()),
 
     initialize: function() {
       this.listenTo(this.model, 'change:data', this.render)
@@ -52,9 +55,12 @@ $(function() {
 	})
       }
 
-      var menu = $(this.template({funs: funs, enums: enums, structs: structs, opaques: opaques,
-			 files: files, examples: examples}))
+      var enumList = this.typeTemplate({title: 'Enums', elements: enums})
+      var structList = this.typeTemplate({title: 'Structs', elements: structs})
+      var opaquesList = this.typeTemplate({title: 'Opaque Structs', elements: opaques})
+      var menu = $(this.template({funs: funs, files: files, examples: examples}))
 
+      $('#types-list', menu).append(enumList, structList, opaquesList)
       $('a.group', menu).click(this.model.showGroup)
       $('a.type', menu).click(this.model.showType)
       $('h3', menu).click(this.model.collapseSection)
