@@ -64,6 +64,19 @@ $(function() {
     },
   })
 
+  var VersionView = Backbone.View.extend({
+    el: $('#version'),
+
+    initialize: function() {
+      this.listenTo(this.model, 'change:version', this.render)
+    },
+
+    render: function() {
+      var version = this.model.get('version')
+      this.$el.text(version)
+    }
+  })
+
   // our document model - stores the datastructure generated from docurium
   var Docurium = Backbone.Model.extend({
 
@@ -624,11 +637,8 @@ $(function() {
   window.docurium = new Docurium
   window.ws = new Workspace
 
-  docurium.bind('change:version', function(model, version) {
-    $('#version').text(version)
-  })
-
   var fileListView = new FileListView({model: window.docurium})
+  var versionView = new VersionView({model: window.docurium})
 
   $('#search-field').keyup( docurium.search )
 
