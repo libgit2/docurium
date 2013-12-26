@@ -70,7 +70,7 @@
      </li>
      <li>
        <h3><a href="#">Types</a></h3>
-       <ul>
+       <ul class="hidden">
 	 <li><span class="divide">Enums</span></li>
 	 <% _.each(enums, function(e) { %>
 	 <li>
@@ -93,7 +93,7 @@
      </li>
      <li>
        <h3><a href="#">Files</a></h3>
-       <ul>
+       <ul class="hidden">
 	 <% _.each(files, function(file) { %>
 	 <li>
 	   <a target="github" href="<%= file.url %>"><%= file.name %></a>

@@ -52,12 +52,13 @@ $(function() {
 	})
       }
 
-      menu = $(this.template({funs: funs, enums: enums, structs: structs, opaques: opaques,
+      var menu = $(this.template({funs: funs, enums: enums, structs: structs, opaques: opaques,
 			 files: files, examples: examples}))
 
       $('a.group', menu).click(this.model.showGroup)
       $('a.type', menu).click(this.model.showType)
       $('h3', menu).click(this.model.collapseSection)
+      $('ul.hidden', menu).hide()
 
       this.$el.html(menu)
       return this
