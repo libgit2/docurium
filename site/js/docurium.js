@@ -6,39 +6,46 @@ $(function() {
 
     typeTemplate: _.template($('#type-list-template').html()),
 
+    events: {
+      'click h3': 'toggleList',
+    },
+
+    toggleList: function(e) {
+      $(e.currentTarget).next().toggle(100)
+      return false
+    },
+
     initialize: function() {
       this.listenTo(this.model, 'change:data', this.render)
     },
 
     render: function() {
-      data = this.model.get('data')
+      var data = this.model.get('data')
 
       // Function groups
-      funs = _.map(data['groups'], function(group, i) {
-	return {name: group[0], num: group[1].length}
+      var funs = _.map(data['groups'], function(group, i) {
+	var name = group[0]
+	var link = groupLink(name)
+	return {name: name, link: link, num: group[1].length}
       })
 
       // Types
       var getName = function(type) {
-	return {ref: type.ref, name: type.type[0]}
+	var name = type[0];
+	var link = typeLink(name);
+	return {link: link, name: name};
       }
 
-      // We need to keep the original index around in order to show
-      // the right one when clicking on the link
-      var types = _.map(data['types'], function(type, i) {
-	return {ref: i, type: type}
-      })
-
-      enums = types.filter(function(type) {
-	return type.type[1]['block'] && type.type[1]['type'] == 'enum';
+      var enums = _.filter(data['types'], function(type) {
+	return type[1]['block'] && type[1]['type'] == 'enum';
       }).map(getName)
 
-      structs = types.filter(function(type) {
-	return type.type[1]['block'] && type.type[1]['type'] != 'enum'
+      var structs = _.filter(data['types'], function(type) {
+	return type[1]['block'] && type[1]['type'] != 'enum'
       }).map(getName)
 
-      opaques = types.filter(function(type) {
-	return !type.type[1]['block']
+      var opaques = _.filter(data['types'], function(type) {
+	return !type[1]['block']
       }).map(getName)
 
       // File Listing
@@ -61,9 +68,6 @@ $(function() {
       var menu = $(this.template({funs: funs, files: files, examples: examples}))
 
       $('#types-list', menu).append(enumList, structList, opaquesList)
-      $('a.group', menu).click(this.model.showGroup)
-      $('a.type', menu).click(this.model.showType)
-      $('h3', menu).click(this.model.collapseSection)
       $('ul.hidden', menu).hide()
 
       this.$el.html(menu)
@@ -97,7 +101,9 @@ $(function() {
   })
 
   var VersionPickerView = Backbone.View.extend({
-    el: $('#version-list'),
+    el: $('#versions'),
+
+    list: $('#version-list'),
 
     template: _.template($('#version-picker-template').html()),
 
@@ -106,17 +112,23 @@ $(function() {
     },
 
     events: {
+      'click #version-picker': 'toggleList',
       'click': 'hideList',
     },
 
     hideList: function() {
-      this.$el.hide(100)
+      this.list.hide(100)
+    },
+
+    toggleList: function(e) {
+      $(e.currentTarget).next().toggle(100)
+      return false
     },
 
     render: function() {
       var vers = this.model.get('versions')
       list = this.template({versions: vers})
-      this.$el.hide().html(list)
+      this.list.hide().html(list)
       return this
     },
   })
@@ -209,11 +221,6 @@ $(function() {
       $.getJSON(version + '.json').then(function(data) {
         docurium.set({data: data})
       })
-    },
-
-    collapseSection: function(data) {
-      $(this).next().toggle(100)
-      return false
     },
 
     showIndexPage: function(replace) {
@@ -341,7 +348,7 @@ $(function() {
 
       // Show where this is used in the examples
       if(ex = fdata[fname].examples) {
-        also = $('<div>').addClass('funcEx')
+        var also = $('<div>').addClass('funcEx')
         also.append("Used in examples: ")
         for( fname in ex ) {
           lines = ex[fname]
@@ -357,11 +364,10 @@ $(function() {
       }
 
       // Show other functions in this group
-      also = $('<div>').addClass('also')
+      var also = $('<div>').addClass('also')
       flink = $('<a>')
-	.attr('href', '#' + docurium.get('version') + '/group'/ + group[0])
+	.attr('href', '#' + groupLink(group[0]))
 	.append(group[0])
-      flink.click(docurium.showGroup)
 
       also.append("Also in ")
       also.append(flink)
@@ -378,20 +384,14 @@ $(function() {
       content.append(also)
 
       $('.content').replaceWith(content)
-      this.addHotlinks()
     },
 
     showType: function(data, manual) {
       var tdata
-      if(manual) {
-	var types = this.get('data')['types']
-	tdata = _.find(types, function(g) {
-	  return g[0] == manual
-	})
-      } else {
-        ref = parseInt($(this).attr('ref'))
-	tdata = docurium.get('data')['types'][ref]
-      }
+      var types = this.get('data')['types']
+      var tdata = _.find(types, function(g) {
+	return g[0] == manual
+      })
       tname = tdata[0]
       data = tdata[1]
 
@@ -418,7 +418,6 @@ $(function() {
       for(var i=0; i<ret.length; i++) {
         gname = docurium.groupOf(ret[i])
         flink = $('<a>').attr('href', '#' + groupLink(gname, ret[i])).append(ret[i])
-        flink.click( docurium.showFun )
         content.append(flink)
         content.append(', ')
       }
@@ -430,7 +429,6 @@ $(function() {
       for(var i=0; i<needs.length; i++) {
         gname = docurium.groupOf(needs[i])
         flink = $('<a>').attr('href', '#' + groupLink(gname, needs[i])).append(needs[i])
-        flink.click( docurium.showFun )
         content.append(flink)
         content.append(', ')
       }
@@ -443,17 +441,11 @@ $(function() {
       return false
     },
 
-    showGroup: function(data, manual, flink) {
-      var group
-      if(manual) {
-	var types = this.get('data')['groups']
-	group = _.find(types, function(g) {
+    showGroup: function(manual, flink) {
+      var types = this.get('data')['groups']
+      var group = _.find(types, function(g) {
 	  return g[0] == manual
-	})
-      } else {
-        ref = parseInt($(this).attr('ref'))
-	group = docurium.get('data')['groups'][ref]
-      }
+      })
       fdata = docurium.get('data')['functions']
       gname = group[0]
 
@@ -507,24 +499,14 @@ $(function() {
         typeName = type[0]
         typeData = type[1]
         re = new RegExp(typeName + ' ', 'gi');
-        link = '<a ref="' + i.toString() + '" class="typeLink' + typeName + '" href="#">' + typeName + '</a> '
-        text = text.replace(re, link)
+        var link = $('<a>').attr('href', '#' + typeLink(typeName)).append(typeName)[0]
+        text = text.replace(re, link.outerHTML + ' ')
       }
       return text
     },
 
     groupOf: function (func) {
       return this.get('groups')[func]
-    },
-
-    addHotlinks: function() {
-      types = this.get('data')['types']
-      for(var i=0; i<types.length; i++) {
-        type = types[i]
-        typeName = type[0]
-        className = '.typeLink' + typeName
-        $(className).click( this.showType )
-      }
     },
 
     github_file: function(file, line, lineto) {
@@ -625,7 +607,7 @@ $(function() {
 
     group: function(version, gname) {
       docurium.setVersion(version)
-      docurium.showGroup(null, gname)
+      docurium.showGroup(gname)
     },
 
     groupFun: function(version, gname, fname) {
@@ -684,6 +666,4 @@ $(function() {
   var versionPickerView = new VersionPickerView({model: window.docurium})
 
   $('#search-field').keyup( docurium.search )
-
-  $('#version-picker').click( docurium.collapseSection )
 })
