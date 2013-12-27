@@ -105,6 +105,23 @@
      </li>
     </script>
 
+    <!-- Listing of the details of a single template -->
+    <script type="text/template" id="function-args-template">
+      <table class="funcTable">
+	<% _.each(args, function(arg) { %>
+	<tr>
+	  <td valign="top" nowrap="true"><%= arg.link %></td>
+	  <td valign="top" class="var"><%= arg.name %></td>
+	  <td class="comment"><%= arg.comment %></td>
+	</tr>
+	<% }) %>
+      </table>
+    </script>
+    <script type="text/template" id="function-template">
+     <h1 class="funcTitle"><%= name %></h1>
+     <h3 class="funcDesc"><%= data.description %></h3>
+    </script>
+
     <div id="not-footer">
     <div id="header-wrapper">
       <div id="header">

@@ -269,6 +269,8 @@ $(function() {
     },
 
     showFun: function(gname, fname) {
+      var template = _.template($('#function-template').html())
+      var argsTemplate = _.template($('#function-args-template').html())
       group = docurium.getGroup(gname)
 
       fdata = docurium.get('data')['functions']
@@ -285,14 +287,10 @@ $(function() {
       }
 
       // Show Function Arguments
-      argtable = $('<table>').addClass('funcTable')
-      fdata[fname]['args'].forEach(function(arg) {
-        row = $('<tr>')
-        row.append($('<td>').attr('valign', 'top').attr('nowrap', true).append(this.hotLink(arg.type)))
-        row.append($('<td>').attr('valign', 'top').addClass('var').append(arg.name))
-        row.append($('<td>').addClass('comment').append(arg.comment))
-        argtable.append(row)
+      var args = _.map(fdata[fname]['args'], function(arg) {
+	return {link: this.hotLink(arg.type), name: arg.name, comment: arg.comment}
       }, this)
+      var argtable = argsTemplate({args: args})
       content.append(argtable)
 
       // Show Function Return Value
