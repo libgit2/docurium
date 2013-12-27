@@ -337,7 +337,7 @@ $(function() {
 
       // Show where this is used in the examples
       if(ex = fdata[fname].examples) {
-        also = $('<div>').addClass('funcEx')
+        var also = $('<div>').addClass('funcEx')
         also.append("Used in examples: ")
         for( fname in ex ) {
           lines = ex[fname]
@@ -353,9 +353,9 @@ $(function() {
       }
 
       // Show other functions in this group
-      also = $('<div>').addClass('also')
+      var also = $('<div>').addClass('also')
       flink = $('<a>')
-	.attr('href', '#' + docurium.get('version') + '/group/' + group[0])
+	.attr('href', '#' + groupLink(group[0]))
 	.append(group[0])
 
       also.append("Also in ")
