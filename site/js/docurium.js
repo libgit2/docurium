@@ -373,7 +373,6 @@ $(function() {
       content.append(also)
 
       $('.content').replaceWith(content)
-      this.addHotlinks()
     },
 
     showType: function(data, manual) {
@@ -491,24 +490,14 @@ $(function() {
         typeName = type[0]
         typeData = type[1]
         re = new RegExp(typeName + ' ', 'gi');
-        link = '<a ref="' + i.toString() + '" class="typeLink' + typeName + '" href="#">' + typeName + '</a> '
-        text = text.replace(re, link)
+        var link = $('<a>').attr('href', '#' + typeLink(typeName)).append(typeName)[0]
+        text = text.replace(re, link.outerHTML + ' ')
       }
       return text
     },
 
     groupOf: function (func) {
       return this.get('groups')[func]
-    },
-
-    addHotlinks: function() {
-      types = this.get('data')['types']
-      for(var i=0; i<types.length; i++) {
-        type = types[i]
-        typeName = type[0]
-        className = '.typeLink' + typeName
-        $(className).click( this.showType )
-      }
     },
 
     github_file: function(file, line, lineto) {
