@@ -407,7 +407,6 @@ $(function() {
       for(var i=0; i<ret.length; i++) {
         gname = docurium.groupOf(ret[i])
         flink = $('<a>').attr('href', '#' + groupLink(gname, ret[i])).append(ret[i])
-        flink.click( docurium.showFun )
         content.append(flink)
         content.append(', ')
       }
@@ -419,7 +418,6 @@ $(function() {
       for(var i=0; i<needs.length; i++) {
         gname = docurium.groupOf(needs[i])
         flink = $('<a>').attr('href', '#' + groupLink(gname, needs[i])).append(needs[i])
-        flink.click( docurium.showFun )
         content.append(flink)
         content.append(', ')
       }
