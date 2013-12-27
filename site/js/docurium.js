@@ -22,27 +22,21 @@ $(function() {
 
       // Types
       var getName = function(type) {
-	var name = type.type[0];
+	var name = type[0];
 	var link = typeLink(name);
-	return {ref: type.ref, link: link, name: name};
+	return {link: link, name: name};
       }
 
-      // We need to keep the original index around in order to show
-      // the right one when clicking on the link
-      var types = _.map(data['types'], function(type, i) {
-	return {ref: i, type: type}
-      })
-
-      enums = types.filter(function(type) {
-	return type.type[1]['block'] && type.type[1]['type'] == 'enum';
+      var enums = _.filter(data['types'], function(type) {
+	return type[1]['block'] && type[1]['type'] == 'enum';
       }).map(getName)
 
-      structs = types.filter(function(type) {
-	return type.type[1]['block'] && type.type[1]['type'] != 'enum'
+      var structs = _.filter(data['types'], function(type) {
+	return type[1]['block'] && type[1]['type'] != 'enum'
       }).map(getName)
 
-      opaques = types.filter(function(type) {
-	return !type.type[1]['block']
+      var opaques = _.filter(data['types'], function(type) {
+	return !type[1]['block']
       }).map(getName)
 
       // File Listing
