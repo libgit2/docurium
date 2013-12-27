@@ -355,7 +355,7 @@ $(function() {
       // Show other functions in this group
       also = $('<div>').addClass('also')
       flink = $('<a>')
-	.attr('href', '#' + docurium.get('version') + '/group'/ + group[0])
+	.attr('href', '#' + docurium.get('version') + '/group/' + group[0])
 	.append(group[0])
       flink.click(docurium.showGroup)
 
