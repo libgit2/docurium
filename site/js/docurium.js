@@ -11,16 +11,20 @@ $(function() {
     },
 
     render: function() {
-      data = this.model.get('data')
+      var data = this.model.get('data')
 
       // Function groups
-      funs = _.map(data['groups'], function(group, i) {
-	return {name: group[0], num: group[1].length}
+      var funs = _.map(data['groups'], function(group, i) {
+	var name = group[0]
+	var link = groupLink(name)
+	return {name: name, link: link, num: group[1].length}
       })
 
       // Types
       var getName = function(type) {
-	return {ref: type.ref, name: type.type[0]}
+	var name = type.type[0];
+	var link = typeLink(name);
+	return {ref: type.ref, link: link, name: name};
       }
 
       // We need to keep the original index around in order to show
@@ -61,8 +65,6 @@ $(function() {
       var menu = $(this.template({funs: funs, files: files, examples: examples}))
 
       $('#types-list', menu).append(enumList, structList, opaquesList)
-      $('a.group', menu).click(this.model.showGroup)
-      $('a.type', menu).click(this.model.showType)
       $('h3', menu).click(this.model.collapseSection)
       $('ul.hidden', menu).hide()
 
@@ -383,15 +385,10 @@ $(function() {
 
     showType: function(data, manual) {
       var tdata
-      if(manual) {
-	var types = this.get('data')['types']
-	tdata = _.find(types, function(g) {
-	  return g[0] == manual
-	})
-      } else {
-        ref = parseInt($(this).attr('ref'))
-	tdata = docurium.get('data')['types'][ref]
-      }
+      var types = this.get('data')['types']
+      var tdata = _.find(types, function(g) {
+	return g[0] == manual
+      })
       tname = tdata[0]
       data = tdata[1]
 
@@ -444,16 +441,10 @@ $(function() {
     },
 
     showGroup: function(data, manual, flink) {
-      var group
-      if(manual) {
-	var types = this.get('data')['groups']
-	group = _.find(types, function(g) {
+      var types = this.get('data')['groups']
+      var group = _.find(types, function(g) {
 	  return g[0] == manual
-	})
-      } else {
-        ref = parseInt($(this).attr('ref'))
-	group = docurium.get('data')['groups'][ref]
-      }
+      })
       fdata = docurium.get('data')['functions']
       gname = group[0]
 

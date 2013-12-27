@@ -59,7 +59,7 @@
 	<li><span class="divide"><%= title %></span></li>
 	<% _.each(elements, function(e) { %>
 	<li>
-	  <a href="#" ref="<%= e.ref %>" class="type", id="typeItem<%= e.name %>">
+	  <a href="#<%= e.link %>" ref="<%= e.ref %>" class="type", id="typeItem<%= e.name %>">
 	  <%= e.name %>
 	  </a>
 	</li>
@@ -72,7 +72,7 @@
        <ul>
 	 <% _.each(funs, function(fun, i) { %>
 	 <li>
-	   <a href="#" ref="<%= i %>" class="group" id="groupItem<%= fun.name %>">
+	   <a href="#<%= fun.link %>" ref="<%= i %>" class="group" id="groupItem<%= fun.name %>">
 	   <%= fun.name %>&nbsp;<small>(<%= fun.num %>)</small>
 	   </a>
 	 </li>
