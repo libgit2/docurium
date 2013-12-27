@@ -6,6 +6,15 @@ $(function() {
 
     typeTemplate: _.template($('#type-list-template').html()),
 
+    events: {
+      'click h3': 'toggleList',
+    },
+
+    toggleList: function(e) {
+      $(e.currentTarget).next().toggle(100)
+      return false
+    },
+
     initialize: function() {
       this.listenTo(this.model, 'change:data', this.render)
     },
@@ -59,7 +68,6 @@ $(function() {
       var menu = $(this.template({funs: funs, files: files, examples: examples}))
 
       $('#types-list', menu).append(enumList, structList, opaquesList)
-      $('h3', menu).click(this.model.collapseSection)
       $('ul.hidden', menu).hide()
 
       this.$el.html(menu)
@@ -93,7 +101,9 @@ $(function() {
   })
 
   var VersionPickerView = Backbone.View.extend({
-    el: $('#version-list'),
+    el: $('#versions'),
+
+    list: $('#version-list'),
 
     template: _.template($('#version-picker-template').html()),
 
@@ -102,17 +112,23 @@ $(function() {
     },
 
     events: {
+      'click #version-picker': 'toggleList',
       'click': 'hideList',
     },
 
     hideList: function() {
-      this.$el.hide(100)
+      this.list.hide(100)
+    },
+
+    toggleList: function(e) {
+      $(e.currentTarget).next().toggle(100)
+      return false
     },
 
     render: function() {
       var vers = this.model.get('versions')
       list = this.template({versions: vers})
-      this.$el.hide().html(list)
+      this.list.hide().html(list)
       return this
     },
   })
@@ -205,11 +221,6 @@ $(function() {
       $.getJSON(version + '.json').then(function(data) {
         docurium.set({data: data})
       })
-    },
-
-    collapseSection: function(data) {
-      $(this).next().toggle(100)
-      return false
     },
 
     showIndexPage: function(replace) {
@@ -655,6 +666,4 @@ $(function() {
   var versionPickerView = new VersionPickerView({model: window.docurium})
 
   $('#search-field').keyup( docurium.search )
-
-  $('#version-picker').click( docurium.collapseSection )
 })
