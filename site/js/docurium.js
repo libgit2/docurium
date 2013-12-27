@@ -278,110 +278,44 @@ $(function() {
       functions = group[1]
 
       document.body.scrollTop = document.documentElement.scrollTop = 0;
-      content = $('<div>').addClass('content')
 
-      // Show Function Name
-      content.append($('<h1>').addClass('funcTitle').append(fname))
-      if(fdata[fname]['description']) {
-        sub = content.append($('<h3>').addClass('funcDesc').append( ' ' + fdata[fname]['description'] ))
-      }
-
-      // Show Function Arguments
+      // Function Arguments
       var args = _.map(fdata[fname]['args'], function(arg) {
 	return {link: this.hotLink(arg.type), name: arg.name, comment: arg.comment}
       }, this)
-      var argtable = argsTemplate({args: args})
-      content.append(argtable)
 
-      // Show Function Return Value
-      retdiv = $('<div>').addClass('returns')
-      retdiv.append($('<h3>').append("returns"))
-      rettable = $('<table>').addClass('funcTable')
-      retrow = $('<tr>')
-      rettable.append(retrow)
-      retdiv.append(rettable)
+      var data = fdata[fname]
+      // function return value
+      var ret = data['return']
+      var returns = {link: this.hotLink(ret.type), comment: ret.comment}
+      // function signature
+      var sig = this.hotLink(ret.type) + ' ' + fname + '(' + data['argline'] + ');'
+      // version history
+      var sigHist = this.get('signatures')[fname]
+      var version = this.get('version')
+      var sigs = _.map(sigHist.exists, function(ver) {
+	var klass = []
+	if (sigHist.changes[ver])
+	  klass.push('changed')
+	if (ver == version)
+	  klass.push('current')
 
-      ret = fdata[fname]['return']
-      retrow.append($('<td>').attr('valign', 'top').append(this.hotLink(ret.type)))
-      if(ret.comment) {
-        retrow.append($('<td>').addClass('comment').append(ret.comment))
-      }
-      content.append(retdiv)
-
-      // Show Non-Parsed Function Comments
-      if (fdata[fname]['comments'])
-        content.append($('<div>').append(fdata[fname]['comments']))
-
-      // Show Function Signature
-      ex = $('<code>').addClass('params')
-      ex.append(this.hotLink(fdata[fname]['return']['type'] + ' ' + fname + '(' + fdata[fname]['argline'] + ');'))
-      example = $('<div>').addClass('example')
-      example.append($('<h3>').append("signature"))
-      example.append(ex)
-      content.append(example)
-
-      // Show Function History
-      sigs = $('<div>').addClass('signatures')
-      sigs.append($('<h3>').append("versions"))
-      sigHist = docurium.get('signatures')[fname]
-      var list = $('<ul>')
-      for(var i in sigHist.exists) {
-        ver = sigHist.exists[i]
-        link = $('<a>').attr('href', '#' + groupLink(gname, fname, ver)).append(ver)
-        if(sigHist.changes[ver]) {
-          link.addClass('changed')
-        }
-        if(ver == docurium.get('version')) {
-          link.addClass('current')
-        }
-        list.append($('<li>').append(link))
-      }
-      sigs.append(list)
-      content.append(sigs)
-
-      // Link to Function Def on GitHub
-      link = this.github_file(fdata[fname].file, fdata[fname].line, fdata[fname].lineto)
-      flink = $('<a>').attr('target', 'github').attr('href', link).append(fdata[fname].file)
-      content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
-
-      // Show where this is used in the examples
-      if(ex = fdata[fname].examples) {
-        var also = $('<div>').addClass('funcEx')
-        also.append("Used in examples: ")
-        for( fname in ex ) {
-          lines = ex[fname]
-          line = $('<li>')
-          line.append($('<strong>').append(fname))
-          for( var i in lines ) {
-            flink = $('<a>').attr('href', lines[i]).append(' [' + (parseInt(i) + 1) + '] ')
-            line.append(flink)
-          }
-          also.append(line)
-        }
-        content.append(also)
-      }
-
-      // Show other functions in this group
-      var also = $('<div>').addClass('also')
-      flink = $('<a>')
-	.attr('href', '#' + groupLink(group[0]))
-	.append(group[0])
-
-      also.append("Also in ")
-      also.append(flink)
-      also.append(" group: <br/>")
-
-      links = _.map(functions, function(f) {
-        return $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
+	return {url: '#' + groupLink(gname, fname, ver), name: ver, klass: klass.join(' ')}
       })
-      for (i = 0; i < links.length-1; i++) {
-	also.append(links[i])
-        also.append(', ')
-      }
-      also.append(_.last(links))
-      content.append(also)
+      // GitHub link
+      var fileLink = this.github_file(data.file, data.line, data.lineto)
+      // link to the group
+      var alsoGroup = '#' + groupLink(group[0])
+      var alsoLinks = _.map(functions, function(f) {
+	return {url: '#' + groupLink(gname, f), name: f}
+      })
 
-      $('.content').replaceWith(content)
+
+      var cont = template({name: fname, data: data, argsTemplate: argsTemplate, args: args,
+			   returns: returns, sig: sig, sigs: sigs, fileLink: fileLink,
+			   groupName: gname, alsoGroup: alsoGroup, alsoLinks: alsoLinks})
+
+      $('.content').html(cont)
     },
 
     showType: function(data, manual) {
@@ -654,6 +588,8 @@ $(function() {
   function searchLink(tname) {
     return docurium.get('version') + "/search/" + tname
   }
+
+  //_.templateSettings.variable = 'rc'
 
   window.docurium = new Docurium
   window.ws = new Workspace

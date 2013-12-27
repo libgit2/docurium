@@ -120,6 +120,55 @@
     <script type="text/template" id="function-template">
      <h1 class="funcTitle"><%= name %></h1>
      <h3 class="funcDesc"><%= data.description %></h3>
+     <!-- The args table -->
+     <%= argsTemplate({args: args}) %>
+     <div class="returns">
+       <h3>returns</h3>
+       <table class="funcTable">
+	 <tr>
+	   <td valign="top"><%= returns.link %></td>
+	   <td class="comment"><%= returns.comment %></td>
+	 </tr>
+       </table>
+     </div>
+     <div><%= data.comments %></div>
+     <!-- function signature -->
+     <div class="example">
+       <h3>signature</h3>
+       <code class="params"><%= sig %></code>
+     </div>
+     <!-- function history -->
+     <div class="signatures">
+       <h3>versions</h3>
+       <ul>
+	 <% _.each(sigs, function(sig) { %>
+	 <li><a href="<%= sig.url %>" class="<%= sig.klass %>"><%= sig.name %></a></li>
+	 <% }) %>
+       </ul>
+     </div>
+     <div class="fileLink">Defined in: <a href="<%= fileLink %>"> <%= data.file %></a></div>
+     <% if (data.examples) { %>
+     <div class="funcEx">Used in examples:
+     <ul>
+     <% _.each(data.examples, function(uses, filename) { %>
+     <li>
+       <strong><%= filename %></strong>
+       <% _.each(uses, function(use, i) { %>
+       <a href="<%= use %>">[<%= i + 1 %>]</a>
+       <% }) %> <!-- loop over the uses -->
+     </li>
+     <% }) %> <!-- loop over the files -->
+     </ul>
+     </div>
+     <% } %> <!-- if we have examples -->
+     <div class="also">
+       Also in <a href="<%= alsoGroup %>"><%= groupName %></a> group: <br/>
+       <% _.each(_.initial(alsoLinks), function(link) { %>
+       <a href="<%= link.url %>"><%= link.name %></a>, 
+       <% }) %>
+       <% var link = _.last(alsoLinks) %>
+       <a href="<%= link.url %>"><%= link.name %></a>
+     </div>
     </script>
 
     <div id="not-footer">
