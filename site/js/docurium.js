@@ -434,7 +434,7 @@ $(function() {
       return false
     },
 
-    showGroup: function(data, manual, flink) {
+    showGroup: function(manual, flink) {
       var types = this.get('data')['groups']
       var group = _.find(types, function(g) {
 	  return g[0] == manual
@@ -610,7 +610,7 @@ $(function() {
 
     group: function(version, gname) {
       docurium.setVersion(version)
-      docurium.showGroup(null, gname)
+      docurium.showGroup(gname)
     },
 
     groupFun: function(version, gname, fname) {
