@@ -382,13 +382,16 @@ $(function() {
     },
 
     showType: function(data, manual) {
+      var tdata
       if(manual) {
-        id = '#typeItem' + manual
-        ref = parseInt($(id).attr('ref'))
+	var types = this.get('data')['types']
+	tdata = _.find(types, function(g) {
+	  return g[0] == manual
+	})
       } else {
         ref = parseInt($(this).attr('ref'))
+	tdata = docurium.get('data')['types'][ref]
       }
-      tdata = docurium.get('data')['types'][ref]
       tname = tdata[0]
       data = tdata[1]
 
@@ -441,13 +444,16 @@ $(function() {
     },
 
     showGroup: function(data, manual, flink) {
+      var group
       if(manual) {
-        id = '#groupItem' + manual
-        ref = parseInt($(id).attr('ref'))
+	var types = this.get('data')['groups']
+	group = _.find(types, function(g) {
+	  return g[0] == manual
+	})
       } else {
         ref = parseInt($(this).attr('ref'))
+	group = docurium.get('data')['groups'][ref]
       }
-      group = docurium.get('data')['groups'][ref]
       fdata = docurium.get('data')['functions']
       gname = group[0]
 
@@ -522,6 +528,7 @@ $(function() {
     },
 
     github_file: function(file, line, lineto) {
+      var data = this.get('data')
       url = ['https://github.com', docurium.get('github'),
 	     'blob', docurium.get('version'), data.prefix, file].join('/')
       if(line) {
