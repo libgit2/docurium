@@ -1,5 +1,5 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<!DOCTYPE html>
+<html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>API Documentation</title>
@@ -43,18 +43,29 @@
 
     <!-- Version picker -->
     <script type="text/template" id="version-picker-template">
-      <ul id="version-list">
-	<% _.each(versions, function(version) { %>
-	<li><a href="#<%= version %>"><%= version %></a></li>
-	<% }) %>
-	<li><a href="#p/changelog">Changelog</a></li>
-      </ul>
+      <% _.each(versions, function(version) { %>
+      <li><a href="#<%= version %>"><%= version %></a></li>
+      <% }) %>
+      <li><a href="#p/changelog">Changelog</a></li>
     </script>
 
   </head>
 
   <body class="documentation">
 
+    <!-- Sidebar where the groups and types appear -->
+    <script type="text/template" id="type-list-template">
+      <li>
+	<li><span class="divide"><%= title %></span></li>
+	<% _.each(elements, function(e) { %>
+	<li>
+	  <a href="#" ref="<%= e.ref %>" class="type", id="typeItem<%= e.name %>">
+	  <%= e.name %>
+	  </a>
+	</li>
+	<% }) %>
+      </li>
+    </script>
     <script type="text/template" id="file-list-template">
      <li>
        <h3><a href="#">Functions</a></h3>
@@ -70,30 +81,11 @@
      </li>
      <li>
        <h3><a href="#">Types</a></h3>
-       <ul>
-	 <li><span class="divide">Enums</span></li>
-	 <% _.each(enums, function(e) { %>
-	 <li>
-	   <a href="#" ref="<%= e.ref %>" class="type", id="typeItem<%= e.name %>"><%= e.name %></a>
-	 </li>
-	 <% }) %>
-	 <li><span class="divide">Structs</span></li>
-	 <% _.each(structs, function(s) { %>
-	 <li>
-	   <a href="#" ref="<%= s.ref %>" class="type", id="typeItem<%= s.name %>"><%= s.name %></a>
-	 </li>
-	 <% }) %>
-	 <li><span class="divide">Opaque Structs</span></li>
-	 <% _.each(opaques, function(o) { %>
-	 <li>
-	   <a href="#" ref="<%= o.ref %>" class="type", id="typeItem<%= o.name %>"><%= o.name %></a>
-	 </li>
-	 <% }) %>
-       </ul>
+       <ul class="hidden" id="types-list" />
      </li>
      <li>
        <h3><a href="#">Files</a></h3>
-       <ul>
+       <ul class="hidden">
 	 <% _.each(files, function(file) { %>
 	 <li>
 	   <a target="github" href="<%= file.url %>"><%= file.name %></a>

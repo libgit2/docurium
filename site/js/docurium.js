@@ -1,4 +1,185 @@
 $(function() {
+  var FileListView = Backbone.View.extend({
+    el: $('#files-list'),
+
+    template:  _.template($('#file-list-template').html()),
+
+    typeTemplate: _.template($('#type-list-template').html()),
+
+    initialize: function() {
+      this.listenTo(this.model, 'change:data', this.render)
+    },
+
+    render: function() {
+      data = this.model.get('data')
+
+      // Function groups
+      funs = _.map(data['groups'], function(group, i) {
+	return {name: group[0], num: group[1].length}
+      })
+
+      // Types
+      var getName = function(type) {
+	return {ref: type.ref, name: type.type[0]}
+      }
+
+      // We need to keep the original index around in order to show
+      // the right one when clicking on the link
+      var types = _.map(data['types'], function(type, i) {
+	return {ref: i, type: type}
+      })
+
+      enums = types.filter(function(type) {
+	return type.type[1]['block'] && type.type[1]['type'] == 'enum';
+      }).map(getName)
+
+      structs = types.filter(function(type) {
+	return type.type[1]['block'] && type.type[1]['type'] != 'enum'
+      }).map(getName)
+
+      opaques = types.filter(function(type) {
+	return !type.type[1]['block']
+      }).map(getName)
+
+      // File Listing
+      files = _.map(data['files'], function(file) {
+	url = this.github_file(file['file'])
+	return {url: url, name: file['file']}
+      }, this.model)
+
+      // Examples List
+      examples = []
+      if(data['examples'] && (data['examples'].length > 0)) {
+	examples = _.map(data['examples'], function(file) {
+	  return {name: file[0], path: file[1]}
+	})
+      }
+
+      var enumList = this.typeTemplate({title: 'Enums', elements: enums})
+      var structList = this.typeTemplate({title: 'Structs', elements: structs})
+      var opaquesList = this.typeTemplate({title: 'Opaque Structs', elements: opaques})
+      var menu = $(this.template({funs: funs, files: files, examples: examples}))
+
+      $('#types-list', menu).append(enumList, structList, opaquesList)
+      $('a.group', menu).click(this.model.showGroup)
+      $('a.type', menu).click(this.model.showType)
+      $('h3', menu).click(this.model.collapseSection)
+      $('ul.hidden', menu).hide()
+
+      this.$el.html(menu)
+      return this
+    },
+  })
+
+  var VersionView = Backbone.View.extend({
+    el: $('#version'),
+
+    initialize: function() {
+      this.listenTo(this.model, 'change:version', this.render)
+      this.listenTo(this.model, 'change:name', this.renderName)
+      this.title = $('#site-title')
+    },
+
+    render: function() {
+      var version = this.model.get('version')
+      this.$el.text(version)
+      this.title.attr('href', '#' + version)
+      return this
+    },
+
+    renderName: function() {
+      var name = this.model.get('name')
+      var title = name + ' API'
+      this.title.text(title)
+      document.title = title
+      return this
+    },
+  })
+
+  var VersionPickerView = Backbone.View.extend({
+    el: $('#version-list'),
+
+    template: _.template($('#version-picker-template').html()),
+
+    initialize: function() {
+      this.listenTo(this.model, 'change:versions', this.render)
+    },
+
+    events: {
+      'click': 'hideList',
+    },
+
+    hideList: function() {
+      this.$el.hide(100)
+    },
+
+    render: function() {
+      var vers = this.model.get('versions')
+      list = this.template({versions: vers})
+      this.$el.hide().html(list)
+      return this
+    },
+  })
+
+  var ChangelogView = Backbone.View.extend({
+    template: _.template($('#changelog-template').html()),
+
+    itemTemplate: _.template($('#changelog-item-template').html()),
+
+    initialize: function() {
+      // for every version, show which functions added, removed, changed - from HEAD down
+      var versions = this.model.get('versions')
+      var sigHist = this.model.get('signatures')
+
+      var lastVer = _.first(versions)
+
+      // fill changelog struct
+      var changelog = {}
+      for(var i in versions) {
+        var version = versions[i]
+        changelog[version] = {'deletes': [], 'changes': [], 'adds': []}
+      }
+
+      // figure out the adds, deletes and changes
+      _.forEach(sigHist, function(func, fname) {
+	var lastv = _.last(func.exists)
+	var firstv = _.first(func.exists)
+	changelog[firstv]['adds'].push(fname)
+
+	// figure out where it was deleted or changed
+	if (lastv && (lastv != lastVer)) {
+	  var vi = _.indexOf(versions,lastv)
+	  var delv = versions[vi-1]
+	  changelog[delv]['deletes'].push(fname)
+
+	  _.forEach(func.changes, function(_, v) {
+	    changelog[v]['changes'].push(fname)
+	  })
+	}
+      })
+
+      var vers = _.map(versions, function(version) {
+	var deletes = changelog[version]['deletes']
+	deletes.sort()
+
+	var additions = changelog[version]['adds']
+	additions.sort()
+	var adds = _.map(additions, function(add) {
+          var gname = this.model.groupOf(add)
+	  return {link: groupLink(gname, add, version), text: add}
+	}, this)
+
+	return {title: version, listing: this.itemTemplate({dels: deletes, adds: adds})}
+      }, this)
+
+      this.html = this.template({versions: vers})
+    },
+
+    render: function() {
+      $('.content').html(this.html)
+    }
+  })
+
   // our document model - stores the datastructure generated from docurium
   var Docurium = Backbone.Model.extend({
 
@@ -6,49 +187,27 @@ $(function() {
 
     initialize: function() {
       this.loadVersions()
+      this.bind('change:version', this.loadDoc)
     },
 
     loadVersions: function() {
       $.getJSON("project.json").then(function(data) {
         docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures, 'name': data.name, 'groups': data.groups})
-        if(data.name) {
-          $('#site-title').text(data.name + ' API')
-          document.title = data.name + ' API'
-        }
-        docurium.setVersionPicker()
         docurium.setVersion()
       })
-    },
-
-    setVersionPicker: function () {
-      hideVersionList = function() { $('#version-list').hide(100) }
-      vers = docurium.get('versions')
-      template = _.template($('#version-picker-template').html())
-      // make sure this is a jquery object so we can use click()
-      list = $(template({versions: vers})).hide()
-      $('a', list).click(hideVersionList)
-      $('#version-list').replaceWith(list)
     },
 
     setVersion: function (version) {
       if(!version) {
         version = _.first(docurium.get('versions'))
       }
-      if(docurium.get('version') != version) {
-        docurium.set({'version': version})
-        $('#site-title').attr('href', '#' + version)
-        docurium.loadDoc()
-      }
+      docurium.set({version: version})
     },
 
     loadDoc: function() {
       version = this.get('version')
       $.getJSON(version + '.json').then(function(data) {
-	// use data as a proxy for whether we've started the history
-	hadData = docurium.get('data') != undefined
-        docurium.set({'data': data})
-	if (!hadData)
-	  Backbone.history.start()
+        docurium.set({data: data})
       })
     },
 
@@ -222,66 +381,17 @@ $(function() {
       this.addHotlinks()
     },
 
-    showChangeLog: function() {
-      template = _.template($('#changelog-template').html())
-      itemTemplate = _.template($('#changelog-item-template').html())
-
-      // for every version, show which functions added, removed, changed - from HEAD down
-      versions = docurium.get('versions')
-      sigHist = docurium.get('signatures')
-
-      lastVer = _.first(versions)
-
-      // fill changelog struct
-      changelog = {}
-      for(var i in versions) {
-        version = versions[i]
-        changelog[version] = {'deletes': [], 'changes': [], 'adds': []}
-      }
-
-      // figure out the adds, deletes and changes
-      _.forEach(sigHist, function(func, fname) {
-	lastv = _.last(func.exists)
-	firstv = _.first(func.exists)
-	changelog[firstv]['adds'].push(fname)
-
-	// figure out where it was deleted or changed
-	if (lastv && (lastv != lastVer)) {
-	  vi = _.indexOf(versions,lastv)
-	  delv = versions[vi-1]
-	  changelog[delv]['deletes'].push(fname)
-
-	  _.forEach(func.changes, function(_, v) {
-	    changelog[v]['changes'].push(fname)
-	  })
-	}
-      })
-
-      vers = _.map(versions, function(version) {
-	deletes = changelog[version]['deletes']
-	deletes.sort()
-
-	additions = changelog[version]['adds']
-	additions.sort()
-	adds = _.map(additions, function(add) {
-          gname = docurium.groupOf(add)
-	  return {link: groupLink(gname, add, version), text: add}
-	})
-
-	return {title: version, listing: itemTemplate({dels: deletes, adds: adds})}
-      })
-
-      $('.content').html(template({versions: vers}))
-    },
-
     showType: function(data, manual) {
+      var tdata
       if(manual) {
-        id = '#typeItem' + manual
-        ref = parseInt($(id).attr('ref'))
+	var types = this.get('data')['types']
+	tdata = _.find(types, function(g) {
+	  return g[0] == manual
+	})
       } else {
         ref = parseInt($(this).attr('ref'))
+	tdata = docurium.get('data')['types'][ref]
       }
-      tdata = docurium.get('data')['types'][ref]
       tname = tdata[0]
       data = tdata[1]
 
@@ -334,13 +444,16 @@ $(function() {
     },
 
     showGroup: function(data, manual, flink) {
+      var group
       if(manual) {
-        id = '#groupItem' + manual
-        ref = parseInt($(id).attr('ref'))
+	var types = this.get('data')['groups']
+	group = _.find(types, function(g) {
+	  return g[0] == manual
+	})
       } else {
         ref = parseInt($(this).attr('ref'))
+	group = docurium.get('data')['groups'][ref]
       }
-      group = docurium.get('data')['groups'][ref]
       fdata = docurium.get('data')['functions']
       gname = group[0]
 
@@ -414,63 +527,8 @@ $(function() {
       }
     },
 
-    refreshView: function() {
-      template = _.template($('#file-list-template').html())
-      data = this.get('data')
-
-      // Function groups
-      funs = _.map(data['groups'], function(group, i) {
-	return {name: group[0], num: group[1].length}
-      })
-
-      // Types
-      var getName = function(type) {
-	return {ref: type.ref, name: type.type[0]}
-      }
-
-      // We need to keep the original index around in order to show
-      // the right one when clicking on the link
-      var types = _.map(data['types'], function(type, i) {
-	return {ref: i, type: type}
-      })
-
-      enums = types.filter(function(type) {
-	return type.type[1]['block'] && type.type[1]['type'] == 'enum';
-      }).map(getName)
-
-      structs = types.filter(function(type) {
-	return type.type[1]['block'] && type.type[1]['type'] != 'enum'
-      }).map(getName)
-
-      opaques = types.filter(function(type) {
-	return !type.type[1]['block']
-      }).map(getName)
-
-      // File Listing
-      files = _.map(data['files'], function(file) {
-	url = this.github_file(file['file'])
-	return {url: url, name: file['file']}
-      }, this)
-
-      // Examples List
-      examples = []
-      if(data['examples'] && (data['examples'].length > 0)) {
-	examples = _.map(data['examples'], function(file) {
-	  return {name: file[0], path: file[1]}
-	})
-      }
-
-      menu = $(template({funs: funs, enums: enums, structs: structs, opaques: opaques,
-			 files: files, examples: examples}))
-
-      $('a.group', menu).click(this.showGroup)
-      $('a.type', menu).click(this.showType)
-      $('h3', menu).click(this.collapseSection)
-     
-      $('#files-list').html(menu)
-    },
-
     github_file: function(file, line, lineto) {
+      var data = this.get('data')
       url = ['https://github.com', docurium.get('github'),
 	     'blob', docurium.get('version'), data.prefix, file].join('/')
       if(line) {
@@ -587,8 +645,13 @@ $(function() {
     },
 
     changelog: function(version, tname) {
+      // let's wait to process it until it's asked, and let's only do
+      // it once
+      if (this.changelogView == undefined) {
+	this.changelogView = new ChangelogView({model: docurium})
+      }
       docurium.setVersion()
-      docurium.showChangeLog()
+      this.changelogView.render()
     },
 
   });
@@ -614,16 +677,13 @@ $(function() {
 
   window.docurium = new Docurium
   window.ws = new Workspace
+  docurium.once('change:data', function() {Backbone.history.start()})
 
-  docurium.bind('change:version', function(model, version) {
-    $('#version').text(version)
-  })
-  docurium.bind('change:data', function(model, data) {
-    model.refreshView()
-  })
+  var fileListView = new FileListView({model: window.docurium})
+  var versionView = new VersionView({model: window.docurium})
+  var versionPickerView = new VersionPickerView({model: window.docurium})
 
   $('#search-field').keyup( docurium.search )
 
   $('#version-picker').click( docurium.collapseSection )
-
 })
