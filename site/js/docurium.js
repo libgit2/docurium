@@ -300,9 +300,8 @@ $(function() {
       })
     },
 
-    showIndexPage: function(replace) {
-      version = docurium.get('version')
-      ws.navigate(version, {replace: replace})
+    showIndexPage: function() {
+      var version = docurium.get('version')
 
       data = docurium.get('data')
       content = $('<div>').addClass('content')
@@ -489,7 +488,7 @@ $(function() {
       var value = $('#search-field').val()
 
       if (value.length < 3) {
-        docurium.showIndexPage(false)
+	ws.navigate(docurium.get('version'), {trigger: true})
         return
       }
 
@@ -548,7 +547,7 @@ $(function() {
   var Workspace = Backbone.Router.extend({
 
     routes: {
-      "":                             "main",
+      "":                             "index",
       ":version":                     "main",
       ":version/group/:group":        "group",
       ":version/type/:type":          "showtype",
@@ -557,11 +556,16 @@ $(function() {
       "p/changelog":                  "changelog",
     },
 
+    index: function() {
+      // set the default version
+      docurium.setVersion()
+      // and replate our URL with it, to avoid a back-button loop
+      this.navigate(docurium.get('version'), {replace: true, trigger: true})
+    },
+
     main: function(version) {
       docurium.setVersion(version)
-      // when asking for '/', replace with 'HEAD' instead of redirecting
-      var replace = version == undefined
-      docurium.showIndexPage(replace)
+      docurium.showIndexPage()
     },
 
     group: function(version, gname) {
