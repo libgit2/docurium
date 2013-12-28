@@ -317,6 +317,42 @@ $(function() {
     },
   })
 
+  var TypeModel = Backbone.Model.extend({
+    initialize: function() {
+      var typename = this.get('typename')
+      var docurium = this.get('docurium')
+      var types = docurium.get('data')['types']
+      var tdata = _.find(types, function(g) {
+	return g[0] == typename
+      })
+      var tname = tdata[0]
+      var data = tdata[1]
+
+      var toPair = function(fun) {
+	var gname = this.groupOf(fun)
+	var url = '#' + groupLink(gname, fun)
+	return {name: fun, url: url}
+      }
+
+      var returns = _.map(data.used.returns, toPair, docurium)
+      var needs = _.map(data.used.needs, toPair, docurium)
+      var fileLink = {name: data.file, url: docurium.github_file(data.file, data.line, data.lineto)}
+
+      this.set('data', {tname: tname, data: data, returns: returns, needs: needs, fileLink: fileLink})
+    }
+  })
+
+  var TypeView = Backbone.View.extend({
+    template: _.template($('#type-template').html()),
+
+    render: function() {
+      document.body.scrollTop = document.documentElement.scrollTop = 0;
+
+      var content = this.template(this.model.get('data'))
+      $('.content').html(content)
+    }
+  })
+
   // our document model - stores the datastructure generated from docurium
   var Docurium = Backbone.Model.extend({
 
@@ -353,34 +389,6 @@ $(function() {
       return _.find(groups, function(g) {
 	return g[0] == gname
       })
-    },
-
-    showType: function(manual) {
-      var template = _.template($('#type-template').html())
-      var types = this.get('data')['types']
-      var tdata = _.find(types, function(g) {
-	return g[0] == manual
-      })
-      var tname = tdata[0]
-      var data = tdata[1]
-
-      //ws.navigate(typeLink(tname))
-      document.body.scrollTop = document.documentElement.scrollTop = 0;
-
-      var toPair = function(fun) {
-	var gname = this.groupOf(fun)
-	var url = '#' + groupLink(gname, fun)
-	return {name: fun, url: url}
-      }
-
-      var returns = _.map(data.used.returns, toPair, this)
-      var needs = _.map(data.used.needs, toPair, this)
-      var fileLink = {name: data.file, url: this.github_file(data.file, data.line, data.lineto)}
-
-      var content = template({tname: tname, data: data, returns: returns, needs: needs, fileLink: fileLink})
-
-      $('.content').html(content)
-      return false
     },
 
     showGroup: function(manual, flink) {
@@ -575,7 +583,14 @@ $(function() {
 
     showtype: function(version, tname) {
       docurium.setVersion(version)
-      docurium.showType(tname)
+      var model = new TypeModel({docurium: docurium, typename: tname})
+      var view = new TypeView({model: model})
+
+      if (this.currentView)
+	this.currentView.remove()
+
+      this.currentView = view
+      view.render()
     },
 
     search: function(version, query) {
