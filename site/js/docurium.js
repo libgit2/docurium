@@ -192,6 +192,69 @@ $(function() {
     }
   })
 
+  var FunctionModel = Backbone.Model.extend({
+    initialize: function() {
+      var gname = this.get('gname')
+      var fname = this.get('fname')
+      var docurium = this.get('docurium')
+
+      var group = docurium.getGroup(gname)
+
+      var fdata = docurium.get('data')['functions']
+      var functions = group[1]
+
+      // Function Arguments
+      var args = _.map(fdata[fname]['args'], function(arg) {
+	return {link: this.hotLink(arg.type), name: arg.name, comment: arg.comment}
+      }, docurium)
+
+      var data = fdata[fname]
+      // function return value
+      var ret = data['return']
+      var returns = {link: docurium.hotLink(ret.type), comment: ret.comment}
+      // function signature
+      var sig = docurium.hotLink(ret.type) + ' ' + fname + '(' + data['argline'] + ');'
+      // version history
+      var sigHist = docurium.get('signatures')[fname]
+      var version = docurium.get('version')
+      var sigs = _.map(sigHist.exists, function(ver) {
+	var klass = []
+	if (sigHist.changes[ver])
+	  klass.push('changed')
+	if (ver == version)
+	  klass.push('current')
+
+	return {url: '#' + groupLink(gname, fname, ver), name: ver, klass: klass.join(' ')}
+      })
+      // GitHub link
+      var fileLink = docurium.github_file(data.file, data.line, data.lineto)
+      // link to the group
+      var alsoGroup = '#' + groupLink(group[0])
+      var alsoLinks = _.map(functions, function(f) {
+	return {url: '#' + groupLink(gname, f), name: f}
+      })
+
+      this.set('data', {name: fname, data: data, args: args, returns: returns, sig: sig,
+			sigs: sigs, fileLink: fileLink, groupName: gname,
+			alsoGroup: alsoGroup, alsoLinks: alsoLinks})
+    }
+  })
+
+  var FunctionView = Backbone.View.extend({
+    template: _.template($('#function-template').html()),
+    argsTemplate: _.template($('#function-args-template').html()),
+
+    render: function() {
+      document.body.scrollTop = document.documentElement.scrollTop = 0;
+      var data = this.model.get('data')
+      data.argsTemplate = this.argsTemplate
+      var cont = this.template(data)
+
+      $('.content').html(cont)
+      return this
+    },
+  })
+
   // our document model - stores the datastructure generated from docurium
   var Docurium = Backbone.Model.extend({
 
@@ -266,56 +329,6 @@ $(function() {
       return _.find(groups, function(g) {
 	return g[0] == gname
       })
-    },
-
-    showFun: function(gname, fname) {
-      var template = _.template($('#function-template').html())
-      var argsTemplate = _.template($('#function-args-template').html())
-      group = docurium.getGroup(gname)
-
-      fdata = docurium.get('data')['functions']
-      gname = group[0]
-      functions = group[1]
-
-      document.body.scrollTop = document.documentElement.scrollTop = 0;
-
-      // Function Arguments
-      var args = _.map(fdata[fname]['args'], function(arg) {
-	return {link: this.hotLink(arg.type), name: arg.name, comment: arg.comment}
-      }, this)
-
-      var data = fdata[fname]
-      // function return value
-      var ret = data['return']
-      var returns = {link: this.hotLink(ret.type), comment: ret.comment}
-      // function signature
-      var sig = this.hotLink(ret.type) + ' ' + fname + '(' + data['argline'] + ');'
-      // version history
-      var sigHist = this.get('signatures')[fname]
-      var version = this.get('version')
-      var sigs = _.map(sigHist.exists, function(ver) {
-	var klass = []
-	if (sigHist.changes[ver])
-	  klass.push('changed')
-	if (ver == version)
-	  klass.push('current')
-
-	return {url: '#' + groupLink(gname, fname, ver), name: ver, klass: klass.join(' ')}
-      })
-      // GitHub link
-      var fileLink = this.github_file(data.file, data.line, data.lineto)
-      // link to the group
-      var alsoGroup = '#' + groupLink(group[0])
-      var alsoLinks = _.map(functions, function(f) {
-	return {url: '#' + groupLink(gname, f), name: f}
-      })
-
-
-      var cont = template({name: fname, data: data, argsTemplate: argsTemplate, args: args,
-			   returns: returns, sig: sig, sigs: sigs, fileLink: fileLink,
-			   groupName: gname, alsoGroup: alsoGroup, alsoLinks: alsoLinks})
-
-      $('.content').html(cont)
     },
 
     showType: function(data, manual) {
@@ -544,7 +557,13 @@ $(function() {
 
     groupFun: function(version, gname, fname) {
       docurium.setVersion(version)
-      docurium.showFun(gname, fname)
+      var model = new FunctionModel({docurium: docurium, gname: gname, fname: fname})
+      var view = new FunctionView({model: model})
+      if (this.currentView)
+	this.currentview.remove()
+
+      this.currentview = view
+      view.render()
     },
 
     showtype: function(version, tname) {
