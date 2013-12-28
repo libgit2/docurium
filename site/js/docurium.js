@@ -1,26 +1,13 @@
 $(function() {
-  var FileListView = Backbone.View.extend({
-    el: $('#files-list'),
-
-    template:  _.template($('#file-list-template').html()),
-
-    typeTemplate: _.template($('#type-list-template').html()),
-
-    events: {
-      'click h3': 'toggleList',
-    },
-
-    toggleList: function(e) {
-      $(e.currentTarget).next().toggle(100)
-      return false
-    },
-
+  var FileListModel = Backbone.Model.extend({
     initialize: function() {
-      this.listenTo(this.model, 'change:data', this.render)
+      var docurium = this.get('docurium')
+      this.listenTo(docurium, 'change:data', this.extract)
     },
 
-    render: function() {
-      var data = this.model.get('data')
+    extract: function() {
+      var docurium = this.get('docurium')
+      var data = docurium.get('data')
 
       // Function groups
       var funs = _.map(data['groups'], function(group, i) {
@@ -49,23 +36,51 @@ $(function() {
       }).map(getName)
 
       // File Listing
-      files = _.map(data['files'], function(file) {
-	url = this.github_file(file['file'])
+      var files = _.map(data['files'], function(file) {
+	var url = this.github_file(file['file'])
 	return {url: url, name: file['file']}
-      }, this.model)
+      }, docurium)
 
       // Examples List
-      examples = []
+      var examples = []
       if(data['examples'] && (data['examples'].length > 0)) {
 	examples = _.map(data['examples'], function(file) {
 	  return {name: file[0], path: file[1]}
 	})
       }
 
-      var enumList = this.typeTemplate({title: 'Enums', elements: enums})
-      var structList = this.typeTemplate({title: 'Structs', elements: structs})
-      var opaquesList = this.typeTemplate({title: 'Opaque Structs', elements: opaques})
-      var menu = $(this.template({funs: funs, files: files, examples: examples}))
+      this.set('data', {funs: funs, enums: enums, structs: structs, opaques: opaques,
+			files: files, examples: examples})
+    },
+  })
+
+  var FileListView = Backbone.View.extend({
+    el: $('#files-list'),
+
+    template:  _.template($('#file-list-template').html()),
+
+    typeTemplate: _.template($('#type-list-template').html()),
+
+    events: {
+      'click h3': 'toggleList',
+    },
+
+    toggleList: function(e) {
+      $(e.currentTarget).next().toggle(100)
+      return false
+    },
+
+    initialize: function() {
+      this.listenTo(this.model, 'change:data', this.render)
+    },
+
+    render: function() {
+      var data = this.model.get('data')
+
+      var enumList = this.typeTemplate({title: 'Enums', elements: data.enums})
+      var structList = this.typeTemplate({title: 'Structs', elements: data.structs})
+      var opaquesList = this.typeTemplate({title: 'Opaque Structs', elements: data.opaques})
+      var menu = $(this.template({funs: data.funs, files: data.files, examples: data.examples}))
 
       $('#types-list', menu).append(enumList, structList, opaquesList)
       $('ul.hidden', menu).hide()
@@ -614,7 +629,8 @@ $(function() {
   window.ws = new Workspace
   docurium.once('change:data', function() {Backbone.history.start()})
 
-  var fileListView = new FileListView({model: window.docurium})
+  var fileList = new FileListModel({docurium: window.docurium})
+  var fileListView = new FileListView({model: fileList})
   var versionView = new VersionView({model: window.docurium})
   var versionPickerView = new VersionPickerView({model: window.docurium})
 
