@@ -301,40 +301,27 @@ $(function() {
     },
 
     showIndexPage: function() {
-      var version = docurium.get('version')
+      var version = this.get('version')
+      var template = _.template($('#index-template').html())
 
-      data = docurium.get('data')
-      content = $('<div>').addClass('content')
-      content.append($('<h1>').append("Public API Functions"))
+      var data = this.get('data')
+      var sigHist = this.get('signatures')
 
-      sigHist = docurium.get('signatures')
-
-      // Function Group
-      data.groups.forEach(function(group) {
-        content.append($('<h2>').addClass('funcGroup').append(group[0]))
-        list = $('<p>').addClass('functionList')
-	links = group[1].map(function(fun) {
-          link = $('<a>').attr('href', '#' + groupLink(group[0], fun)).append(fun)
-          if(sigHist[fun].changes[version]) {
-            link.addClass('changed')
-          }
-          if(version == _.first(sigHist[fun].exists)) {
-            link.addClass('introd')
-          }
-	  return link
+      var groups = _.map(data.groups, function(group) {
+	var gname = group[0]
+	var funs = _.map(group[1], function(fun) {
+	  var klass = ''
+	  if (sigHist[fun].changes[version])
+	    klass = 'changed'
+	  if (version == _.first(sigHist[fun].exists))
+	    klass = 'introd'
+	  return {name: fun, url: '#' + groupLink(gname, fun), klass: klass}
 	})
-
-	// intersperse commas between each function
-	for(var i = 0; i < links.length - 1; i++) {
-	  list.append(links[i])
-	  list.append(", ")
-	}
-	list.append(_.last(links))
-
-	content.append(list)
+	return {name: gname, funs: funs}
       })
 
-      $('.content').replaceWith(content)
+      var cont = template({groups: groups})
+      $('.content').html(cont)
     },
 
     getGroup: function(gname) {

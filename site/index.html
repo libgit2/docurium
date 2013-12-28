@@ -171,6 +171,21 @@
      </div>
     </script>
 
+    <!-- main page, list of groups and their functions -->
+    <script type="text/template" id="index-template">
+      <h1>Public API Functions</h1>
+      <% _.each(groups, function(group) { %>
+      <h2 class="funcGroup"><%= group.name %></h2>
+      <p class="functionList">
+	<% _.each(_.initial(group.funs), function(fun) { %>
+	<a href="<%= fun.url %>" class="<%= fun.klass %>"><%= fun.name %></a>
+	<% }) %> <!-- loop through all but the last function -->
+	<% var fun = _.last(group.funs) %>
+	<a href="<%= fun.url %>" class="<%= fun.klass %>"><%= fun.name %></a>
+      </p>
+      <% }) %> <!-- loop through the groups -->
+    </script>
+
     <div id="not-footer">
     <div id="header-wrapper">
       <div id="header">
