@@ -83,7 +83,6 @@ $(function() {
       var menu = $(this.template({funs: data.funs, files: data.files, examples: data.examples}))
 
       $('#types-list', menu).append(enumList, structList, opaquesList)
-      $('ul.hidden', menu).hide()
 
       this.$el.html(menu)
       return this
@@ -143,7 +142,7 @@ $(function() {
     render: function() {
       var vers = this.model.get('versions')
       list = this.template({versions: vers})
-      this.list.hide().html(list)
+      this.list.html(list)
       return this
     },
   })
