@@ -576,8 +576,7 @@ $(function() {
 
     main: function(version) {
       docurium.setVersion(version)
-      var model = new MainListModel({docurium: docurium})
-      var view = new MainListView({model: model})
+      var view = new MainListView({model: this.mainList})
       if (this.currentView)
 	this.currentView.remove()
 
@@ -653,6 +652,8 @@ $(function() {
   var fileListView = new FileListView({model: fileList})
   var versionView = new VersionView({model: window.docurium})
   var versionPickerView = new VersionPickerView({model: window.docurium})
+  var mainList = new MainListModel({docurium: window.docurium})
+  ws.mainList = mainList
 
   $('#search-field').keyup( docurium.search )
 })
