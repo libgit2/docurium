@@ -355,58 +355,31 @@ $(function() {
       })
     },
 
-    showType: function(data, manual) {
-      var tdata
+    showType: function(manual) {
+      var template = _.template($('#type-template').html())
       var types = this.get('data')['types']
       var tdata = _.find(types, function(g) {
 	return g[0] == manual
       })
-      tname = tdata[0]
-      data = tdata[1]
+      var tname = tdata[0]
+      var data = tdata[1]
 
-      ws.navigate(typeLink(tname))
+      //ws.navigate(typeLink(tname))
       document.body.scrollTop = document.documentElement.scrollTop = 0;
 
-      content = $('<div>').addClass('content')
-      content.append($('<h1>').addClass('funcTitle').append(tname).append($("<small>").append(data.type)))
-
-      content.append($('<p>').append(data.value))
-
-      if(data.comments) {
-	content.append($('<div>').append(data.comments))
+      var toPair = function(fun) {
+	var gname = this.groupOf(fun)
+	var url = '#' + groupLink(gname, fun)
+	return {name: fun, url: url}
       }
 
-      if(data.block) {
-        content.append($('<pre>').append(data.block))
-      }
+      var returns = _.map(data.used.returns, toPair, this)
+      var needs = _.map(data.used.needs, toPair, this)
+      var fileLink = {name: data.file, url: this.github_file(data.file, data.line, data.lineto)}
 
-      var ret = data.used.returns
-      if (ret.length > 0) {
-        content.append($('<h3>').append('Returns'))
-      }
-      for(var i=0; i<ret.length; i++) {
-        gname = docurium.groupOf(ret[i])
-        flink = $('<a>').attr('href', '#' + groupLink(gname, ret[i])).append(ret[i])
-        content.append(flink)
-        content.append(', ')
-      }
+      var content = template({tname: tname, data: data, returns: returns, needs: needs, fileLink: fileLink})
 
-      var needs = data.used.needs
-      if (needs.length > 0) {
-        content.append($('<h3>').append('Argument In'))
-      }
-      for(var i=0; i<needs.length; i++) {
-        gname = docurium.groupOf(needs[i])
-        flink = $('<a>').attr('href', '#' + groupLink(gname, needs[i])).append(needs[i])
-        content.append(flink)
-        content.append(', ')
-      }
-
-      link = docurium.github_file(data.file, data.line, data.lineto)
-      flink = $('<a>').attr('target', 'github').attr('href', link).append(data.file)
-      content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
-
-      $('.content').replaceWith(content)
+      $('.content').html(content)
       return false
     },
 
@@ -602,7 +575,7 @@ $(function() {
 
     showtype: function(version, tname) {
       docurium.setVersion(version)
-      docurium.showType(null, tname)
+      docurium.showType(tname)
     },
 
     search: function(version, query) {

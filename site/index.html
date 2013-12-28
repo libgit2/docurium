@@ -186,6 +186,40 @@
       <% }) %> <!-- loop through the groups -->
     </script>
 
+    <!-- listing for a particular type -->
+    <script type="text/template" id="type-template">
+      <h1 class="funcTitle"><%= tname %><small><%= data.type %></small></h1>
+      <p><%= data.value %></p>
+      <% if (data.comments) { %>
+      <div><%= data.comments %></div>
+      <% } %>
+      <% if (data.block) { %>
+      <pre><%= data.block %></pre>
+      <% } %>
+      <% if (returns.length > 0) { %>
+      <h3>Returns</h3>
+      <% _.each(_.initial(returns), function(fun) { %>
+      <a href="<%= fun.url %>"><%= fun.name %></a>
+      <% }) %> <!-- loop over each 'return' -->
+      <% var fun = _.last(returns) %>
+      <a href="<%= fun.url %>"><%= fun.name %></a>
+      <% } %> <!-- if we have 'returns' -->
+
+      <% if (needs.length > 0) { %>
+      <h3>Argument In</h3>
+      <% _.each(_.initial(needs), function(fun) { %>
+      <a href="<%= fun.url %>"><%= fun.name %></a>
+      <% }) %> <!-- loop over each 'need' -->
+      <% var fun = _.last(needs) %>
+      <a href="<%= fun.url %>"><%= fun.name %></a>
+      <% } %> <!-- if we have 'needs' -->
+
+      <div class="fileLink">
+	Defined in:
+	<a href="<%= fileLink.url %>"><%= fileLink.name %></a>
+      </div>
+    </script>
+
     <div id="not-footer">
     <div id="header-wrapper">
       <div id="header">
