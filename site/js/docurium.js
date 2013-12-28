@@ -269,6 +269,54 @@ $(function() {
     },
   })
 
+  var MainListModel = Backbone.Model.extend({
+    initialize: function() {
+      var docurium = this.get('docurium')
+      this.listenTo(docurium, 'change:data', this.extract)
+    },
+
+    extract: function() {
+      var docurium = this.get('docurium')
+      var data = docurium.get('data')
+      var sigHist = docurium.get('signatures')
+      var version = docurium.get('version')
+
+      var groups = _.map(data.groups, function(group) {
+	var gname = group[0]
+	var funs = _.map(group[1], function(fun) {
+	  var klass = ''
+	  if (sigHist[fun].changes[version])
+	    klass = 'changed'
+	  if (version == _.first(sigHist[fun].exists))
+	    klass = 'introd'
+	  return {name: fun, url: '#' + groupLink(gname, fun), klass: klass}
+	})
+	return {name: gname, funs: funs}
+      })
+
+      this.set('groups', groups)
+    },
+  })
+
+  var MainListView = Backbone.View.extend({
+    template: _.template($('#index-template').html()),
+
+    initialize: function() {
+      this.listenTo(this.model, 'change:groups', this.render)
+    },
+
+    render: function() {
+      var groups = this.model.get('groups')
+      if (groups == undefined)
+	this.model.extract()
+
+      groups = this.model.get('groups')
+      var cont = this.template({groups: groups})
+      $('.content').html(cont)
+      return this
+    },
+  })
+
   // our document model - stores the datastructure generated from docurium
   var Docurium = Backbone.Model.extend({
 
@@ -298,30 +346,6 @@ $(function() {
       $.getJSON(version + '.json').then(function(data) {
         docurium.set({data: data})
       })
-    },
-
-    showIndexPage: function() {
-      var version = this.get('version')
-      var template = _.template($('#index-template').html())
-
-      var data = this.get('data')
-      var sigHist = this.get('signatures')
-
-      var groups = _.map(data.groups, function(group) {
-	var gname = group[0]
-	var funs = _.map(group[1], function(fun) {
-	  var klass = ''
-	  if (sigHist[fun].changes[version])
-	    klass = 'changed'
-	  if (version == _.first(sigHist[fun].exists))
-	    klass = 'introd'
-	  return {name: fun, url: '#' + groupLink(gname, fun), klass: klass}
-	})
-	return {name: gname, funs: funs}
-      })
-
-      var cont = template({groups: groups})
-      $('.content').html(cont)
     },
 
     getGroup: function(gname) {
@@ -552,7 +576,13 @@ $(function() {
 
     main: function(version) {
       docurium.setVersion(version)
-      docurium.showIndexPage()
+      var model = new MainListModel({docurium: docurium})
+      var view = new MainListView({model: model})
+      if (this.currentView)
+	this.currentView.remove()
+
+      this.currentView = view
+      view.render()
     },
 
     group: function(version, gname) {
@@ -565,9 +595,9 @@ $(function() {
       var model = new FunctionModel({docurium: docurium, gname: gname, fname: fname})
       var view = new FunctionView({model: model})
       if (this.currentView)
-	this.currentview.remove()
+	this.currentView.remove()
 
-      this.currentview = view
+      this.currentView = view
       view.render()
     },
 
