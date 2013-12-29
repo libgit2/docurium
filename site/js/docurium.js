@@ -357,11 +357,11 @@ $(function() {
 
     initialize: function(o) {
       var group = o.group
-      this.gname = group[0]
+      var gname = group[0]
       var fdata = o.functions
 
       this.functions = _.map(group[1], function(name) {
-	var url = '#' + groupLink(this.gname, name)
+	var url = '#' + groupLink(gname, name)
 	var d = fdata[name]
 	return {name: name, url: url, returns: d['return']['type'], argline: d['argline'],
 		description: d['description'], comments: d['comments'], args: d['args']}
