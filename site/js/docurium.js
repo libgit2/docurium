@@ -198,11 +198,11 @@ $(function() {
 	return {title: version, listing: this.itemTemplate({dels: deletes, adds: adds})}
       }, this)
 
-      this.html = this.template({versions: vers})
+      this.el = this.template({versions: vers})
     },
 
     render: function() {
-      $('.content').html(this.html)
+      return this
     }
   })
 
@@ -264,7 +264,7 @@ $(function() {
       data.argsTemplate = this.argsTemplate
       var cont = this.template(data)
 
-      $('.content').html(cont)
+      this.el = cont
       return this
     },
   })
@@ -312,7 +312,7 @@ $(function() {
 
       groups = this.model.get('groups')
       var cont = this.template({groups: groups})
-      $('.content').html(cont)
+      this.el = cont
       return this
     },
   })
@@ -349,7 +349,8 @@ $(function() {
       document.body.scrollTop = document.documentElement.scrollTop = 0;
 
       var content = this.template(this.model.get('data'))
-      $('.content').html(content)
+      this.el = content
+      return this
     }
   })
 
@@ -357,12 +358,6 @@ $(function() {
     template: _.template($('#group-template').html()),
 
     initialize: function(o) {
-      //var types = this.get('data')['groups']
-      //var group = _.find(types, function(g) {
-      // return g[0] == manual
-      //})
-      //var fdata = docurium.get('data')['functions']
-      //this.gname = group[0]
       var group = o.group
       this.gname = group[0]
       var fdata = o.functions
@@ -379,7 +374,8 @@ $(function() {
       var content = this.template({gname: this.gname, functions: this.functions})
 
       document.body.scrollTop = document.documentElement.scrollTop = 0;
-      $('.content').html(content)
+      this.el = content
+      return this
     },
   })
 
@@ -448,7 +444,6 @@ $(function() {
 	var tl = typeLink(name)
 	var url = '#' + tl
         if (name.search(value) > -1) {
-          var link = $('<a>').attr('href', '#' + typeLink(name)).append(name)
           searchResults.push({url: url, name: name, match: type[1].type, navigate: tl})
         }
       })
@@ -472,8 +467,22 @@ $(function() {
 	return
 
       var content = this.template({results: col.toJSON()})
-      $('.content').html(content)
+      this.el = content
      }
+  })
+
+  var MainView = Backbone.View.extend({
+    el: $('#content'),
+
+    setActive: function(view) {
+      view.render()
+
+      if (this.activeView)
+	this.activeView.remove()
+
+      this.activeView = view
+      this.$el.html(view.el)
+    }
   })
 
   // our document model - stores the datastructure generated from docurium
@@ -564,6 +573,7 @@ $(function() {
     initialize: function(o) {
       this.doc = o.docurium
       this.search = o.search
+      this.mainView = o.mainView
     },
 
     index: function() {
@@ -576,11 +586,7 @@ $(function() {
     main: function(version) {
       this.doc.setVersion(version)
       var view = new MainListView({model: this.mainList})
-      if (this.currentView)
-	this.currentView.remove()
-
-      this.currentView = view
-      view.render()
+      this.mainView.setActive(view)
     },
 
     group: function(version, gname) {
@@ -588,46 +594,28 @@ $(function() {
       var group = this.doc.getGroup(gname)
       var fdata = this.doc.get('data')['functions']
       var view = new GroupView({group: group, functions: fdata})
-      if (this.currentView)
-	this.currentView.remove()
-
-      this.currentView = view
-      view.render()
+      this.mainView.setActive(view)
     },
 
     groupFun: function(version, gname, fname) {
       this.doc.setVersion(version)
       var model = new FunctionModel({docurium: this.doc, gname: gname, fname: fname})
       var view = new FunctionView({model: model})
-      if (this.currentView)
-	this.currentView.remove()
-
-      this.currentView = view
-      view.render()
+      this.mainView.setActive(view)
     },
 
     showtype: function(version, tname) {
       this.doc.setVersion(version)
       var model = new TypeModel({docurium: this.doc, typename: tname})
       var view = new TypeView({model: model})
-
-      if (this.currentView)
-	this.currentView.remove()
-
-      this.currentView = view
-      view.render()
+      this.mainView.setActive(view)
     },
 
     search: function(version, query) {
       this.doc.setVersion(version)
       var view = new SearchView({model: this.search})
       $('#search-field').val(query).keyup()
-
-      if (this.currentView)
-	this.currentView.remove()
-
-      this.currentView = view
-      view.render()
+      this.mainView.setActive(view)
     },
 
     changelog: function(version, tname) {
@@ -637,7 +625,7 @@ $(function() {
 	this.changelogView = new ChangelogView({model: this.doc})
       }
       this.doc.setVersion()
-      this.changelogView.render()
+      this.mainView.setActive(this.ChangelogView)
     },
   });
 
@@ -667,7 +655,9 @@ $(function() {
   var searchField = new SearchFieldView({id: 'search-field'})
   var searchCol = new SearchCollection({docurium: window.docurium, field: searchField})
 
-  var router = new Workspace({docurium: docurium, search: searchCol})
+  var mainView = new MainView()
+
+  var router = new Workspace({docurium: docurium, search: searchCol, mainView: mainView})
   window.ws = router
   docurium.once('change:data', function() {Backbone.history.start()})
 
