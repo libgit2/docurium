@@ -525,15 +525,19 @@ $(function() {
       "p/changelog":                  "changelog",
     },
 
+    initialize: function(o) {
+      this.doc = o.docurium
+    },
+
     index: function() {
       // set the default version
-      docurium.setVersion()
+      this.doc.setVersion()
       // and replate our URL with it, to avoid a back-button loop
-      this.navigate(docurium.get('version'), {replace: true, trigger: true})
+      this.navigate(this.doc.get('version'), {replace: true, trigger: true})
     },
 
     main: function(version) {
-      docurium.setVersion(version)
+      this.doc.setVersion(version)
       var view = new MainListView({model: this.mainList})
       if (this.currentView)
 	this.currentView.remove()
@@ -543,9 +547,9 @@ $(function() {
     },
 
     group: function(version, gname) {
-      docurium.setVersion(version)
-      var group = docurium.getGroup(gname)
-      var fdata = docurium.get('data')['functions']
+      this.doc.setVersion(version)
+      var group = this.doc.getGroup(gname)
+      var fdata = this.doc.get('data')['functions']
       var view = new GroupView({group: group, functions: fdata})
       if (this.currentView)
 	this.currentView.remove()
@@ -555,8 +559,8 @@ $(function() {
     },
 
     groupFun: function(version, gname, fname) {
-      docurium.setVersion(version)
-      var model = new FunctionModel({docurium: docurium, gname: gname, fname: fname})
+      this.doc.setVersion(version)
+      var model = new FunctionModel({docurium: this.doc, gname: gname, fname: fname})
       var view = new FunctionView({model: model})
       if (this.currentView)
 	this.currentView.remove()
@@ -566,8 +570,8 @@ $(function() {
     },
 
     showtype: function(version, tname) {
-      docurium.setVersion(version)
-      var model = new TypeModel({docurium: docurium, typename: tname})
+      this.doc.setVersion(version)
+      var model = new TypeModel({docurium: this.doc, typename: tname})
       var view = new TypeView({model: model})
 
       if (this.currentView)
@@ -578,18 +582,18 @@ $(function() {
     },
 
     search: function(version, query) {
-      docurium.setVersion(version)
+      this.doc.setVersion(version)
       $('#search-field').val(query)
-      docurium.search()
+      this.doc.search()
     },
 
     changelog: function(version, tname) {
       // let's wait to process it until it's asked, and let's only do
       // it once
       if (this.changelogView == undefined) {
-	this.changelogView = new ChangelogView({model: docurium})
+	this.changelogView = new ChangelogView({model: this.doc})
       }
-      docurium.setVersion()
+      this.doc.setVersion()
       this.changelogView.render()
     },
 
@@ -617,7 +621,7 @@ $(function() {
   //_.templateSettings.variable = 'rc'
 
   window.docurium = new Docurium
-  window.ws = new Workspace
+  window.ws = new Workspace({docurium: docurium})
   docurium.once('change:data', function() {Backbone.history.start()})
 
   var fileList = new FileListModel({docurium: window.docurium})
