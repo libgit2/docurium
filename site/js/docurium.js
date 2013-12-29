@@ -396,48 +396,23 @@ $(function() {
       var group = _.find(types, function(g) {
 	  return g[0] == manual
       })
-      fdata = docurium.get('data')['functions']
-      gname = group[0]
+      var fdata = docurium.get('data')['functions']
+      var gname = group[0]
 
-      ws.navigate(groupLink(gname));
       document.body.scrollTop = document.documentElement.scrollTop = 0;
 
-      functions = group[1]
-      content = $('<div>').addClass('content')
-      content.append($('<h1>').append(gname + ' functions'))
+      var functions = _.map(group[1], function(name) {
+	var url = '#' + groupLink(gname, name)
+	var d = fdata[name]
+	return {name: name, url: url, returns: d['return']['type'], argline: d['argline'],
+		description: d['description'], comments: d['comments'], args: d['args']}
+      })
 
-      table = $('<table>').addClass('methods')
-      for(i=0; i<functions.length; i++) {
-        f = functions[i]
-        d = fdata[f]
-        row = $('<tr>')
-        row.append($('<td>').attr('nowrap', true).attr('valign', 'top').append(d['return']['type'].substring(0, 20)))
-        link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
-        row.append($('<td>').attr('valign', 'top').addClass('methodName').append( link ))
-        args = d['args']
-        argtd = $('<td>')
-        for(j=0; j<args.length; j++) {
-          argtd.append(args[j].type + ' ' + args[j].name)
-          argtd.append($('<br>'))
-        }
-        row.append(argtd)
-        table.append(row)
-      }
-      content.append(table)
+      var template = _.template($('#group-template').html())
+      var content = template({gname: gname, functions: functions})
+      console.log(content)
 
-      for(var i=0; i<functions.length; i++) {
-        f = functions[i]
-        argsText = '( ' + fdata[f]['argline'] + ' )'
-        link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
-        content.append($('<h2>').append(link).append($('<small>').append(argsText)))
-        description = fdata[f]['description']
-	if(fdata[f]['comments'])
-		description += "\n\n" + fdata[f]['comments']
-
-	content.append($('<div>').addClass('description').append(description))
-      }
-
-      $('.content').replaceWith(content)
+      $('.content').html(content)
       return false
     },
 

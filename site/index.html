@@ -220,6 +220,36 @@
       </div>
     </script>
 
+    <script type="text/template" id="group-template">
+      <h1><%= gname %> functions</h1>
+      <!-- table with all the functions -->
+      <table class="methods">
+	<% _.each(functions, function(fun) { %>
+	<tr>
+	  <td valign="top" nowrap="true">
+	    <%= fun.returns %>
+	  </td>
+	  <td valign="top" class="methodName">
+	    <a href="<%= fun.url %>"><%= fun.name %></a>
+	  </td>
+	  <td>
+	    <% _.each(fun.args, function(arg) { %>
+	    <%= arg.type %> <%= arg.name %><br/>
+	    <% }) %> <!-- loop over the args of a function -->
+	  </td>
+	</tr>
+	<% }) %> <!-- loop over the functions -->
+      </table>
+      <!-- list of the functions with the descriptions -->
+      <% _.each(functions, function(fun) { %>
+      <h2><a href="<%= fun.url %>"><%= fun.name %></a><small>(<%= fun.argline %>)</small></h2>
+      <div class="description">
+	<%= fun.description %>
+	<%= fun.comments %>
+      </div>
+      <% }) %> <!-- loop over the functions -->
+    </script>
+
     <div id="not-footer">
     <div id="header-wrapper">
       <div id="header">
