@@ -460,9 +460,9 @@ $(function() {
   var SearchView = Backbone.View.extend({
     template: _.template($('#search-template').html()),
 
-    initialize: function() {
-      this.listenTo(this.model, 'reset', this.render)
-    },
+    // initialize: function() {
+    //   this.listenTo(this.model, 'reset', this.render)
+    // },
 
     render: function() {
       var col = this.model
@@ -620,8 +620,8 @@ $(function() {
 
     search: function(version, query) {
       this.doc.setVersion(version)
-      $('#search-field').val(query)
       var view = new SearchView({model: this.search})
+      $('#search-field').val(query).keyup()
 
       if (this.currentView)
 	this.currentView.remove()
@@ -681,8 +681,9 @@ $(function() {
   searchCol.on('reset', function(col, prev) {
     console.log(col, prev)
     if (col.length == 1) {
-      router.navigate(col.at(0).attributes.navigate, {trigger: true, replace: true})
+      router.navigate(col.pluck('navigate')[0], {trigger: true, replace: true})
     } else {
+      // FIXME: this keeps recreating the view
       router.navigate(searchLink(col.value), {trigger: true})
     }
   })
