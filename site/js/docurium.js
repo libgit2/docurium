@@ -1,26 +1,13 @@
 $(function() {
-  var FileListView = Backbone.View.extend({
-    el: $('#files-list'),
-
-    template:  _.template($('#file-list-template').html()),
-
-    typeTemplate: _.template($('#type-list-template').html()),
-
-    events: {
-      'click h3': 'toggleList',
-    },
-
-    toggleList: function(e) {
-      $(e.currentTarget).next().toggle(100)
-      return false
-    },
-
+  var FileListModel = Backbone.Model.extend({
     initialize: function() {
-      this.listenTo(this.model, 'change:data', this.render)
+      var docurium = this.get('docurium')
+      this.listenTo(docurium, 'change:data', this.extract)
     },
 
-    render: function() {
-      var data = this.model.get('data')
+    extract: function() {
+      var docurium = this.get('docurium')
+      var data = docurium.get('data')
 
       // Function groups
       var funs = _.map(data['groups'], function(group, i) {
@@ -49,26 +36,53 @@ $(function() {
       }).map(getName)
 
       // File Listing
-      files = _.map(data['files'], function(file) {
-	url = this.github_file(file['file'])
+      var files = _.map(data['files'], function(file) {
+	var url = this.github_file(file['file'])
 	return {url: url, name: file['file']}
-      }, this.model)
+      }, docurium)
 
       // Examples List
-      examples = []
+      var examples = []
       if(data['examples'] && (data['examples'].length > 0)) {
 	examples = _.map(data['examples'], function(file) {
 	  return {name: file[0], path: file[1]}
 	})
       }
 
-      var enumList = this.typeTemplate({title: 'Enums', elements: enums})
-      var structList = this.typeTemplate({title: 'Structs', elements: structs})
-      var opaquesList = this.typeTemplate({title: 'Opaque Structs', elements: opaques})
-      var menu = $(this.template({funs: funs, files: files, examples: examples}))
+      this.set('data', {funs: funs, enums: enums, structs: structs, opaques: opaques,
+			files: files, examples: examples})
+    },
+  })
+
+  var FileListView = Backbone.View.extend({
+    el: $('#files-list'),
+
+    template:  _.template($('#file-list-template').html()),
+
+    typeTemplate: _.template($('#type-list-template').html()),
+
+    events: {
+      'click h3': 'toggleList',
+    },
+
+    toggleList: function(e) {
+      $(e.currentTarget).next().toggle(100)
+      return false
+    },
+
+    initialize: function() {
+      this.listenTo(this.model, 'change:data', this.render)
+    },
+
+    render: function() {
+      var data = this.model.get('data')
+
+      var enumList = this.typeTemplate({title: 'Enums', elements: data.enums})
+      var structList = this.typeTemplate({title: 'Structs', elements: data.structs})
+      var opaquesList = this.typeTemplate({title: 'Opaque Structs', elements: data.opaques})
+      var menu = $(this.template({funs: data.funs, files: data.files, examples: data.examples}))
 
       $('#types-list', menu).append(enumList, structList, opaquesList)
-      $('ul.hidden', menu).hide()
 
       this.$el.html(menu)
       return this
@@ -128,7 +142,7 @@ $(function() {
     render: function() {
       var vers = this.model.get('versions')
       list = this.template({versions: vers})
-      this.list.hide().html(list)
+      this.list.html(list)
       return this
     },
   })
@@ -184,11 +198,290 @@ $(function() {
 	return {title: version, listing: this.itemTemplate({dels: deletes, adds: adds})}
       }, this)
 
-      this.html = this.template({versions: vers})
+      this.el = this.template({versions: vers})
     },
 
     render: function() {
-      $('.content').html(this.html)
+      return this
+    }
+  })
+
+  var FunctionModel = Backbone.Model.extend({
+    initialize: function() {
+      var gname = this.get('gname')
+      var fname = this.get('fname')
+      var docurium = this.get('docurium')
+
+      var group = docurium.getGroup(gname)
+
+      var fdata = docurium.get('data')['functions']
+      var functions = group[1]
+
+      // Function Arguments
+      var args = _.map(fdata[fname]['args'], function(arg) {
+	return {link: this.hotLink(arg.type), name: arg.name, comment: arg.comment}
+      }, docurium)
+
+      var data = fdata[fname]
+      // function return value
+      var ret = data['return']
+      var returns = {link: docurium.hotLink(ret.type), comment: ret.comment}
+      // function signature
+      var sig = docurium.hotLink(ret.type) + ' ' + fname + '(' + data['argline'] + ');'
+      // version history
+      var sigHist = docurium.get('signatures')[fname]
+      var version = docurium.get('version')
+      var sigs = _.map(sigHist.exists, function(ver) {
+	var klass = []
+	if (sigHist.changes[ver])
+	  klass.push('changed')
+	if (ver == version)
+	  klass.push('current')
+
+	return {url: '#' + groupLink(gname, fname, ver), name: ver, klass: klass.join(' ')}
+      })
+      // GitHub link
+      var fileLink = docurium.github_file(data.file, data.line, data.lineto)
+      // link to the group
+      var alsoGroup = '#' + groupLink(group[0])
+      var alsoLinks = _.map(functions, function(f) {
+	return {url: '#' + groupLink(gname, f), name: f}
+      })
+
+      this.set('data', {name: fname, data: data, args: args, returns: returns, sig: sig,
+			sigs: sigs, fileLink: fileLink, groupName: gname,
+			alsoGroup: alsoGroup, alsoLinks: alsoLinks})
+    }
+  })
+
+  var FunctionView = Backbone.View.extend({
+    template: _.template($('#function-template').html()),
+    argsTemplate: _.template($('#function-args-template').html()),
+
+    render: function() {
+      document.body.scrollTop = document.documentElement.scrollTop = 0;
+      var data = this.model.get('data')
+      data.argsTemplate = this.argsTemplate
+      var cont = this.template(data)
+
+      this.el = cont
+      return this
+    },
+  })
+
+  var MainListModel = Backbone.Model.extend({
+    initialize: function() {
+      var docurium = this.get('docurium')
+      this.listenTo(docurium, 'change:data', this.extract)
+    },
+
+    extract: function() {
+      var docurium = this.get('docurium')
+      var data = docurium.get('data')
+      var sigHist = docurium.get('signatures')
+      var version = docurium.get('version')
+
+      var groups = _.map(data.groups, function(group) {
+	var gname = group[0]
+	var funs = _.map(group[1], function(fun) {
+	  var klass = ''
+	  if (sigHist[fun].changes[version])
+	    klass = 'changed'
+	  if (version == _.first(sigHist[fun].exists))
+	    klass = 'introd'
+	  return {name: fun, url: '#' + groupLink(gname, fun), klass: klass}
+	})
+	return {name: gname, funs: funs}
+      })
+
+      this.set('groups', groups)
+    },
+  })
+
+  var MainListView = Backbone.View.extend({
+    template: _.template($('#index-template').html()),
+
+    initialize: function() {
+      this.listenTo(this.model, 'change:groups', this.render)
+    },
+
+    render: function() {
+      var groups = this.model.get('groups')
+      if (groups == undefined)
+	this.model.extract()
+
+      groups = this.model.get('groups')
+      var cont = this.template({groups: groups})
+      this.el = cont
+      return this
+    },
+  })
+
+  var TypeModel = Backbone.Model.extend({
+    initialize: function() {
+      var typename = this.get('typename')
+      var docurium = this.get('docurium')
+      var types = docurium.get('data')['types']
+      var tdata = _.find(types, function(g) {
+	return g[0] == typename
+      })
+      var tname = tdata[0]
+      var data = tdata[1]
+
+      var toPair = function(fun) {
+	var gname = this.groupOf(fun)
+	var url = '#' + groupLink(gname, fun)
+	return {name: fun, url: url}
+      }
+
+      var returns = _.map(data.used.returns, toPair, docurium)
+      var needs = _.map(data.used.needs, toPair, docurium)
+      var fileLink = {name: data.file, url: docurium.github_file(data.file, data.line, data.lineto)}
+
+      this.set('data', {tname: tname, data: data, returns: returns, needs: needs, fileLink: fileLink})
+    }
+  })
+
+  var TypeView = Backbone.View.extend({
+    template: _.template($('#type-template').html()),
+
+    render: function() {
+      var content = this.template(this.model.get('data'))
+      this.el = content
+      return this
+    }
+  })
+
+  var GroupView = Backbone.View.extend({
+    template: _.template($('#group-template').html()),
+
+    initialize: function(o) {
+      var group = o.group
+      var gname = group[0]
+      var fdata = o.functions
+
+      this.functions = _.map(group[1], function(name) {
+	var url = '#' + groupLink(gname, name)
+	var d = fdata[name]
+	return {name: name, url: url, returns: d['return']['type'], argline: d['argline'],
+		description: d['description'], comments: d['comments'], args: d['args']}
+      })
+    },
+
+    render: function() {
+      var content = this.template({gname: this.gname, functions: this.functions})
+
+      this.el = content
+      return this
+    },
+  })
+
+  var SearchFieldView = Backbone.View.extend({
+    tagName: 'input',
+
+    el: $('#search-field'),
+
+    events: {
+      'keyup': function() {
+	this.trigger('keyup')
+	if (this.$el.val() == '')
+	  this.trigger('empty')
+      }
+    },
+  })
+
+  var SearchCollection = Backbone.Collection.extend({
+    defaults: {
+      value: '',
+    },
+
+    initialize: function(o) {
+      this.field = o.field
+      this.docurium = o.docurium
+
+      this.listenTo(this.field, 'keyup', this.keyup)
+    },
+
+    keyup: function() {
+      var newValue = this.field.$el.val()
+      if (this.value == newValue || newValue.length < 3)
+	return
+
+      this.value = newValue
+      this.refreshSearch()
+    },
+
+    refreshSearch: function() {
+      var docurium = this.docurium
+      var value = this.value
+
+      var data = docurium.get('data')
+      var searchResults = []
+
+      // look for functions (name, comment, argline)
+      _.forEach(data.functions, function(f, name) {
+	var gname = docurium.groupOf(name)
+	// look in the function name first
+        if (name.search(value) > -1) {
+	  var gl = groupLink(gname, name)
+	  var url = '#' + gl
+	  searchResults.push({url: url, name: name, match: 'function', navigate: gl})
+	  return
+        }
+
+	// if we didn't find it there, let's look in the argline
+        if (f.argline && f.argline.search(value) > -1) {
+	  var gl = groupLink(gname, name)
+	  var url = '#' + gl
+          searchResults.push({url: url, name: name, match: f.argline, navigate: gl})
+        }
+      })
+
+      // look for types
+      data.types.forEach(function(type) {
+        var name = type[0]
+	var tl = typeLink(name)
+	var url = '#' + tl
+        if (name.search(value) > -1) {
+          searchResults.push({url: url, name: name, match: type[1].type, navigate: tl})
+        }
+      })
+
+      this.reset(searchResults)
+    },
+  })
+
+  var SearchView = Backbone.View.extend({
+    template: _.template($('#search-template').html()),
+
+    // initialize: function() {
+    //   this.listenTo(this.model, 'reset', this.render)
+    // },
+
+    render: function() {
+      // we don't render for less than two results
+      if (this.collection.length < 2)
+	return
+
+      var content = this.template({results: this.collection.toJSON()})
+      this.el = content
+     }
+  })
+
+  var MainView = Backbone.View.extend({
+    el: $('#content'),
+
+    setActive: function(view) {
+      view.render()
+
+      if (this.activeView)
+	this.activeView.remove()
+
+      this.activeView = view
+      this.$el.html(view.el)
+
+      // move back to the top when we switch views
+      document.body.scrollTop = document.documentElement.scrollTop = 0;
     }
   })
 
@@ -223,272 +516,11 @@ $(function() {
       })
     },
 
-    showIndexPage: function(replace) {
-      version = docurium.get('version')
-      ws.navigate(version, {replace: replace})
-
-      data = docurium.get('data')
-      content = $('<div>').addClass('content')
-      content.append($('<h1>').append("Public API Functions"))
-
-      sigHist = docurium.get('signatures')
-
-      // Function Group
-      data.groups.forEach(function(group) {
-        content.append($('<h2>').addClass('funcGroup').append(group[0]))
-        list = $('<p>').addClass('functionList')
-	links = group[1].map(function(fun) {
-          link = $('<a>').attr('href', '#' + groupLink(group[0], fun)).append(fun)
-          if(sigHist[fun].changes[version]) {
-            link.addClass('changed')
-          }
-          if(version == _.first(sigHist[fun].exists)) {
-            link.addClass('introd')
-          }
-	  return link
-	})
-
-	// intersperse commas between each function
-	for(var i = 0; i < links.length - 1; i++) {
-	  list.append(links[i])
-	  list.append(", ")
-	}
-	list.append(_.last(links))
-
-	content.append(list)
-      })
-
-      $('.content').replaceWith(content)
-    },
-
     getGroup: function(gname) {
       var groups = docurium.get('data')['groups']
       return _.find(groups, function(g) {
 	return g[0] == gname
       })
-    },
-
-    showFun: function(gname, fname) {
-      group = docurium.getGroup(gname)
-
-      fdata = docurium.get('data')['functions']
-      gname = group[0]
-      functions = group[1]
-
-      document.body.scrollTop = document.documentElement.scrollTop = 0;
-      content = $('<div>').addClass('content')
-
-      // Show Function Name
-      content.append($('<h1>').addClass('funcTitle').append(fname))
-      if(fdata[fname]['description']) {
-        sub = content.append($('<h3>').addClass('funcDesc').append( ' ' + fdata[fname]['description'] ))
-      }
-
-      // Show Function Arguments
-      argtable = $('<table>').addClass('funcTable')
-      fdata[fname]['args'].forEach(function(arg) {
-        row = $('<tr>')
-        row.append($('<td>').attr('valign', 'top').attr('nowrap', true).append(this.hotLink(arg.type)))
-        row.append($('<td>').attr('valign', 'top').addClass('var').append(arg.name))
-        row.append($('<td>').addClass('comment').append(arg.comment))
-        argtable.append(row)
-      }, this)
-      content.append(argtable)
-
-      // Show Function Return Value
-      retdiv = $('<div>').addClass('returns')
-      retdiv.append($('<h3>').append("returns"))
-      rettable = $('<table>').addClass('funcTable')
-      retrow = $('<tr>')
-      rettable.append(retrow)
-      retdiv.append(rettable)
-
-      ret = fdata[fname]['return']
-      retrow.append($('<td>').attr('valign', 'top').append(this.hotLink(ret.type)))
-      if(ret.comment) {
-        retrow.append($('<td>').addClass('comment').append(ret.comment))
-      }
-      content.append(retdiv)
-
-      // Show Non-Parsed Function Comments
-      if (fdata[fname]['comments'])
-        content.append($('<div>').append(fdata[fname]['comments']))
-
-      // Show Function Signature
-      ex = $('<code>').addClass('params')
-      ex.append(this.hotLink(fdata[fname]['return']['type'] + ' ' + fname + '(' + fdata[fname]['argline'] + ');'))
-      example = $('<div>').addClass('example')
-      example.append($('<h3>').append("signature"))
-      example.append(ex)
-      content.append(example)
-
-      // Show Function History
-      sigs = $('<div>').addClass('signatures')
-      sigs.append($('<h3>').append("versions"))
-      sigHist = docurium.get('signatures')[fname]
-      var list = $('<ul>')
-      for(var i in sigHist.exists) {
-        ver = sigHist.exists[i]
-        link = $('<a>').attr('href', '#' + groupLink(gname, fname, ver)).append(ver)
-        if(sigHist.changes[ver]) {
-          link.addClass('changed')
-        }
-        if(ver == docurium.get('version')) {
-          link.addClass('current')
-        }
-        list.append($('<li>').append(link))
-      }
-      sigs.append(list)
-      content.append(sigs)
-
-      // Link to Function Def on GitHub
-      link = this.github_file(fdata[fname].file, fdata[fname].line, fdata[fname].lineto)
-      flink = $('<a>').attr('target', 'github').attr('href', link).append(fdata[fname].file)
-      content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
-
-      // Show where this is used in the examples
-      if(ex = fdata[fname].examples) {
-        var also = $('<div>').addClass('funcEx')
-        also.append("Used in examples: ")
-        for( fname in ex ) {
-          lines = ex[fname]
-          line = $('<li>')
-          line.append($('<strong>').append(fname))
-          for( var i in lines ) {
-            flink = $('<a>').attr('href', lines[i]).append(' [' + (parseInt(i) + 1) + '] ')
-            line.append(flink)
-          }
-          also.append(line)
-        }
-        content.append(also)
-      }
-
-      // Show other functions in this group
-      var also = $('<div>').addClass('also')
-      flink = $('<a>')
-	.attr('href', '#' + groupLink(group[0]))
-	.append(group[0])
-
-      also.append("Also in ")
-      also.append(flink)
-      also.append(" group: <br/>")
-
-      links = _.map(functions, function(f) {
-        return $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
-      })
-      for (i = 0; i < links.length-1; i++) {
-	also.append(links[i])
-        also.append(', ')
-      }
-      also.append(_.last(links))
-      content.append(also)
-
-      $('.content').replaceWith(content)
-    },
-
-    showType: function(data, manual) {
-      var tdata
-      var types = this.get('data')['types']
-      var tdata = _.find(types, function(g) {
-	return g[0] == manual
-      })
-      tname = tdata[0]
-      data = tdata[1]
-
-      ws.navigate(typeLink(tname))
-      document.body.scrollTop = document.documentElement.scrollTop = 0;
-
-      content = $('<div>').addClass('content')
-      content.append($('<h1>').addClass('funcTitle').append(tname).append($("<small>").append(data.type)))
-
-      content.append($('<p>').append(data.value))
-
-      if(data.comments) {
-	content.append($('<div>').append(data.comments))
-      }
-
-      if(data.block) {
-        content.append($('<pre>').append(data.block))
-      }
-
-      var ret = data.used.returns
-      if (ret.length > 0) {
-        content.append($('<h3>').append('Returns'))
-      }
-      for(var i=0; i<ret.length; i++) {
-        gname = docurium.groupOf(ret[i])
-        flink = $('<a>').attr('href', '#' + groupLink(gname, ret[i])).append(ret[i])
-        content.append(flink)
-        content.append(', ')
-      }
-
-      var needs = data.used.needs
-      if (needs.length > 0) {
-        content.append($('<h3>').append('Argument In'))
-      }
-      for(var i=0; i<needs.length; i++) {
-        gname = docurium.groupOf(needs[i])
-        flink = $('<a>').attr('href', '#' + groupLink(gname, needs[i])).append(needs[i])
-        content.append(flink)
-        content.append(', ')
-      }
-
-      link = docurium.github_file(data.file, data.line, data.lineto)
-      flink = $('<a>').attr('target', 'github').attr('href', link).append(data.file)
-      content.append($('<div>').addClass('fileLink').append("Defined in: ").append(flink))
-
-      $('.content').replaceWith(content)
-      return false
-    },
-
-    showGroup: function(manual, flink) {
-      var types = this.get('data')['groups']
-      var group = _.find(types, function(g) {
-	  return g[0] == manual
-      })
-      fdata = docurium.get('data')['functions']
-      gname = group[0]
-
-      ws.navigate(groupLink(gname));
-      document.body.scrollTop = document.documentElement.scrollTop = 0;
-
-      functions = group[1]
-      content = $('<div>').addClass('content')
-      content.append($('<h1>').append(gname + ' functions'))
-
-      table = $('<table>').addClass('methods')
-      for(i=0; i<functions.length; i++) {
-        f = functions[i]
-        d = fdata[f]
-        row = $('<tr>')
-        row.append($('<td>').attr('nowrap', true).attr('valign', 'top').append(d['return']['type'].substring(0, 20)))
-        link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
-        row.append($('<td>').attr('valign', 'top').addClass('methodName').append( link ))
-        args = d['args']
-        argtd = $('<td>')
-        for(j=0; j<args.length; j++) {
-          argtd.append(args[j].type + ' ' + args[j].name)
-          argtd.append($('<br>'))
-        }
-        row.append(argtd)
-        table.append(row)
-      }
-      content.append(table)
-
-      for(var i=0; i<functions.length; i++) {
-        f = functions[i]
-        argsText = '( ' + fdata[f]['argline'] + ' )'
-        link = $('<a>').attr('href', '#' + groupLink(gname, f)).append(f)
-        content.append($('<h2>').append(link).append($('<small>').append(argsText)))
-        description = fdata[f]['description']
-	if(fdata[f]['comments'])
-		description += "\n\n" + fdata[f]['comments']
-
-	content.append($('<div>').addClass('description').append(description))
-      }
-
-      $('.content').replaceWith(content)
-      return false
     },
 
     // look for structs and link them 
@@ -524,72 +556,12 @@ $(function() {
 
       return url
     },
-
-    search: function(data) {
-      var searchResults = []
-      var value = $('#search-field').val()
-
-      if (value.length < 3) {
-        docurium.showIndexPage(false)
-        return
-      }
-
-      this.searchResults = []
-
-      ws.navigate(searchLink(value))
-
-      data = docurium.get('data')
-
-      // look for functions (name, comment, argline)
-      _.forEach(data.functions, function(f, name) {
-	gname = docurium.groupOf(name)
-	// look in the function name first
-        if (name.search(value) > -1) {
-          var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
-	  searchResults.push({link: flink, match: 'function', navigate: groupLink(gname, name)})
-	  return
-        }
-
-	// if we didn't find it there, let's look in the argline
-        if (f.argline && f.argline.search(value) > -1) {
-          var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
-          searchResults.push({link: flink, match: f.argline, navigate: groupLink(gname, name)})
-        }
-      })
-
-      // look for types
-      data.types.forEach(function(type) {
-        name = type[0]
-        if (name.search(value) > -1) {
-          var link = $('<a>').attr('href', '#' + typeLink(name)).append(name)
-          searchResults.push({link: link, match: type[1].type, navigate: typeLink(name)})
-        }
-      })
-
-      // if we have a single result, show that page
-      if (searchResults.length == 1) {
-         ws.navigate(searchResults[0].navigate, {trigger: true, replace: true})
-         return
-      }
-
-      content = $('<div>').addClass('content')
-      content.append($('<h1>').append("Search Results"))
-      rows = _.map(searchResults, function(result) {
-	return $('<tr>').append(
-	  $('<td>').append(result.link),
-	  $('<td>').append(result.match))
-      })
-
-      content.append($('<table>').append(rows))
-      $('.content').replaceWith(content)
-    }
-
   })
 
   var Workspace = Backbone.Router.extend({
 
     routes: {
-      "":                             "main",
+      "":                             "index",
       ":version":                     "main",
       ":version/group/:group":        "group",
       ":version/type/:type":          "showtype",
@@ -598,44 +570,63 @@ $(function() {
       "p/changelog":                  "changelog",
     },
 
+    initialize: function(o) {
+      this.doc = o.docurium
+      this.search = o.search
+      this.mainView = o.mainView
+    },
+
+    index: function() {
+      // set the default version
+      this.doc.setVersion()
+      // and replate our URL with it, to avoid a back-button loop
+      this.navigate(this.doc.get('version'), {replace: true, trigger: true})
+    },
+
     main: function(version) {
-      docurium.setVersion(version)
-      // when asking for '/', replace with 'HEAD' instead of redirecting
-      var replace = version == undefined
-      docurium.showIndexPage(replace)
+      this.doc.setVersion(version)
+      var view = new MainListView({model: this.mainList})
+      this.mainView.setActive(view)
     },
 
     group: function(version, gname) {
-      docurium.setVersion(version)
-      docurium.showGroup(gname)
+      this.doc.setVersion(version)
+      var group = this.doc.getGroup(gname)
+      var fdata = this.doc.get('data')['functions']
+      var view = new GroupView({group: group, functions: fdata})
+      this.mainView.setActive(view)
     },
 
     groupFun: function(version, gname, fname) {
-      docurium.setVersion(version)
-      docurium.showFun(gname, fname)
+      this.doc.setVersion(version)
+      var model = new FunctionModel({docurium: this.doc, gname: gname, fname: fname})
+      var view = new FunctionView({model: model})
+      this.mainView.setActive(view)
     },
 
     showtype: function(version, tname) {
-      docurium.setVersion(version)
-      docurium.showType(null, tname)
+      this.doc.setVersion(version)
+      var model = new TypeModel({docurium: this.doc, typename: tname})
+      var view = new TypeView({model: model})
+      this.mainView.setActive(view)
     },
 
     search: function(version, query) {
-      docurium.setVersion(version)
-      $('#search-field').val(query)
-      docurium.search()
+      this.doc.setVersion(version)
+      var view = new SearchView({collection: this.search})
+      $('#search-field').val(query).keyup()
+      this.mainView.setActive(view)
     },
 
     changelog: function(version, tname) {
       // let's wait to process it until it's asked, and let's only do
       // it once
       if (this.changelogView == undefined) {
-	this.changelogView = new ChangelogView({model: docurium})
+	this.changelogView = new ChangelogView({model: this.doc})
       }
-      docurium.setVersion()
-      this.changelogView.render()
+      this.doc.setVersion()
+      this.mainView.setActive(this.ChangelogView)
     },
-
   });
 
   function groupLink(gname, fname, version) {
@@ -657,13 +648,38 @@ $(function() {
     return docurium.get('version') + "/search/" + tname
   }
 
+  //_.templateSettings.variable = 'rc'
+
   window.docurium = new Docurium
-  window.ws = new Workspace
+
+  var searchField = new SearchFieldView({id: 'search-field'})
+  var searchCol = new SearchCollection({docurium: window.docurium, field: searchField})
+
+  var mainView = new MainView()
+
+  var router = new Workspace({docurium: docurium, search: searchCol, mainView: mainView})
+
+  searchField.on('empty', function() {
+    router.navigate(docurium.get('version'), {trigger: true})
+  })
+
+  window.ws = router
   docurium.once('change:data', function() {Backbone.history.start()})
 
-  var fileListView = new FileListView({model: window.docurium})
+  var fileList = new FileListModel({docurium: window.docurium})
+  var fileListView = new FileListView({model: fileList})
   var versionView = new VersionView({model: window.docurium})
   var versionPickerView = new VersionPickerView({model: window.docurium})
+  var mainList = new MainListModel({docurium: window.docurium})
+  ws.mainList = mainList
 
-  $('#search-field').keyup( docurium.search )
+  searchCol.on('reset', function(col, prev) {
+    console.log(col, prev)
+    if (col.length == 1) {
+      router.navigate(col.pluck('navigate')[0], {trigger: true, replace: true})
+    } else {
+      // FIXME: this keeps recreating the view
+      router.navigate(searchLink(col.value), {trigger: true})
+    }
+  })
 })
