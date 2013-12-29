@@ -346,8 +346,6 @@ $(function() {
     template: _.template($('#type-template').html()),
 
     render: function() {
-      document.body.scrollTop = document.documentElement.scrollTop = 0;
-
       var content = this.template(this.model.get('data'))
       this.el = content
       return this
@@ -373,7 +371,6 @@ $(function() {
     render: function() {
       var content = this.template({gname: this.gname, functions: this.functions})
 
-      document.body.scrollTop = document.documentElement.scrollTop = 0;
       this.el = content
       return this
     },
@@ -484,6 +481,9 @@ $(function() {
 
       this.activeView = view
       this.$el.html(view.el)
+
+      // move back to the top when we switch views
+      document.body.scrollTop = document.documentElement.scrollTop = 0;
     }
   })
 
