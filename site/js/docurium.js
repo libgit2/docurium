@@ -387,6 +387,8 @@ $(function() {
     events: {
       'keyup': function() {
 	this.trigger('keyup')
+	if (this.$el.val() == '')
+	  this.trigger('empty')
       }
     },
   })
@@ -658,6 +660,11 @@ $(function() {
   var mainView = new MainView()
 
   var router = new Workspace({docurium: docurium, search: searchCol, mainView: mainView})
+
+  searchField.on('empty', function() {
+    router.navigate(docurium.get('version'), {trigger: true})
+  })
+
   window.ws = router
   docurium.once('change:data', function() {Backbone.history.start()})
 
