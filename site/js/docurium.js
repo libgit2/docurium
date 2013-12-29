@@ -383,6 +383,99 @@ $(function() {
     },
   })
 
+  var SearchFieldView = Backbone.View.extend({
+    tagName: 'input',
+
+    el: $('#search-field'),
+
+    events: {
+      'keyup': function() {
+	this.trigger('keyup')
+      }
+    },
+  })
+
+  var SearchCollection = Backbone.Collection.extend({
+    defaults: {
+      value: '',
+    },
+
+    initialize: function(o) {
+      this.field = o.field
+      this.docurium = o.docurium
+
+      this.listenTo(this.field, 'keyup', this.keyup)
+    },
+
+    keyup: function() {
+      var newValue = this.field.$el.val()
+      if (this.value == newValue || newValue.length < 3)
+	return
+
+      this.value = newValue
+      this.refreshSearch()
+    },
+
+    refreshSearch: function() {
+      var docurium = this.docurium
+      var value = this.value
+
+      var data = docurium.get('data')
+      var searchResults = []
+
+      // look for functions (name, comment, argline)
+      _.forEach(data.functions, function(f, name) {
+	var gname = docurium.groupOf(name)
+	// look in the function name first
+        if (name.search(value) > -1) {
+	  var gl = groupLink(gname, name)
+	  var url = '#' + gl
+	  searchResults.push({url: url, name: name, match: 'function', navigate: gl})
+	  return
+        }
+
+	// if we didn't find it there, let's look in the argline
+        if (f.argline && f.argline.search(value) > -1) {
+	  var gl = groupLink(gname, name)
+	  var url = '#' + gl
+          searchResults.push({url: url, name: name, match: f.argline, navigate: gl})
+        }
+      })
+
+      // look for types
+      data.types.forEach(function(type) {
+        var name = type[0]
+	var tl = typeLink(name)
+	var url = '#' + tl
+        if (name.search(value) > -1) {
+          var link = $('<a>').attr('href', '#' + typeLink(name)).append(name)
+          searchResults.push({url: url, name: name, match: type[1].type, navigate: tl})
+        }
+      })
+
+      this.reset(searchResults)
+    },
+  })
+
+  var SearchView = Backbone.View.extend({
+    template: _.template($('#search-template').html()),
+
+    initialize: function() {
+      this.listenTo(this.model, 'reset', this.render)
+    },
+
+    render: function() {
+      var col = this.model
+
+      // we don't render for less than two results
+      if (col.length < 2)
+	return
+
+      var content = this.template({results: col.toJSON()})
+      $('.content').html(content)
+     }
+  })
+
   // our document model - stores the datastructure generated from docurium
   var Docurium = Backbone.Model.extend({
 
@@ -454,63 +547,6 @@ $(function() {
 
       return url
     },
-
-    search: function(data) {
-      var searchResults = []
-      var value = $('#search-field').val()
-
-      if (value.length < 3) {
-	ws.navigate(docurium.get('version'), {trigger: true})
-        return
-      }
-
-      this.searchResults = []
-
-      ws.navigate(searchLink(value))
-
-      data = docurium.get('data')
-
-      // look for functions (name, comment, argline)
-      _.forEach(data.functions, function(f, name) {
-	var gname = docurium.groupOf(name)
-	// look in the function name first
-        if (name.search(value) > -1) {
-	  var gl = groupLink(gname, name)
-	  var url = '#' + gl
-	  searchResults.push({url: url, name: name, match: 'function', navigate: gl})
-	  return
-        }
-
-	// if we didn't find it there, let's look in the argline
-        if (f.argline && f.argline.search(value) > -1) {
-	  var gl = groupLink(gname, name)
-	  var url = '#' + gl
-          searchResults.push({url: url, name: name, match: f.argline, navigate: gl})
-        }
-      })
-
-      // look for types
-      data.types.forEach(function(type) {
-        var name = type[0]
-	var tl = typeLink(name)
-	var url = '#' + tl
-        if (name.search(value) > -1) {
-          var link = $('<a>').attr('href', '#' + typeLink(name)).append(name)
-          searchResults.push({url: url, name: name, match: type[1].type, navigate: tl})
-        }
-      })
-
-      // if we have a single result, show that page
-      if (searchResults.length == 1) {
-         ws.navigate(searchResults[0].navigate, {trigger: true, replace: true})
-         return
-      }
-
-      var template = _.template($('#search-template').html())
-      var content = template({results: searchResults})
-      $('.content').html(content)
-    }
-
   })
 
   var Workspace = Backbone.Router.extend({
@@ -527,6 +563,7 @@ $(function() {
 
     initialize: function(o) {
       this.doc = o.docurium
+      this.search = o.search
     },
 
     index: function() {
@@ -584,7 +621,13 @@ $(function() {
     search: function(version, query) {
       this.doc.setVersion(version)
       $('#search-field').val(query)
-      this.doc.search()
+      var view = new SearchView({model: this.search})
+
+      if (this.currentView)
+	this.currentView.remove()
+
+      this.currentView = view
+      view.render()
     },
 
     changelog: function(version, tname) {
@@ -596,7 +639,6 @@ $(function() {
       this.doc.setVersion()
       this.changelogView.render()
     },
-
   });
 
   function groupLink(gname, fname, version) {
@@ -621,7 +663,12 @@ $(function() {
   //_.templateSettings.variable = 'rc'
 
   window.docurium = new Docurium
-  window.ws = new Workspace({docurium: docurium})
+
+  var searchField = new SearchFieldView({id: 'search-field'})
+  var searchCol = new SearchCollection({docurium: window.docurium, field: searchField})
+
+  var router = new Workspace({docurium: docurium, search: searchCol})
+  window.ws = router
   docurium.once('change:data', function() {Backbone.history.start()})
 
   var fileList = new FileListModel({docurium: window.docurium})
@@ -631,5 +678,12 @@ $(function() {
   var mainList = new MainListModel({docurium: window.docurium})
   ws.mainList = mainList
 
-  $('#search-field').keyup( docurium.search )
+  searchCol.on('reset', function(col, prev) {
+    console.log(col, prev)
+    if (col.length == 1) {
+      router.navigate(col.at(0).attributes.navigate, {trigger: true, replace: true})
+    } else {
+      router.navigate(searchLink(col.value), {trigger: true})
+    }
+  })
 })
