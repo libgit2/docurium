@@ -269,17 +269,16 @@ $(function() {
     },
   })
 
-  var MainListModel = Backbone.Model.extend({
-    initialize: function() {
-      var docurium = this.get('docurium')
-      this.listenTo(docurium, 'change:data', this.extract)
+  var GroupCollection = Backbone.Collection.extend({
+    initialize: function(o) {
+      this.docurium = o.docurium
+      this.listenTo(this.docurium, 'change:data', this.refill)
     },
 
-    extract: function() {
-      var docurium = this.get('docurium')
-      var data = docurium.get('data')
-      var sigHist = docurium.get('signatures')
-      var version = docurium.get('version')
+    refill: function(o, doc) {
+      var data = o.changed.data
+      var sigHist = this.docurium.get('signatures')
+      var version = this.docurium.get('version')
 
       var groups = _.map(data.groups, function(group) {
 	var gname = group[0]
@@ -287,14 +286,16 @@ $(function() {
 	  var klass = ''
 	  if (sigHist[fun].changes[version])
 	    klass = 'changed'
+
 	  if (version == _.first(sigHist[fun].exists))
 	    klass = 'introd'
+
 	  return {name: fun, url: '#' + groupLink(gname, fun), klass: klass}
 	})
 	return {name: gname, funs: funs}
       })
 
-      this.set('groups', groups)
+      this.reset(groups)
     },
   })
 
@@ -302,17 +303,12 @@ $(function() {
     template: _.template($('#index-template').html()),
 
     initialize: function() {
-      this.listenTo(this.model, 'change:groups', this.render)
+      this.listenTo(this.collection, 'reset', this.render)
     },
 
     render: function() {
-      var groups = this.model.get('groups')
-      if (groups == undefined)
-	this.model.extract()
-
-      groups = this.model.get('groups')
-      var cont = this.template({groups: groups})
-      this.el = cont
+      this.el = this.template({groups: this.collection.toJSON()})
+      this.trigger('redraw')
       return this
     },
   })
@@ -474,15 +470,24 @@ $(function() {
     setActive: function(view) {
       view.render()
 
-      if (this.activeView)
+      if (this.activeView) {
+	this.stopListening()
 	this.activeView.remove()
+      }
 
       this.activeView = view
+      // make sure we know when the view wants to render again
+      this.listenTo(view, 'redraw', this.render)
+
       this.$el.html(view.el)
 
       // move back to the top when we switch views
       document.body.scrollTop = document.documentElement.scrollTop = 0;
-    }
+    },
+
+    render: function() {
+      this.$el.html(this.activeView.el)
+    },
   })
 
   // our document model - stores the datastructure generated from docurium
@@ -574,6 +579,7 @@ $(function() {
       this.doc = o.docurium
       this.search = o.search
       this.mainView = o.mainView
+      this.groups = o.groups
     },
 
     index: function() {
@@ -585,7 +591,7 @@ $(function() {
 
     main: function(version) {
       this.doc.setVersion(version)
-      var view = new MainListView({model: this.mainList})
+      var view = new MainListView({collection: this.groups})
       this.mainView.setActive(view)
     },
 
@@ -654,10 +660,12 @@ $(function() {
 
   var searchField = new SearchFieldView({id: 'search-field'})
   var searchCol = new SearchCollection({docurium: window.docurium, field: searchField})
+  var groupCol = new GroupCollection({docurium: window.docurium})
 
   var mainView = new MainView()
 
-  var router = new Workspace({docurium: docurium, search: searchCol, mainView: mainView})
+  var router = new Workspace({docurium: docurium, search: searchCol, mainView: mainView,
+			      groups: groupCol})
 
   searchField.on('empty', function() {
     router.navigate(docurium.get('version'), {trigger: true})
@@ -670,11 +678,8 @@ $(function() {
   var fileListView = new FileListView({model: fileList})
   var versionView = new VersionView({model: window.docurium})
   var versionPickerView = new VersionPickerView({model: window.docurium})
-  var mainList = new MainListModel({docurium: window.docurium})
-  ws.mainList = mainList
 
   searchCol.on('reset', function(col, prev) {
-    console.log(col, prev)
     if (col.length == 1) {
       router.navigate(col.pluck('navigate')[0], {trigger: true, replace: true})
     } else {
