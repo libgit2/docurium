@@ -353,6 +353,36 @@ $(function() {
     }
   })
 
+  var GroupView = Backbone.View.extend({
+    template: _.template($('#group-template').html()),
+
+    initialize: function(o) {
+      //var types = this.get('data')['groups']
+      //var group = _.find(types, function(g) {
+      // return g[0] == manual
+      //})
+      //var fdata = docurium.get('data')['functions']
+      //this.gname = group[0]
+      var group = o.group
+      this.gname = group[0]
+      var fdata = o.functions
+
+      this.functions = _.map(group[1], function(name) {
+	var url = '#' + groupLink(this.gname, name)
+	var d = fdata[name]
+	return {name: name, url: url, returns: d['return']['type'], argline: d['argline'],
+		description: d['description'], comments: d['comments'], args: d['args']}
+      })
+    },
+
+    render: function() {
+      var content = this.template({gname: this.gname, functions: this.functions})
+
+      document.body.scrollTop = document.documentElement.scrollTop = 0;
+      $('.content').html(content)
+    },
+  })
+
   // our document model - stores the datastructure generated from docurium
   var Docurium = Backbone.Model.extend({
 
@@ -389,31 +419,6 @@ $(function() {
       return _.find(groups, function(g) {
 	return g[0] == gname
       })
-    },
-
-    showGroup: function(manual, flink) {
-      var types = this.get('data')['groups']
-      var group = _.find(types, function(g) {
-	  return g[0] == manual
-      })
-      var fdata = docurium.get('data')['functions']
-      var gname = group[0]
-
-      document.body.scrollTop = document.documentElement.scrollTop = 0;
-
-      var functions = _.map(group[1], function(name) {
-	var url = '#' + groupLink(gname, name)
-	var d = fdata[name]
-	return {name: name, url: url, returns: d['return']['type'], argline: d['argline'],
-		description: d['description'], comments: d['comments'], args: d['args']}
-      })
-
-      var template = _.template($('#group-template').html())
-      var content = template({gname: gname, functions: functions})
-      console.log(content)
-
-      $('.content').html(content)
-      return false
     },
 
     // look for structs and link them 
@@ -542,7 +547,14 @@ $(function() {
 
     group: function(version, gname) {
       docurium.setVersion(version)
-      docurium.showGroup(gname)
+      var group = docurium.getGroup(gname)
+      var fdata = docurium.get('data')['functions']
+      var view = new GroupView({group: group, functions: fdata})
+      if (this.currentView)
+	this.currentView.remove()
+
+      this.currentView = view
+      view.render()
     },
 
     groupFun: function(version, gname, fname) {
