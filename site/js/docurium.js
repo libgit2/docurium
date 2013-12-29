@@ -472,27 +472,31 @@ $(function() {
 
       // look for functions (name, comment, argline)
       _.forEach(data.functions, function(f, name) {
-	gname = docurium.groupOf(name)
+	var gname = docurium.groupOf(name)
 	// look in the function name first
         if (name.search(value) > -1) {
-          var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
-	  searchResults.push({link: flink, match: 'function', navigate: groupLink(gname, name)})
+	  var gl = groupLink(gname, name)
+	  var url = '#' + gl
+	  searchResults.push({url: url, name: name, match: 'function', navigate: gl})
 	  return
         }
 
 	// if we didn't find it there, let's look in the argline
         if (f.argline && f.argline.search(value) > -1) {
-          var flink = $('<a>').attr('href', '#' + groupLink(gname, name)).append(name)
-          searchResults.push({link: flink, match: f.argline, navigate: groupLink(gname, name)})
+	  var gl = groupLink(gname, name)
+	  var url = '#' + gl
+          searchResults.push({url: url, name: name, match: f.argline, navigate: gl})
         }
       })
 
       // look for types
       data.types.forEach(function(type) {
-        name = type[0]
+        var name = type[0]
+	var tl = typeLink(name)
+	var url = '#' + tl
         if (name.search(value) > -1) {
           var link = $('<a>').attr('href', '#' + typeLink(name)).append(name)
-          searchResults.push({link: link, match: type[1].type, navigate: typeLink(name)})
+          searchResults.push({url: url, name: name, match: type[1].type, navigate: tl})
         }
       })
 
@@ -502,16 +506,9 @@ $(function() {
          return
       }
 
-      content = $('<div>').addClass('content')
-      content.append($('<h1>').append("Search Results"))
-      rows = _.map(searchResults, function(result) {
-	return $('<tr>').append(
-	  $('<td>').append(result.link),
-	  $('<td>').append(result.match))
-      })
-
-      content.append($('<table>').append(rows))
-      $('.content').replaceWith(content)
+      var template = _.template($('#search-template').html())
+      var content = template({results: searchResults})
+      $('.content').html(content)
     }
 
   })

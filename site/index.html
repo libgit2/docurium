@@ -250,6 +250,18 @@
       <% }) %> <!-- loop over the functions -->
     </script>
 
+    <script type="text/template" id="search-template">
+      <h1>Search Results</h1>
+      <table>
+	<% _.each(results, function(result) { %>
+	<tr>
+	  <td><a href="<%= result.url %>"><%= result.name %></a></td>
+	  <td><%= result.match %></td>
+	</tr>
+	<% }) %>
+      </table>
+    </script>
+
     <div id="not-footer">
     <div id="header-wrapper">
       <div id="header">
