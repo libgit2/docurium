@@ -459,13 +459,11 @@ $(function() {
     // },
 
     render: function() {
-      var col = this.model
-
       // we don't render for less than two results
-      if (col.length < 2)
+      if (this.collection.length < 2)
 	return
 
-      var content = this.template({results: col.toJSON()})
+      var content = this.template({results: this.collection.toJSON()})
       this.el = content
      }
   })
@@ -615,7 +613,7 @@ $(function() {
 
     search: function(version, query) {
       this.doc.setVersion(version)
-      var view = new SearchView({model: this.search})
+      var view = new SearchView({collection: this.search})
       $('#search-field').val(query).keyup()
       this.mainView.setActive(view)
     },
