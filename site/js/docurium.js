@@ -8,18 +8,19 @@ $(function() {
     extract: function() {
       var docurium = this.get('docurium')
       var data = docurium.get('data')
+      var version = docurium.get('version')
 
       // Function groups
       var funs = _.map(data['groups'], function(group, i) {
 	var name = group[0]
-	var link = groupLink(name)
+	var link = groupLink(name, version)
 	return {name: name, link: link, num: group[1].length}
       })
 
       // Types
       var getName = function(type) {
 	var name = type[0];
-	var link = typeLink(name);
+	var link = typeLink(name, version);
 	return {link: link, name: name};
       }
 
@@ -192,7 +193,7 @@ $(function() {
 	additions.sort()
 	var adds = _.map(additions, function(add) {
           var gname = this.model.groupOf(add)
-	  return {link: groupLink(gname, add, version), text: add}
+	  return {link: functionLink(gname, add, version), text: add}
 	}, this)
 
 	return {title: version, listing: this.itemTemplate({dels: deletes, adds: adds})}
@@ -238,14 +239,15 @@ $(function() {
 	if (ver == version)
 	  klass.push('current')
 
-	return {url: '#' + groupLink(gname, fname, ver), name: ver, klass: klass.join(' ')}
+	return {url: '#' + functionLink(gname, fname, ver), name: ver, klass: klass.join(' ')}
       })
       // GitHub link
       var fileLink = docurium.github_file(data.file, data.line, data.lineto)
       // link to the group
-      var alsoGroup = '#' + groupLink(group[0])
+      var version = docurium.get('version')
+      var alsoGroup = '#' + groupLink(group[0], version)
       var alsoLinks = _.map(functions, function(f) {
-	return {url: '#' + groupLink(gname, f), name: f}
+	return {url: '#' + functionLink(gname, f, version), name: f}
       })
 
       this.set('data', {name: fname, data: data, args: args, returns: returns, sig: sig,
@@ -290,7 +292,7 @@ $(function() {
 	  if (version == _.first(sigHist[fun].exists))
 	    klass = 'introd'
 
-	  return {name: fun, url: '#' + groupLink(gname, fun), klass: klass}
+	  return {name: fun, url: '#' + functionLink(gname, fun, version), klass: klass}
 	})
 	return {name: gname, funs: funs}
       })
@@ -317,6 +319,7 @@ $(function() {
     initialize: function() {
       var typename = this.get('typename')
       var docurium = this.get('docurium')
+      var version = docurium.get('version')
       var types = docurium.get('data')['types']
       var tdata = _.find(types, function(g) {
 	return g[0] == typename
@@ -326,7 +329,7 @@ $(function() {
 
       var toPair = function(fun) {
 	var gname = this.groupOf(fun)
-	var url = '#' + groupLink(gname, fun)
+	var url = '#' + functionLink(gname, fun, version)
 	return {name: fun, url: url}
       }
 
@@ -355,9 +358,10 @@ $(function() {
       var group = o.group
       var gname = group[0]
       var fdata = o.functions
+      var version = o.version
 
       this.functions = _.map(group[1], function(name) {
-	var url = '#' + groupLink(gname, name)
+	var url = '#' + functionLink(gname, name, version)
 	var d = fdata[name]
 	return {name: name, url: url, returns: d['return']['type'], argline: d['argline'],
 		description: d['description'], comments: d['comments'], args: d['args']}
@@ -414,12 +418,13 @@ $(function() {
       var data = docurium.get('data')
       var searchResults = []
 
+      var version = docurium.get('version')
       // look for functions (name, comment, argline)
       _.forEach(data.functions, function(f, name) {
 	var gname = docurium.groupOf(name)
 	// look in the function name first
         if (name.search(value) > -1) {
-	  var gl = groupLink(gname, name)
+	  var gl = functionLink(gname, name, version)
 	  var url = '#' + gl
 	  searchResults.push({url: url, name: name, match: 'function', navigate: gl})
 	  return
@@ -427,7 +432,7 @@ $(function() {
 
 	// if we didn't find it there, let's look in the argline
         if (f.argline && f.argline.search(value) > -1) {
-	  var gl = groupLink(gname, name)
+	  var gl = functionLink(gname, name, version)
 	  var url = '#' + gl
           searchResults.push({url: url, name: name, match: f.argline, navigate: gl})
         }
@@ -436,7 +441,7 @@ $(function() {
       // look for types
       data.types.forEach(function(type) {
         var name = type[0]
-	var tl = typeLink(name)
+	var tl = typeLink(name, version)
 	var url = '#' + tl
         if (name.search(value) > -1) {
           searchResults.push({url: url, name: name, match: type[1].type, navigate: tl})
@@ -531,12 +536,13 @@ $(function() {
     // look for structs and link them 
     hotLink: function(text) {
       types = this.get('data')['types']
+      var version = this.get('version')
       for(var i=0; i<types.length; i++) {
         type = types[i]
         typeName = type[0]
         typeData = type[1]
         re = new RegExp(typeName + ' ', 'gi');
-        var link = $('<a>').attr('href', '#' + typeLink(typeName)).append(typeName)[0]
+        var link = $('<a>').attr('href', '#' + typeLink(typeName, version)).append(typeName)[0]
         text = text.replace(re, link.outerHTML + ' ')
       }
       return text
@@ -635,23 +641,20 @@ $(function() {
     },
   });
 
-  function groupLink(gname, fname, version) {
-    if(!version) {
-      version = docurium.get('version')
-    }
-    if(fname) {
+  function functionLink(gname, fname, version) {
       return version + "/group/" + gname + '/' + fname
-    } else {
+  }
+
+  function groupLink(gname, version) {
       return version + "/group/" + gname
-    }
   }
 
-  function typeLink(tname) {
-    return docurium.get('version') + "/type/" + tname
+  function typeLink(tname, version) {
+    return version + "/type/" + tname
   }
 
-  function searchLink(tname) {
-    return docurium.get('version') + "/search/" + tname
+  function searchLink(term, version) {
+    return version + "/search/" + term
   }
 
   //_.templateSettings.variable = 'rc'
@@ -683,8 +686,9 @@ $(function() {
     if (col.length == 1) {
       router.navigate(col.pluck('navigate')[0], {trigger: true, replace: true})
     } else {
+      var version = docurium.get('version')
       // FIXME: this keeps recreating the view
-      router.navigate(searchLink(col.value), {trigger: true})
+      router.navigate(searchLink(col.value, version), {trigger: true})
     }
   })
 })
