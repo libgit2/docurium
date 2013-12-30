@@ -605,7 +605,8 @@ $(function() {
       this.doc.setVersion(version)
       var group = this.doc.getGroup(gname)
       var fdata = this.doc.get('data')['functions']
-      var view = new GroupView({group: group, functions: fdata})
+      var version = this.doc.get('version')
+      var view = new GroupView({group: group, functions: fdata, version: version})
       this.mainView.setActive(view)
     },
 
@@ -659,11 +660,11 @@ $(function() {
 
   //_.templateSettings.variable = 'rc'
 
-  window.docurium = new Docurium
+  var docurium = new Docurium
 
   var searchField = new SearchFieldView({id: 'search-field'})
-  var searchCol = new SearchCollection({docurium: window.docurium, field: searchField})
-  var groupCol = new GroupCollection({docurium: window.docurium})
+  var searchCol = new SearchCollection({docurium: docurium, field: searchField})
+  var groupCol = new GroupCollection({docurium: docurium})
 
   var mainView = new MainView()
 
@@ -677,10 +678,10 @@ $(function() {
   window.ws = router
   docurium.once('change:data', function() {Backbone.history.start()})
 
-  var fileList = new FileListModel({docurium: window.docurium})
+  var fileList = new FileListModel({docurium: docurium})
   var fileListView = new FileListView({model: fileList})
-  var versionView = new VersionView({model: window.docurium})
-  var versionPickerView = new VersionPickerView({model: window.docurium})
+  var versionView = new VersionView({model: docurium})
+  var versionPickerView = new VersionPickerView({model: docurium})
 
   searchCol.on('reset', function(col, prev) {
     if (col.length == 1) {
