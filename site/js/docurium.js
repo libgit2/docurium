@@ -675,7 +675,6 @@ $(function() {
     router.navigate(docurium.get('version'), {trigger: true})
   })
 
-  window.ws = router
   docurium.once('change:data', function() {Backbone.history.start()})
 
   var fileList = new FileListModel({docurium: docurium})
