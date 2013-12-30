@@ -460,10 +460,6 @@ $(function() {
     // },
 
     render: function() {
-      // we don't render for less than two results
-      if (this.collection.length < 2)
-	return
-
       var content = this.template({results: this.collection.toJSON()})
       this.el = content
      }
