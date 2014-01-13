@@ -214,7 +214,7 @@ class Docurium
     def parse_function(d)
       d[:args] = []
 
-      rval, argline = d[:decl].split(/\s*#{Regexp.quote(d[:name])}\s*/, 2)
+      rval, argline = d[:decl].split(/\s*#{Regexp.quote(d[:name])}\(\s*/, 2)
 
       # clean up rval if it is like "extern static int" or "GIT_EXTERN(int)"
       while rval =~ /[A-Za-z0-9_]+\(([^\)]+)\)$/i
@@ -224,6 +224,8 @@ class Docurium
       rval.strip!
       d[:return] = { :type => rval }
 
+      # we removed the opening parenthesis, which this is expecting
+      argline = '(' + argline
       # clean up argline
       argline = argline.slice(1..-2) while argline[0] == ?( && argline[-1] == ?)
       d[:argline] = argline.strip
