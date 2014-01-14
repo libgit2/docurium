@@ -207,6 +207,19 @@ $(function() {
     }
   })
 
+  var ReleaseNotesView = Backbone.View.extend({
+    template: _.template($('#release-notes-template').html()),
+
+    initialize: function() {
+      this.notes = this.model.get('relnotes')
+    },
+
+    render: function() {
+      this.el = this.template({notes: this.notes})
+      return this
+    },
+  })
+
   var FunctionModel = Backbone.Model.extend({
     initialize: function() {
       var gname = this.get('gname')
@@ -503,7 +516,7 @@ $(function() {
 
     loadVersions: function() {
       $.getJSON("project.json").then(function(data) {
-        docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures, 'name': data.name, 'groups': data.groups})
+        docurium.set({'versions': data.versions, 'github': data.github, 'signatures': data.signatures, 'name': data.name, 'groups': data.groups, 'relnotes': data.relnotes})
         docurium.setVersion()
       })
     },
@@ -575,6 +588,7 @@ $(function() {
       ":version/group/:group/:func":  "groupFun",
       ":version/search/:query":       "search",
       "p/changelog":                  "changelog",
+      "p/release-notes":              "releaseNotes",
     },
 
     initialize: function(o) {
@@ -636,6 +650,11 @@ $(function() {
       this.doc.setVersion()
       this.mainView.setActive(this.changelogView)
     },
+
+    releaseNotes: function() {
+      var view = new ReleaseNotesView({model: this.doc})
+      this.mainView.setActive(view)
+    }
   });
 
   function functionLink(gname, fname, version) {

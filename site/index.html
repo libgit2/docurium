@@ -47,6 +47,19 @@
       <li><a href="#<%= version %>"><%= version %></a></li>
       <% }) %>
       <li><a href="#p/changelog">Changelog</a></li>
+      <li><a href="#p/release-notes">Release Notes</a></li>
+    </script>
+
+    <script type="text/temlate" id="release-notes-template">
+      <h1>Release Notes</h1>
+      <ul>
+	<% _.each(notes, function(note, version) { %>
+	<li>
+	  <h3><%= version %></h3>
+	  <div><%= note %></div>
+	</li>
+	<% }) %>
+      </ul>
     </script>
 
   </head>
