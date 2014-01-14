@@ -95,12 +95,37 @@ class Docurium
     output
   end
 
+  def generate_release_notes(versions)
+    # We want to take the release notes from HEAD, as that contains
+    # the most recent text for all versions (and what are you even
+    # doing if not)
+    version = 'HEAD'
+
+    path = option_version(version, 'notes')
+    return unless path
+
+    out = {}
+    tree = find_subtree(version, path)
+    tree.select { |file|
+      file[:type] == :blob && versions.include?(file[:name])
+    }.each { |file|
+      content = @repo.lookup(file[:oid]).content
+      out[file[:name]] = content
+    }
+
+    out
+  end
+
   def generate_docs
     out "* generating docs"
     output_index = Rugged::Index.new
     write_site(output_index)
     versions = get_versions
     versions << 'HEAD'
+
+    out "  - processing release notes"
+    relnotes = generate_release_notes(versions)
+
     versions.each do |version|
       out "  - processing version #{version}"
       index = @repo.index
@@ -135,6 +160,7 @@ class Docurium
       :github   => @options['github'],
       :name     => @options['name'],
       :signatures => @sigs,
+      :relnotes => relnotes,
       :groups   => @groups
     }
     sha = @repo.write(project.to_json, :blob)

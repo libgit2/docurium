@@ -45,6 +45,7 @@ The Docurium config file looks like this:
      "prefix": "git_",
      "branch": "gh-pages",
      "examples": "examples",
+     "notes": "release-notes",
      "legacy":  {
         "input": {"src/git": ["v0.1.0"],
                   "src/git2": ["v0.2.0", "v0.3.0"]}
