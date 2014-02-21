@@ -14,7 +14,7 @@ temp = <<-TEMPLATE
  "github": "user/project",
  "input":  "include/lib",
  "prefix": "lib_",
- "output": "docs"
+ "branch": "gh-pages"
 }
 TEMPLATE
       puts "Writing to #{file}"
