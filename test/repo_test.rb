@@ -44,16 +44,19 @@ END
     assert_equal 153, @data[:functions].size
   end
 
-  def test_can_extract_globals
-    skip('known breakage')
+  def test_can_extract_enum_from_define
     assert_equal 41, @data[:globals].size
-    entry = @data[:globals]['GIT_IDXENTRY_EXTENDED2']
-    assert_equal "index.h", entry[:file]
-    assert_equal 73, entry[:line]
+    idxentry = @data[:types].find { |a| a[0] == 'GIT_IDXENTRY' }
+    assert idxentry
+    assert_equal 75, idxentry[1][:lineto]
+    # this one is on the last doc block
+    assert idxentry[1][:block].include? 'GIT_IDXENTRY_EXTENDED2'
+    # from an earlier block, should not get overwritten
+    assert idxentry[1][:block].include? 'GIT_IDXENTRY_UPDATE'
   end
 
   def test_can_extract_structs_and_enums
-    assert_equal 24, @data[:types].size
+    assert_equal 25, @data[:types].size
   end
 
   def test_can_find_type_usage

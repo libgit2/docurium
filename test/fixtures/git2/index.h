@@ -44,7 +44,7 @@ GIT_BEGIN_DECL
 #define GIT_IDXENTRY_VALID     (0x8000)
 #define GIT_IDXENTRY_STAGESHIFT 12
 
-/*
+/**
  * Flags are divided into two parts: in-memory flags and
  * on-disk ones. Flags in GIT_IDXENTRY_EXTENDED_FLAGS
  * will get saved on-disk.
@@ -64,7 +64,7 @@ GIT_BEGIN_DECL
 #define GIT_IDXENTRY_UNPACKED          (1 << 8)
 #define GIT_IDXENTRY_NEW_SKIP_WORKTREE (1 << 9)
 
-/*
+/**
  * Extended on-disk flags:
  */
 #define GIT_IDXENTRY_INTENT_TO_ADD     (1 << 13)
