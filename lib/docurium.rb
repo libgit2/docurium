@@ -380,10 +380,12 @@ class Docurium
           @data[:types][r[:name]] ||= {}
           wanted[:types].each do |k|
             next unless r.has_key? k
+            contents = r[k]
             if k == :comments
               contents = md.render r[k]
-            else
-              contents = r[k]
+            elsif k == :block
+              old_block = @data[:types][r[:name]][k]
+              contents = old_block ? [old_block, r[k]].join("\n") : r[k]
             end
             @data[:types][r[:name]][k] = contents
           end
