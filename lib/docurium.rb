@@ -310,7 +310,7 @@ class Docurium
   def update_globals(recs)
     wanted = {
       :functions => %W/type value file line lineto args argline sig return group description comments/.map(&:to_sym),
-      :types => %W/type value file line lineto block tdef comments/.map(&:to_sym),
+      :types => %W/decl type value file line lineto block tdef comments/.map(&:to_sym),
       :globals => %W/value file line comments/.map(&:to_sym),
       :meta => %W/brief defgroup ingroup comments/.map(&:to_sym),
     }
@@ -386,6 +386,10 @@ class Docurium
             elsif k == :block
               old_block = @data[:types][r[:name]][k]
               contents = old_block ? [old_block, r[k]].join("\n") : r[k]
+            elsif k == :decl
+              type = @data[:types][r[:name]]
+              type[:sections] ||= []
+              type[:sections] << [md.render(r[:comments]), r[k]]
             end
             @data[:types][r[:name]][k] = contents
           end
