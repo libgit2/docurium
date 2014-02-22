@@ -119,4 +119,9 @@ END
     assert_equal 6, funcs.size
   end
 
+  def test_can_store_mutliple_enum_doc_sections
+    idxentry = @data[:types].find { |a| a[0] == 'GIT_IDXENTRY' }
+    assert_equal 2, idxentry[1][:sections].size
+  end
+
 end
