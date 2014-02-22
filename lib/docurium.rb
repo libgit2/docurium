@@ -16,7 +16,7 @@ Rocco::Markdown = RedcarpetCompat
 class Docurium
   attr_accessor :branch, :output_dir, :data
 
-  def initialize(config_file, repo = '.')
+  def initialize(config_file, repo = nil)
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
