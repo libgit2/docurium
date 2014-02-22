@@ -2,5 +2,5 @@
  "name":   "libgit2",
  "github": "libgit2/libgit2",
  "prefix": "git_",
- "output": "docs"
+ "branch": "gh-pages"
 }

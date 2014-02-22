@@ -16,13 +16,17 @@ Rocco::Markdown = RedcarpetCompat
 class Docurium
   attr_accessor :branch, :output_dir, :data
 
-  def initialize(config_file)
+  def initialize(config_file, repo = '.')
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
     @groups = {}
-    repo_path = Rugged::Repository.discover('.')
-    @repo = Rugged::Repository.new(repo_path)
+    if repo
+      @repo = repo
+    else
+      repo_path = Rugged::Repository.discover('.')
+      @repo = Rugged::Repository.new(repo_path)
+    end
     clear_data
   end
 
