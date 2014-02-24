@@ -2,14 +2,59 @@ require 'minitest/autorun'
 require 'docurium'
 require 'rugged'
 
+module MiniTestWithHooks
+  class Unit < MiniTest::Unit
+
+    def before_suites
+    end
+
+    def after_suites
+    end
+
+    def _run_suites(suites, type)
+      begin
+        before_suites
+        super(suites, type)
+      ensure
+        after_suites
+      end
+    end
+
+    def _run_suite(suite, type)
+      begin
+        suite.before_suite if suite.respond_to? :before_suite
+        super(suite, type)
+      ensure
+        suite.after_suite if suite.respond_to? :after_suite
+      end
+    end
+
+  end
+end
+
+module MiniTestWithTransactions
+  class Unit < MiniTestWithHooks::Unit
+
+    def before_suites
+      super
+    end
+
+    def after_suites
+      super
+    end
+  end
+end
+
+MiniTest::Unit.runner = MiniTestWithTransactions::Unit.new
+
 class DocuriumTest < MiniTest::Unit::TestCase
 
-  def setup
-    @dir = Dir.mktmpdir()
+    def self.create_repo
+      @@dir = Dir.mktmpdir()
 
-    @repo = Rugged::Repository.init_at(@dir, :bare)
+      repo = Rugged::Repository.init_at(@@dir, :bare)
 
-    config = <<END
+      config = <<END
 {
  "name":   "libgit2",
  "github": "libgit2/libgit2",
@@ -18,24 +63,36 @@ class DocuriumTest < MiniTest::Unit::TestCase
 }
 END
 
-    # Create an index as we would have read from the user's repository
-    index = Rugged::Index.new
-    headers = File.dirname(__FILE__) + '/fixtures/git2/'
-    Dir.entries(headers).each do |rel_path|
-      path = File.join(headers, rel_path)
-      next if File.directory? path
-      id = @repo.write(File.read(path), :blob)
-      index.add(:path => rel_path, :oid => id, :mode => 0100644)
+      # Create an index as we would have read from the user's repository
+      index = Rugged::Index.new
+      headers = File.dirname(__FILE__) + '/fixtures/git2/'
+      Dir.entries(headers).each do |rel_path|
+        path = File.join(headers, rel_path)
+        next if File.directory? path
+        id = repo.write(File.read(path), :blob)
+        index.add(:path => rel_path, :oid => id, :mode => 0100644)
+      end
+
+      path = File.dirname(__FILE__) + '/fixtures/git2/api.docurium'
+      doc = Docurium.new(path, repo)
+      doc.parse_headers(index)
+      @@data = doc.data
     end
 
-    @path = File.dirname(__FILE__) + '/fixtures/git2/api.docurium'
-    @doc = Docurium.new(@path, @repo)
-    @doc.parse_headers(index)
-    @data = @doc.data
+    def self.remove_repo
+      FileUtils.remove_entry(@@dir)
+    end
+
+  def self.before_suite
+    self.create_repo
   end
 
-  def teardown
-    FileUtils.remove_entry(@dir)
+  def self.after_suite
+    self.remove_repo
+  end
+
+  def setup
+    @data = @@data
   end
 
   def test_can_parse_headers
