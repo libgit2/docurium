@@ -268,8 +268,7 @@ class Docurium
       func[group] << key
       func[group].sort!
     end
-    misc = []
-    func.to_a.sort
+    func
   end
 
   def headers(index = nil)

@@ -11,10 +11,9 @@ $(function() {
       var version = docurium.get('version')
 
       // Function groups
-      var funs = _.map(data['groups'], function(group, i) {
-	var name = group[0]
+      var funs = _.map(data['groups'], function(funs, name) {
 	var link = groupLink(name, version)
-	return {name: name, link: link, num: group[1].length}
+	return {name: name, link: link, num: funs.length}
       })
 
       // Types
@@ -213,10 +212,8 @@ $(function() {
       var fname = this.get('fname')
       var docurium = this.get('docurium')
 
-      var group = docurium.getGroup(gname)
-
+      var functions = docurium.get('data')['groups'][gname]
       var fdata = docurium.get('data')['functions']
-      var functions = group[1]
 
       // Function Arguments
       var args = _.map(fdata[fname]['args'], function(arg) {
@@ -245,7 +242,7 @@ $(function() {
       var fileLink = docurium.github_file(data.file, data.line, data.lineto)
       // link to the group
       var version = docurium.get('version')
-      var alsoGroup = '#' + groupLink(group[0], version)
+      var alsoGroup = '#' + groupLink(gname, version)
       var alsoLinks = _.map(functions, function(f) {
 	return {url: '#' + functionLink(gname, f, version), name: f}
       })
@@ -282,9 +279,8 @@ $(function() {
       var sigHist = this.docurium.get('signatures')
       var version = this.docurium.get('version')
 
-      var groups = _.map(data.groups, function(group) {
-	var gname = group[0]
-	var funs = _.map(group[1], function(fun) {
+      var groups = _.map(data.groups, function(funcs, gname) {
+	var funs = _.map(funcs, function(fun) {
 	  var klass = ''
 	  if (sigHist[fun].changes[version])
 	    klass = 'changed'
@@ -355,17 +351,17 @@ $(function() {
     template: _.template($('#group-template').html()),
 
     initialize: function(o) {
-      var group = o.group
-      var gname = group[0]
+      this.gname = o.gname
+      var funcs = o.funcs
       var fdata = o.functions
       var version = o.version
 
-      this.functions = _.map(group[1], function(name) {
-	var url = '#' + functionLink(gname, name, version)
+      this.functions = _.map(funcs, function(name) {
+	var url = '#' + functionLink(this.gname, name, version)
 	var d = fdata[name]
 	return {name: name, url: url, returns: d['return']['type'], argline: d['argline'],
 		description: d['description'], comments: d['comments'], args: d['args']}
-      })
+      }, this)
     },
 
     render: function() {
@@ -522,13 +518,6 @@ $(function() {
       })
     },
 
-    getGroup: function(gname) {
-      var groups = docurium.get('data')['groups']
-      return _.find(groups, function(g) {
-	return g[0] == gname
-      })
-    },
-
     // look for structs and link them 
     hotLink: function(text) {
       types = this.get('data')['types']
@@ -599,10 +588,11 @@ $(function() {
 
     group: function(version, gname) {
       this.doc.setVersion(version)
-      var group = this.doc.getGroup(gname)
-      var fdata = this.doc.get('data')['functions']
+      var data = this.doc.get('data')
+      var funcs = data['groups'][gname]
+      var fdata = data['functions']
       var version = this.doc.get('version')
-      var view = new GroupView({group: group, functions: fdata, version: version})
+      var view = new GroupView({gname: gname, funcs: funcs, functions: fdata, version: version})
       this.mainView.setActive(view)
     },
 

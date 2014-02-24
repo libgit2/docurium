@@ -114,8 +114,7 @@ END
 
   def test_can_group_functions
     assert_equal 14, @data[:groups].size
-    group, funcs = @data[:groups].first
-    assert_equal 'blob', group
+    funcs = @data[:groups]['blob']
     assert_equal 6, funcs.size
   end
 
