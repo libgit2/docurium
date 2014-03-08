@@ -107,7 +107,7 @@ class Docurium
 
       # clang gives us CXCursor_FirstAttr as the first one, so we need
       # to skip it
-      args = children(cursor).drop(1).map do |arg|
+      args = children(cursor).map do |arg|
         {
           :name => arg.display_name,
           :type => arg.type.spelling,
@@ -134,7 +134,13 @@ class Docurium
         :sig => sig,
         :args => args,
         :return => ret,
-        :argline => cursor.display_name # FIXME: create a real argline
+        :argline => args.map { |a|
+          if a[:type].end_with? "*"
+            "#{a[:type]}#{a[:name]}"
+          else
+            "#{a[:type]} #{a[:name]}"
+          end
+        }.join(", ")
       }
     end
 

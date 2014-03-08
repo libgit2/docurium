@@ -45,8 +45,12 @@ EOF
                   :body => 'int some_function(char *string);',
                   :rawComments => raw_comments.strip,
                   :lineto => 9,
+                  :tdef => nil,
                   :type => :function,
                   :name => 'some_function',
+                  :description => ' Do something',
+                  :comments => " Do something\n More explanation of what we do\n \n ",
+                  :sig => 'char *',
                   :args => [{
                               :name => 'string',
                               :type => 'char *',
@@ -54,17 +58,11 @@ EOF
                             }],
                   :return => {
                     :type => 'int',
-                    :comment => 'an integer value'
+                    :comment => ' an integer value'
                   },
-                  :argline => 'char *string',
-                  :sig => 'char *',
-                  :description => ' Do something',
-                  :comments => "More explanation of what we do\n ",
                   :decl => 'int some_function(char *string)',
+                  :argline => 'char *string',
                 }]
-
-    pp expected
-    pp actual
 
     assert_equal expected.pretty_inspect, actual.pretty_inspect
   end
@@ -115,13 +113,13 @@ EOF
                             }],
                   :return => {
                     :type => 'int',
-                    :comment => ' an integer value'
+                    :comment => 'an integer value'
                   },
                   :argline => "char *string,\n    size_t len",
                   :sig => 'char *::size_t',
                   :description => 'Do something',
                   :lineto => 11,
-                  :comments => " Do something\n More explanation of what we do\n",
+                  :comments => "More explanation of what we do\n",
                   :name => 'some_function'}]
 
     assert_equal expected, actual
