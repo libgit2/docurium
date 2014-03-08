@@ -126,7 +126,6 @@ GIT_EXTERN(int) some_public_function(int val);
 EOF
 
     actual = @parser.parse_file(name_b, [[name_a, contents_a], [name_b, contents_b]])
-
     # "Fix" the path so we remove the temp dir
     actual[0][:file] = File.split(actual[0][:file])[-1]
 
@@ -152,6 +151,82 @@ EOF
                   },
                   :decl =>"int some_public_function(int val)",
                   :argline =>"int val"
+                }]
+
+    assert_equal expected, actual
+
+  end
+
+  def test_parse_struct
+
+    name = 'struct.h'
+
+    contents = <<EOF
+/**
+* Foo to the bar
+*/
+typedef struct {
+    int val;
+    char *name;
+} git_foo;
+EOF
+
+    actual = @parser.parse_file(name, [[name, contents]])
+    # "Fix" the path so we remove the temp dir
+    actual[0][:file] = File.split(actual[0][:file])[-1]
+
+    expected = [{
+                  :file => "struct.h",
+                  :line => 4,
+                  :lineto => 7,
+                  :tdef => :typedef,
+                  :type => :struct,
+                  :name => "git_foo",
+                  :description => " Foo to the bar",
+                  :comments => " Foo to the bar",
+                  :decl => ["int val", "char * name"],
+                  :block => "int val\nchar * name"
+                }]
+
+    assert_equal expected, actual
+
+  end
+
+  def test_parse_struct_with_field_docs
+
+    name = 'struct.h'
+
+    contents = <<EOF
+/**
+* Foo to the bar
+*/
+typedef struct {
+/**
+* This stores a value
+*/
+    int val;
+/**
+* And this stores its name
+*/
+    char *name;
+} git_foo;
+EOF
+
+    actual = @parser.parse_file(name, [[name, contents]])
+    # "Fix" the path so we remove the temp dir
+    actual[0][:file] = File.split(actual[0][:file])[-1]
+
+    expected = [{
+                  :file => "struct.h",
+                  :line => 4,
+                  :lineto => 13,
+                  :tdef => :typedef,
+                  :type => :struct,
+                  :name => "git_foo",
+                  :description => " Foo to the bar",
+                  :comments => " Foo to the bar",
+                  :decl => ["int val", "char * name"],
+                  :block => "int val\nchar * name"
                 }]
 
     assert_equal expected, actual
