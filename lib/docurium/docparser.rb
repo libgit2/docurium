@@ -122,10 +122,7 @@ class Docurium
       puts "looking at function #{cursor.spelling}, #{cursor.display_name}"
       cmt = extract_function_comment(comment)
 
-      # clang gives us CXCursor_FirstAttr as the first one, so we need
-      # to skip it
       args = children(cursor).map do |arg|
-        puts "Arg #{arg.display_name}"
         {
           :name => arg.display_name,
           :type => arg.type.spelling,
