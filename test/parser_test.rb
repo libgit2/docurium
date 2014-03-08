@@ -17,6 +17,7 @@ class TestParser < Minitest::Unit::TestCase
   end
 
   def test_single_function
+
     name = 'function.h'
     contents = <<EOF
 /**
@@ -59,10 +60,9 @@ EOF
 
   def test_single_multiline_function
 
-    skip("Let's go one at a time")
-
     name = 'function.h'
     contents = <<EOF
+#include <stdlib.h>
 /**
 * Do something
 *
@@ -78,10 +78,15 @@ EOF
 
     actual = @parser.parse_file(name, [[name, contents]])
     expected = [{:file => "function.h",
-                  :line => 9,
-                  :decl => "int some_function(\n    char *string,\n    size_t len)",
-                  :body => "int some_function(\n    char *string,\n    size_t len);",
+                  :line => 10,
+                  :lineto => 12,
+                  :tdef => nil,
                   :type => :function,
+                  :name => 'some_function',
+                  :body => "int some_function(char *string, size_t len);",
+                  :description => ' Do something',
+                  :comments => " Do something\n More explanation of what we do\n ",
+                  :sig => 'char *::size_t',
                   :args => [{
                               :name => 'string',
                               :type => 'char *',
@@ -90,17 +95,15 @@ EOF
                             {
                               :name => 'len',
                               :type => 'size_t',
+                              :comment => nil
                             }],
                   :return => {
                     :type => 'int',
-                    :comment => 'an integer value'
+                    :comment => ' an integer value'
                   },
-                  :argline => "char *string,\n    size_t len",
-                  :sig => 'char *::size_t',
-                  :description => 'Do something',
-                  :lineto => 11,
-                  :comments => "More explanation of what we do\n",
-                  :name => 'some_function'}]
+                  :decl => "int some_function(char *string, size_t len)",
+                  :argline => "char *string, size_t len",
+                }]
 
     assert_equal expected, actual
   end
