@@ -6,4 +6,6 @@ end
 
 gemspec
 
+gem 'ffi-clang', :git => 'https://github.com/ioquatix/ffi-clang.git'
+
 # vim:ft=ruby
