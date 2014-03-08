@@ -57,7 +57,6 @@ class Docurium
           puts "have function"
           rec.merge! extract_function(cursor)
         when :cursor_enum_decl
-          pust "enum!"
           rec.merge! extract_enum(cursor)
         when :cursor_struct
           puts "raw struct"
@@ -197,24 +196,41 @@ class Docurium
       }
     end
 
-    def extract_enum(cursor)
-      subject, desc = extract_subject_desc(cursor.comment)
-
-      values = []
+    def extract_fields(cursor)
+      fields = []
       cursor.visit_children do |cchild, cparent|
-        values << cchild.spelling
+        field = {
+          :type => cchild.type.spelling,
+          :name => cchild.spelling,
+          :comments => extract_subject_desc(cchild.comment)
+        }
+
+        fields << field
         :continue
       end
 
-      block = values.join("\n")
+        fields
+    end
+
+    def extract_enum(cursor)
+      subject, desc = extract_subject_desc(cursor.comment)
+
+      decl = []
+      cursor.visit_children do |cchild, cparent|
+        decl << cchild.spelling
+        :continue
+      end
+
+      block = decl.join("\n")
       #return the docurium object
       {
         :type => :enum,
         :name => cursor.spelling,
         :description => subject,
         :comments => desc,
+        :fields => extract_fields(cursor),
         :block => block,
-        :decl => values,
+        :decl => decl,
       }
     end
 

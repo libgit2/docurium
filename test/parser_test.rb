@@ -263,6 +263,7 @@ EOF
 */
 typedef enum {
 FF  = 0,
+/** Do not allow fast-forwards */
 NO_FF
 } git_merge_action;
 EOF
@@ -271,12 +272,22 @@ EOF
     expected = [{
                   :file => 'enum.h',
                   :line => 4,
-                  :lineto => 7,
+                  :lineto => 8,
                   :tdef => :typedef,
                   :type => :enum,
                   :name => "git_merge_action",
                   :description => " Magical enum of power",
                   :comments => " Magical enum of power",
+                  :fields => [{
+                                :type => "int",
+                                :name => "FF",
+                                :comments => ["", ""]
+                              },
+                              {
+                                :type => "int",
+                                :name => "NO_FF",
+                                :comments => [" Do not allow fast-forwards ", " Do not allow fast-forwards "]
+                              }],
                   :block => "FF\nNO_FF",
                   :decl => ["FF", "NO_FF"]
                 }]
