@@ -30,26 +30,16 @@ class TestParser < Minitest::Unit::TestCase
 int some_function(char *string);
 EOF
 
-    raw_comments = <<EOF
-Do something
-
-More explanation of what we do
-
-@param string a sequence of characters
-@return an integer value
-EOF
-
     actual = @parser.parse_file(name, [[name, contents]])
     expected = [{:file => "function.h",
                   :line => 9,
-                  :body => 'int some_function(char *string);',
-                  :rawComments => raw_comments.strip,
                   :lineto => 9,
                   :tdef => nil,
                   :type => :function,
                   :name => 'some_function',
+                  :body => 'int some_function(char *string);',
                   :description => ' Do something',
-                  :comments => " Do something\n More explanation of what we do\n \n ",
+                  :comments => " Do something\n More explanation of what we do\n ",
                   :sig => 'char *',
                   :args => [{
                               :name => 'string',
@@ -64,7 +54,7 @@ EOF
                   :argline => 'char *string',
                 }]
 
-    assert_equal expected.pretty_inspect, actual.pretty_inspect
+    assert_equal expected, actual
   end
 
   def test_single_multiline_function

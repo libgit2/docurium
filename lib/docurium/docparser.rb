@@ -124,23 +124,31 @@ class Docurium
       # generate function signature
       sig = args.map { |a| a[:type].to_s }.join('::')
 
+      argline = args.map { |a|
+        # pointers don't have a separation between '*' and the name
+        if a[:type].end_with? "*"
+          "#{a[:type]}#{a[:name]}"
+        else
+          "#{a[:type]} #{a[:name]}"
+        end
+      }.join(', ')
+
+      decl = "#{ret[:type]} #{cursor.spelling}(#{argline})"
+      body = "#{decl};"
+
       puts cursor.display_name
       # Return the format that docurium expects
       {
         :type => :function,
         :name => cursor.spelling,
+        :body => body,
         :description => cmt[:description],
         :comments => cmt[:comments],
         :sig => sig,
         :args => args,
         :return => ret,
-        :argline => args.map { |a|
-          if a[:type].end_with? "*"
-            "#{a[:type]}#{a[:name]}"
-          else
-            "#{a[:type]} #{a[:name]}"
-          end
-        }.join(", ")
+        :decl => decl,
+        :argline => argline
       }
     end
 
