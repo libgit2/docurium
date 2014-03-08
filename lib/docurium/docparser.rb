@@ -202,6 +202,10 @@ class Docurium
           :comments => extract_subject_desc(cchild.comment)
         }
 
+        if cursor.kind == :cursor_enum_decl
+          field.merge!({:value => cchild.enum_value})
+        end
+
         fields << field
         :continue
       end

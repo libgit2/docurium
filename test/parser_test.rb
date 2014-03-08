@@ -264,7 +264,7 @@ EOF
 typedef enum {
 FF  = 0,
 /** Do not allow fast-forwards */
-NO_FF
+NO_FF = 1 << 2
 } git_merge_action;
 EOF
 
@@ -281,12 +281,14 @@ EOF
                   :fields => [{
                                 :type => "int",
                                 :name => "FF",
-                                :comments => ["", ""]
+                                :comments => ["", ""],
+                                :value => 0,
                               },
                               {
                                 :type => "int",
                                 :name => "NO_FF",
-                                :comments => [" Do not allow fast-forwards ", " Do not allow fast-forwards "]
+                                :comments => [" Do not allow fast-forwards ", " Do not allow fast-forwards "],
+                                :value => 4,
                               }],
                   :block => "FF\nNO_FF",
                   :decl => ["FF", "NO_FF"]
