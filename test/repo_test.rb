@@ -69,7 +69,7 @@ END
     func = @data[:functions]['git_blob_rawcontent']
     assert_equal "<p>Get a read-only buffer with the raw content of a blob.</p>\n",  func[:description]
     assert_equal 'const void *',  func[:return][:type]
-    assert_equal 'the pointer; NULL if the blob has no contents',  func[:return][:comment]
+    assert_equal ' the pointer; NULL if the blob has no contents',  func[:return][:comment]
     assert_equal 84,              func[:line]
     assert_equal 84,              func[:lineto]
     assert_equal 'blob.h',        func[:file]
@@ -82,7 +82,7 @@ END
   def test_can_parse_defined_functions
     func = @data[:functions]['git_tree_lookup']
     assert_equal 'int',     func[:return][:type]
-    assert_equal '0 on success; error code otherwise',     func[:return][:comment]
+    assert_equal ' 0 on success; error code otherwise',     func[:return][:comment]
     assert_equal 50,        func[:line]
     assert_equal 'tree.h',  func[:file]
     assert_equal 'id',               func[:args][2][:name]
@@ -93,7 +93,7 @@ END
   def test_can_parse_function_cast_args
     func = @data[:functions]['git_reference_listcb']
     assert_equal 'int',             func[:return][:type]
-    assert_equal '0 on success; error code otherwise',  func[:return][:comment]
+    assert_equal ' 0 on success; error code otherwise',  func[:return][:comment]
     assert_equal 321,               func[:line]
     assert_equal 'refs.h',          func[:file]
     assert_equal 'repo',              func[:args][0][:name]
@@ -108,7 +108,7 @@ END
 
   def test_can_get_the_full_description_from_multi_liners
     func = @data[:functions]['git_commit_create_o']
-    desc = "<p>Create a new commit in the repository using <code>git_object</code>\ninstances as parameters.</p>\n"
+    desc = "<p>Create a new commit in the repository using <code>git_object</code>\n instances as parameters.</p>\n"
     assert_equal desc, func[:description]
   end
 
@@ -121,6 +121,7 @@ END
 
   def test_can_store_mutliple_enum_doc_sections
     idxentry = @data[:types].find { |a| a[0] == 'GIT_IDXENTRY' }
+    assert idxentry, "GIT_IDXENTRY did not get automatically created"
     assert_equal 2, idxentry[1][:sections].size
   end
 

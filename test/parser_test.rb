@@ -10,14 +10,7 @@ class TestParser < Minitest::Unit::TestCase
 
   # e.g. parse('git2/refs.h')
   def parse(path, contents)
-
-    actual = @parser.parse_file(path, [[path, contents]])
-    # "Fix" the path so we remove the temp dir
-    if actual[0]
-      actual[0][:file] = File.split(actual[0][:file])[-1]
-    end
-
-    actual
+    @parser.parse_file(path, [[path, contents]])
   end
 
   def test_single_function

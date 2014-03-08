@@ -5,8 +5,8 @@ class Docurium
   class DocParser
     # Entry point for this parser
     # Parse `filename` out of the hash `files`
-    def parse_file(filename, files)
-      puts "called for #{filename}"
+    def parse_file(orig_filename, files)
+      puts "called for #{orig_filename}"
 
       # unfortunately Clang wants unsaved files to exist on disk, so
       # we need to create at least empty files for each unsaved file
@@ -22,7 +22,7 @@ class Docurium
       end
 
       # Override the path we want to filter by
-      filename = File.join(tmpdir, filename)
+      filename = File.join(tmpdir, orig_filename)
       tu = Index.new.parse_translation_unit(filename, [], unsaved, {:detailed_preprocessing_record => 1})
 
       FileUtils.remove_entry(tmpdir)
@@ -48,7 +48,7 @@ class Docurium
 
         extent = cursor.extent
         rec = {
-          :file => filename,
+          :file => orig_filename,
           :line => extent.start.line,
           :lineto => extent.end.line,
           :tdef => nil,
@@ -133,7 +133,10 @@ class Docurium
       puts "looking at function #{cursor.spelling}, #{cursor.display_name}"
       cmt = extract_function_comment(comment)
 
-      args = children(cursor).map do |arg|
+      # Unexposed attribute means that clang doesn't really know
+      # what's behind the type (e.g. for opaque types like git_blob,
+      # where we define the type, but we don't tell anybody what's inside)
+      args = children(cursor).reject {|c| c.kind == :cursor_unexposed_attr} .map do |arg|
         {
           :name => arg.display_name,
           :type => arg.type.spelling,
