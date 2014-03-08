@@ -220,6 +220,19 @@ class Docurium
     def extract_struct(cursor)
       subject, desc = extract_subject_desc(cursor.comment)
 
+      fields = []
+      cursor.visit_children do |cchild, cparent|
+
+        field = {
+          :type => cchild.type.spelling,
+          :name => cchild.spelling,
+          :comments => extract_subject_desc(cchild.comment)
+        }
+
+        fields << field
+        :continue
+      end
+
       values = []
       cursor.visit_children do |cchild, cparent|
         values << "#{cchild.type.spelling} #{cchild.spelling}"
@@ -233,6 +246,7 @@ class Docurium
         :name => cursor.spelling,
         :description => subject,
         :comments => desc,
+        :fields => fields,
         :decl => values,
       }
 

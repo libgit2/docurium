@@ -184,6 +184,18 @@ EOF
                   :name => "git_foo",
                   :description => " Foo to the bar",
                   :comments => " Foo to the bar",
+                  :fields => [
+                              {
+                                :type => "int",
+                                :name => "val",
+                                :comments => ["", ""]
+                              },
+                              {
+                                :type => "char *",
+                                :name => "name",
+                                :comments => ["", ""]
+                              }
+                             ],
                   :decl => ["int val", "char * name"],
                   :block => "int val\nchar * name"
                 }]
@@ -225,6 +237,18 @@ EOF
                   :name => "git_foo",
                   :description => " Foo to the bar",
                   :comments => " Foo to the bar",
+                  :fields => [
+                              {
+                                :type => "int",
+                                :name => "val",
+                                :comments => [" This stores a value", " This stores a value"]
+                              },
+                              {
+                                :type => "char *",
+                                :name => "name",
+                                :comments => [" And this stores its name", " And this stores its name"]
+                              }
+                             ],
                   :decl => ["int val", "char * name"],
                   :block => "int val\nchar * name"
                 }]
