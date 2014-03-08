@@ -76,21 +76,11 @@ int some_function(
     size_t len);
 EOF
 
-    raw_comments = <<EOF
-Do something
-
-More explanation of what we do
-
-@param string a sequence of characters
-@return an integer value
-EOF
-
-    actual = @parser.parse_text(name, contents)
+    actual = @parser.parse_file(name, [[name, contents]])
     expected = [{:file => "function.h",
                   :line => 9,
                   :decl => "int some_function(\n    char *string,\n    size_t len)",
                   :body => "int some_function(\n    char *string,\n    size_t len);",
-                  :rawComments => raw_comments.strip,
                   :type => :function,
                   :args => [{
                               :name => 'string',
