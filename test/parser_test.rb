@@ -13,7 +13,9 @@ class TestParser < Minitest::Unit::TestCase
 
     actual = @parser.parse_file(path, [[path, contents]])
     # "Fix" the path so we remove the temp dir
-    actual[0][:file] = File.split(actual[0][:file])[-1]
+    if actual[0]
+      actual[0][:file] = File.split(actual[0][:file])[-1]
+    end
 
     actual
   end
@@ -295,6 +297,23 @@ EOF
                 }]
 
     assert_equal expected, actual
+
+  end
+
+  def test_parse_define
+
+    name = 'define.h'
+    contents = <<EOF
+/**
+* Path separator
+*/
+#define PATH_SEPARATOR '/'
+EOF
+
+    actual = parse(name, contents)
+
+    #Clang won't let us do comments on defines :("
+    assert_equal [], actual
 
   end
 
