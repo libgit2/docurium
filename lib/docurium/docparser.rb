@@ -30,17 +30,19 @@ class Docurium
       cursor = tu.cursor
 
       recs = []
+
       cursor.visit_children do |cursor, parent|
         #puts "visiting #{cursor.kind} - #{cursor.spelling}"
         location = cursor.location
         next :continue if location.file == nil
-        puts "for file #{location.file} #{cursor.kind} #{cursor.spelling} #{cursor.comment.kind}"
+        next :continue unless location.file == filename
+
+        puts "for file #{location.file} #{cursor.kind} #{cursor.spelling} #{cursor.comment.kind} #{location.line}"
         cursor.visit_children do |c|
           puts "  child #{c.kind}, #{c.spelling}, #{c.comment.kind}"
           :continue
         end
 
-        next :continue unless location.file == filename
         next :continue if cursor.comment.kind == :comment_null
         next :continue if cursor.spelling == ""
 
@@ -78,8 +80,15 @@ class Docurium
       child = nil
       cursor.visit_children { |c| child = c; :break }
       rec = {
+        :name => cursor.spelling,
+        :underlying_type => cursor.underlying_type.spelling,
         :tdef => :typedef,
       }
+
+      if not child
+        return rec
+      end
+
       puts "have typedef #{child.kind}, #{cursor.extent.start.line}"
       case child.kind
       when :cursor_typeref
@@ -101,6 +110,8 @@ class Docurium
         rec[:decl] = cursor.spelling
         rec[:description] = subject
         rec[:comments] = desc
+      when :cursor_type_ref
+        rec[:decl] = cursor.spelling
       else
         raise "No idea how to handle #{child.kind}"
       end

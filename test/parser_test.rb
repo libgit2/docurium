@@ -184,6 +184,7 @@ EOF
                   :tdef => :typedef,
                   :type => :struct,
                   :name => "git_foo",
+                  :underlying_type => 'struct git_foo',
                   :description => " Foo to the bar",
                   :comments => " Foo to the bar",
                   :fields => [
@@ -234,6 +235,7 @@ EOF
                   :tdef => :typedef,
                   :type => :struct,
                   :name => "git_foo",
+                  :underlying_type => 'struct git_foo',
                   :description => " Foo to the bar",
                   :comments => " Foo to the bar",
                   :fields => [
@@ -278,6 +280,7 @@ EOF
                   :tdef => :typedef,
                   :type => :enum,
                   :name => "git_merge_action",
+                  :underlying_type => 'enum git_merge_action',
                   :description => " Magical enum of power",
                   :comments => " Magical enum of power",
                   :fields => [{
@@ -314,6 +317,51 @@ EOF
 
     #Clang won't let us do comments on defines :("
     assert_equal [], actual
+
+  end
+
+  def test_type_reference
+
+    name = 'typeref.h'
+    contents = <<EOF
+/**
+* My very own type
+*/
+typedef int my_type;
+EOF
+
+    actual = parse(name, contents)
+    expected = [{
+                  :file => "typeref.h",
+                  :line => 4,
+                  :lineto => 4,
+                  :tdef => :typedef,
+                  :name => "my_type",
+                  :underlying_type => "int"
+                }]
+
+    assert_equal actual, expected
+
+    name = 'typeref.h'
+    contents = <<EOF
+/**
+* My very own type
+*/
+typedef struct my_type my_type;
+EOF
+
+    actual = parse(name, contents)
+    expected = [{
+                  :file => "typeref.h",
+                  :line => 4,
+                  :lineto => 4,
+                  :tdef => :typedef,
+                  :name => "my_type",
+                  :underlying_type => "struct my_type"
+                }]
+
+    assert_equal actual, expected
+
 
   end
 
