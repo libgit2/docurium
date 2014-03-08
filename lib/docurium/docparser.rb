@@ -8,8 +8,25 @@ class Docurium
     def parse_file(filename, files)
       puts "called for #{filename}"
 
-      tu = Index.new.parse_translation_unit(filename, nil, unsaved_files(files), {:detailed_preprocessing_record => 1})
-      #tu = Index.new.parse_translation_unit(filename, ["-Igit2"], unsaved_files(files), {:detailed_preprocessing_record => 1})
+      # unfortunately Clang wants unsaved files to exist on disk, so
+      # we need to create at least empty files for each unsaved file
+      # we're given.
+
+      tmpdir = Dir.mktmpdir()
+
+      unsaved = files.map do |name, contents|
+        full_path = File.join(tmpdir, name)
+        File.new(full_path, File::CREAT).close()
+
+        UnsavedFile.new(full_path, contents)
+      end
+
+      # Override the path we want to filter by
+      filename = File.join(tmpdir, filename)
+      tu = Index.new.parse_translation_unit(filename, [], unsaved, {:detailed_preprocessing_record => 1})
+
+      FileUtils.remove_entry(tmpdir)
+
       cursor = tu.cursor
 
       recs = []
@@ -231,16 +248,6 @@ class Docurium
       end
 
       list
-    end
-
-    def unsaved_files(files)
-      files.map do |name, content|
-        fixed = content.gsub(/GIT_EXTERN\((.*?)\)/, '\1')
-        if name == "attr.h"
-          puts fixed
-        end
-        UnsavedFile.new(name, fixed)
-      end
     end
 
   end

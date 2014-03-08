@@ -108,4 +108,54 @@ EOF
     assert_equal expected, actual
   end
 
+  def test_parsing_with_extern
+
+    name_a = 'common.h'
+    contents_a = <<EOF
+# define GIT_EXTERN(type) extern type
+EOF
+
+    name_b = 'function.h'
+    contents_b = <<EOF
+#include "common.h"
+
+/**
+* Awesomest API
+*/
+GIT_EXTERN(int) some_public_function(int val);
+EOF
+
+    actual = @parser.parse_file(name_b, [[name_a, contents_a], [name_b, contents_b]])
+
+    # "Fix" the path so we remove the temp dir
+    actual[0][:file] = File.split(actual[0][:file])[-1]
+
+    expected = [{
+                  :file => "function.h",
+                  :line => 6,
+                  :lineto => 6,
+                  :tdef => nil,
+                  :type => :function,
+                  :name => "some_public_function",
+                  :body => "int some_public_function(int val);",
+                  :description => " Awesomest API",
+                  :comments => " Awesomest API",
+                  :sig => "int",
+                  :args => [{
+                              :name=>"val",
+                              :type=>"int",
+                              :comment=>nil
+                            }],
+                  :return => {
+                    :type=>"int",
+                    :comment=>nil
+                  },
+                  :decl =>"int some_public_function(int val)",
+                  :argline =>"int val"
+                }]
+
+    assert_equal expected, actual
+
+  end
+
 end
