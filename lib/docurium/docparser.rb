@@ -57,6 +57,7 @@ class Docurium
           puts "have function"
           rec.merge! extract_function(cursor)
         when :cursor_enum_decl
+          pust "enum!"
           rec.merge! extract_enum(cursor)
         when :cursor_struct
           puts "raw struct"

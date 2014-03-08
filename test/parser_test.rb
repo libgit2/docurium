@@ -9,11 +9,13 @@ class TestParser < Minitest::Unit::TestCase
   end
 
   # e.g. parse('git2/refs.h')
-  def parse(path)
-    realpath = File.dirname(__FILE__) + '/fixtures/' + path
+  def parse(path, contents)
 
-    parser = Docurium::DocParser.new
-    parser.parse_file(path, [[path, File.read(realpath)]])
+    actual = @parser.parse_file(path, [[path, contents]])
+    # "Fix" the path so we remove the temp dir
+    actual[0][:file] = File.split(actual[0][:file])[-1]
+
+    actual
   end
 
   def test_single_function
@@ -31,7 +33,7 @@ class TestParser < Minitest::Unit::TestCase
 int some_function(char *string);
 EOF
 
-    actual = @parser.parse_file(name, [[name, contents]])
+    actual = parse(name, contents)
     expected = [{:file => "function.h",
                   :line => 9,
                   :lineto => 9,
@@ -76,7 +78,7 @@ int some_function(
     size_t len);
 EOF
 
-    actual = @parser.parse_file(name, [[name, contents]])
+    actual = parse(name, contents)
     expected = [{:file => "function.h",
                   :line => 10,
                   :lineto => 12,
@@ -171,9 +173,7 @@ typedef struct {
 } git_foo;
 EOF
 
-    actual = @parser.parse_file(name, [[name, contents]])
-    # "Fix" the path so we remove the temp dir
-    actual[0][:file] = File.split(actual[0][:file])[-1]
+    actual = parse(name, contents)
 
     expected = [{
                   :file => "struct.h",
@@ -224,10 +224,7 @@ typedef struct {
 } git_foo;
 EOF
 
-    actual = @parser.parse_file(name, [[name, contents]])
-    # "Fix" the path so we remove the temp dir
-    actual[0][:file] = File.split(actual[0][:file])[-1]
-
+    actual = parse(name, contents)
     expected = [{
                   :file => "struct.h",
                   :line => 4,
@@ -251,6 +248,37 @@ EOF
                              ],
                   :decl => ["int val", "char * name"],
                   :block => "int val\nchar * name"
+                }]
+
+    assert_equal expected, actual
+
+  end
+
+  def test_parse_enum
+
+    name = 'enum.h'
+    contents = <<EOF
+/**
+* Magical enum of power
+*/
+typedef enum {
+FF  = 0,
+NO_FF
+} git_merge_action;
+EOF
+
+    actual = parse(name, contents)
+    expected = [{
+                  :file => 'enum.h',
+                  :line => 4,
+                  :lineto => 7,
+                  :tdef => :typedef,
+                  :type => :enum,
+                  :name => "git_merge_action",
+                  :description => " Magical enum of power",
+                  :comments => " Magical enum of power",
+                  :block => "FF\nNO_FF",
+                  :decl => ["FF", "NO_FF"]
                 }]
 
     assert_equal expected, actual
