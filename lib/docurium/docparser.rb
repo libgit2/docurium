@@ -6,7 +6,6 @@ class Docurium
     # Entry point for this parser
     # Parse `filename` out of the hash `files`
     def parse_file(orig_filename, files)
-      puts "called for #{orig_filename}"
 
       # unfortunately Clang wants unsaved files to exist on disk, so
       # we need to create at least empty files for each unsaved file
@@ -37,11 +36,11 @@ class Docurium
         next :continue if location.file == nil
         next :continue unless location.file == filename
 
-        puts "for file #{location.file} #{cursor.kind} #{cursor.spelling} #{cursor.comment.kind} #{location.line}"
-        cursor.visit_children do |c|
-          puts "  child #{c.kind}, #{c.spelling}, #{c.comment.kind}"
-          :continue
-        end
+        #puts "for file #{location.file} #{cursor.kind} #{cursor.spelling} #{cursor.comment.kind} #{location.line}"
+        #cursor.visit_children do |c|
+        #  puts "  child #{c.kind}, #{c.spelling}, #{c.comment.kind}"
+        #  :continue
+        #end
 
         next :continue if cursor.comment.kind == :comment_null
         next :continue if cursor.spelling == ""
@@ -56,12 +55,12 @@ class Docurium
 
         case cursor.kind
         when :cursor_function
-          puts "have function"
+          #puts "have function"
           rec.merge! extract_function(cursor)
         when :cursor_enum_decl
           rec.merge! extract_enum(cursor)
         when :cursor_struct
-          puts "raw struct"
+          #puts "raw struct"
           rec.merge! extract_struct(cursor)
         when :cursor_typedef_decl
           rec.merge! extract_typedef(cursor)
@@ -89,10 +88,10 @@ class Docurium
         return rec
       end
 
-      puts "have typedef #{child.kind}, #{cursor.extent.start.line}"
+      #puts "have typedef #{child.kind}, #{cursor.extent.start.line}"
       case child.kind
       when :cursor_typeref
-        puts "pure typedef, #{cursor.spelling}"
+        #puts "pure typedef, #{cursor.spelling}"
         if child.type.kind == :type_record
           rec[:type] = :struct
           rec[:block] = ""
@@ -102,7 +101,7 @@ class Docurium
       when :cursor_enum_decl
         rec.merge! extract_enum(child)
       when :cursor_struct
-        puts "typed struct, #{cursor.spelling}"
+        #puts "typed struct, #{cursor.spelling}"
         rec.merge! extract_struct(child)
       when :cursor_parm_decl
         puts "have parm #{cursor.spelling}, #{cursor.display_name}"
@@ -130,7 +129,7 @@ class Docurium
     def extract_function(cursor)
       comment = cursor.comment
 
-      puts "looking at function #{cursor.spelling}, #{cursor.display_name}"
+      #puts "looking at function #{cursor.spelling}, #{cursor.display_name}"
       cmt = extract_function_comment(comment)
 
       # Unexposed attribute means that clang doesn't really know
@@ -165,7 +164,7 @@ class Docurium
       decl = "#{ret[:type]} #{cursor.spelling}(#{argline})"
       body = "#{decl};"
 
-      puts cursor.display_name
+      #puts cursor.display_name
       # Return the format that docurium expects
       {
         :type => :function,
@@ -258,7 +257,7 @@ class Docurium
         :continue
       end
 
-      puts "struct value #{values}"
+      #puts "struct value #{values}"
 
       rec = {
         :type => :struct,
