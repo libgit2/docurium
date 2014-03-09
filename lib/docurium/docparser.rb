@@ -104,7 +104,7 @@ class Docurium
         #puts "typed struct, #{cursor.spelling}"
         rec.merge! extract_struct(child)
       when :cursor_parm_decl
-        puts "have parm #{cursor.spelling}, #{cursor.display_name}"
+        #puts "have parm #{cursor.spelling}, #{cursor.display_name}"
         subject, desc = extract_subject_desc(cursor.comment)
         rec[:decl] = cursor.spelling
         rec[:description] = subject
@@ -122,7 +122,7 @@ class Docurium
 
     def extract_subject_desc(comment)
       subject = comment.child.text
-      desc = (comment.find_all { |cmt| cmt.kind == :comment_paragraph }).map(&:text).join("\n")
+      desc = (comment.find_all { |cmt| cmt.kind == :comment_paragraph }).drop(1).map(&:text).join("\n\n")
       return subject, desc
     end
 

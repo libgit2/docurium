@@ -37,7 +37,7 @@ EOF
                   :name => 'some_function',
                   :body => 'int some_function(char *string);',
                   :description => ' Do something',
-                  :comments => " Do something\n More explanation of what we do\n ",
+                  :comments => " More explanation of what we do\n\n ",
                   :sig => 'char *',
                   :args => [{
                               :name => 'string',
@@ -82,7 +82,7 @@ EOF
                   :name => 'some_function',
                   :body => "int some_function(char *string, size_t len);",
                   :description => ' Do something',
-                  :comments => " Do something\n More explanation of what we do\n ",
+                  :comments => " More explanation of what we do\n\n ",
                   :sig => 'char *::size_t',
                   :args => [{
                               :name => 'string',
@@ -135,7 +135,7 @@ EOF
                   :name => "some_public_function",
                   :body => "int some_public_function(int val);",
                   :description => " Awesomest API",
-                  :comments => " Awesomest API",
+                  :comments => "",
                   :sig => "int",
                   :args => [{
                               :name=>"val",
@@ -179,7 +179,7 @@ EOF
                   :name => "git_foo",
                   :underlying_type => 'struct git_foo',
                   :description => " Foo to the bar",
-                  :comments => " Foo to the bar",
+                  :comments => "",
                   :fields => [
                               {
                                 :type => "int",
@@ -215,6 +215,8 @@ typedef struct {
     int val;
 /**
 * And this stores its name
+*
+* Which should be pretty descriptive
 */
     char *name;
 } git_foo;
@@ -224,23 +226,23 @@ EOF
     expected = [{
                   :file => "struct.h",
                   :line => 4,
-                  :lineto => 13,
+                  :lineto => 15,
                   :tdef => :typedef,
                   :type => :struct,
                   :name => "git_foo",
                   :underlying_type => 'struct git_foo',
                   :description => " Foo to the bar",
-                  :comments => " Foo to the bar",
+                  :comments => "",
                   :fields => [
                               {
                                 :type => "int",
                                 :name => "val",
-                                :comments => [" This stores a value", " This stores a value"]
+                                :comments => [" This stores a value", ""]
                               },
                               {
                                 :type => "char *",
                                 :name => "name",
-                                :comments => [" And this stores its name", " And this stores its name"]
+                                :comments => [" And this stores its name", " Which should be pretty descriptive"]
                               }
                              ],
                   :decl => ["int val", "char * name"],
@@ -275,7 +277,7 @@ EOF
                   :name => "git_merge_action",
                   :underlying_type => 'enum git_merge_action',
                   :description => " Magical enum of power",
-                  :comments => " Magical enum of power",
+                  :comments => "",
                   :fields => [{
                                 :type => "int",
                                 :name => "FF",
@@ -285,7 +287,7 @@ EOF
                               {
                                 :type => "int",
                                 :name => "NO_FF",
-                                :comments => [" Do not allow fast-forwards ", " Do not allow fast-forwards "],
+                                :comments => [" Do not allow fast-forwards ", ""],
                                 :value => 4,
                               }],
                   :block => "FF\nNO_FF",
