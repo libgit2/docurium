@@ -45,6 +45,7 @@ END
   end
 
   def test_can_extract_enum_from_define
+    skip("this isn't something we do")
     assert_equal 41, @data[:globals].size
     idxentry = @data[:types].find { |a| a[0] == 'GIT_IDXENTRY' }
     assert idxentry
@@ -56,6 +57,7 @@ END
   end
 
   def test_can_extract_structs_and_enums
+    skip("we don't auto-create enums, so the number is wrong")
     assert_equal 25, @data[:types].size
   end
 
@@ -120,6 +122,7 @@ END
   end
 
   def test_can_store_mutliple_enum_doc_sections
+    skip("this isn't something we do")
     idxentry = @data[:types].find { |a| a[0] == 'GIT_IDXENTRY' }
     assert idxentry, "GIT_IDXENTRY did not get automatically created"
     assert_equal 2, idxentry[1][:sections].size
