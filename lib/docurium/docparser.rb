@@ -214,7 +214,7 @@ class Docurium
         field = {
           :type => cchild.type.spelling,
           :name => cchild.spelling,
-          :comments => extract_subject_desc(cchild.comment)
+          :comments => cchild.comment.find_all {|c| c.kind == :comment_paragraph }.map(&:text).join("\n\n")
         }
 
         if cursor.kind == :cursor_enum_decl

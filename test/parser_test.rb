@@ -184,12 +184,12 @@ EOF
                               {
                                 :type => "int",
                                 :name => "val",
-                                :comments => ["", ""]
+                                :comments => "",
                               },
                               {
                                 :type => "char *",
                                 :name => "name",
-                                :comments => ["", ""]
+                                :comments => "",
                               }
                              ],
                   :decl => ["int val", "char * name"],
@@ -237,12 +237,12 @@ EOF
                               {
                                 :type => "int",
                                 :name => "val",
-                                :comments => [" This stores a value", ""]
+                                :comments => " This stores a value",
                               },
                               {
                                 :type => "char *",
                                 :name => "name",
-                                :comments => [" And this stores its name", " Which should be pretty descriptive"]
+                                :comments => " And this stores its name\n\n Which should be pretty descriptive",
                               }
                              ],
                   :decl => ["int val", "char * name"],
@@ -281,13 +281,13 @@ EOF
                   :fields => [{
                                 :type => "int",
                                 :name => "FF",
-                                :comments => ["", ""],
+                                :comments => "",
                                 :value => 0,
                               },
                               {
                                 :type => "int",
                                 :name => "NO_FF",
-                                :comments => [" Do not allow fast-forwards ", ""],
+                                :comments => " Do not allow fast-forwards ",
                                 :value => 4,
                               }],
                   :block => "FF\nNO_FF",

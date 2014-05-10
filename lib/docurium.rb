@@ -303,7 +303,7 @@ class Docurium
 
     wanted = {
       :functions => %W/type value file line lineto args argline sig return group description comments/.map(&:to_sym),
-      :types => %W/decl type value file line lineto block tdef comments/.map(&:to_sym),
+      :types => %W/decl type value file line lineto block tdef comments fields/.map(&:to_sym),
       :globals => %W/value file line comments/.map(&:to_sym),
       :meta => %W/brief defgroup ingroup comments/.map(&:to_sym),
     }
@@ -379,10 +379,12 @@ class Docurium
             elsif k == :block
               old_block = @data[:types][r[:name]][k]
               contents = old_block ? [old_block, r[k]].join("\n") : r[k]
-            elsif k == :decl
+            elsif k == :fields
               type = @data[:types][r[:name]]
-              type[:sections] ||= []
-              type[:sections] << [md.render(r[:comments]), r[k]]
+              type[:fields] = []
+              r[:fields].each do |f|
+                f[:comments] = md.render(f[:comments])
+              end
             end
             @data[:types][r[:name]][k] = contents
           end
