@@ -194,12 +194,12 @@
       <div><%= data.comments %></div>
       <% } %>
       <% if (data.fields) { %>
+      <dl>
       <% _.each(data.fields, function(f) { %>
-      <div>
-	<div><%= f.comments %></div>
-	<div><code><%= f.name %></code>&nbsp;<code><%= f.value %></code></div>
-      </div>
+      <dt><code><%= f.name %> <%= f.value %></code></dt>
+      <dd><%= f.comments %></dd>
       <% }) %>
+      </dl>
       <% } else if (data.block) { %>
       <pre><%= data.block %></pre>
       <% } %>
