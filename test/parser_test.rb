@@ -310,8 +310,18 @@ EOF
 
     actual = parse(name, contents)
 
-    #Clang won't let us do comments on defines :("
-    assert_equal [], actual
+    expected = [{
+                    :file => "define.h",
+                    :line => 4,
+                    :lineto => 4,
+                    :tdef => nil,
+                    :type => :define,
+                    :name => "PATH_SEPARATOR",
+                    :decl => "PATH_SEPARATOR",
+                    :block => "PATH_SEPARATOR",
+                  }]
+
+    assert_equal expected, actual
 
   end
 

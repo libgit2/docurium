@@ -44,7 +44,7 @@ class Docurium
         #  :continue
         #end
 
-        next :continue if cursor.comment.kind == :comment_null
+        next :continue if cursor.comment.kind == :comment_null and cursor.kind != :cursor_macro_definition
         next :continue if cursor.spelling == ""
 
         extent = cursor.extent
@@ -66,6 +66,8 @@ class Docurium
           rec.merge! extract_struct(cursor)
         when :cursor_typedef_decl
           rec.merge! extract_typedef(cursor)
+        when :cursor_macro_definition
+          rec.merge! extract_macro(cursor)
         else
           raise "No idea how to deal with #{cursor.kind}"
         end
@@ -271,6 +273,19 @@ class Docurium
       }
 
       rec[:block] = values.join("\n") unless values.empty?
+      rec
+    end
+
+    def extract_macro(cursor)
+      # these unfortunately do not have comments
+
+      rec = {
+        :type => :define,
+        :name => cursor.spelling,
+        :decl => cursor.spelling,
+        :block => cursor.spelling,
+      }
+
       rec
     end
 
