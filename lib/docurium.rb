@@ -196,12 +196,30 @@ class Docurium
     parser = DocParser.new
     headers.each do |header|
       records = parser.parse_file(header, files)
+      vivify_enums!(records)
       update_globals(records)
     end
 
     @data[:groups] = group_functions
     @data[:types] = @data[:types].sort # make it an assoc array
     find_type_usage
+  end
+
+  # Create enums out of defines with similar names. We're only really
+  # interested in defines which share the second part of the name,
+  # which is a good enough heuristic most of the time
+  def vivify_enums!(records)
+    records.reject! {|r|
+      next false if r[:type] != :define
+      next true if r[:name].split('_').length < 3
+      next false if r[:name].downcase.start_with? @options['prefix']
+      true
+    }
+    defs = records.map.with_index.select {|r, _| r[:type] == :define }
+    puts defs
+    components = defs.map {|r, i| [r[:name].split('_'), i] }
+    puts components
+
   end
 
   private
