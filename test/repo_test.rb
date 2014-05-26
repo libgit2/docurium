@@ -64,7 +64,7 @@ END
   def test_can_find_type_usage
     oid = @data[:types].assoc('git_oid')
     assert_equal 10, oid[1][:used][:returns].size
-    assert_equal 49, oid[1][:used][:needs].size
+    assert_equal 39, oid[1][:used][:needs].size
   end
 
   def test_can_parse_normal_functions

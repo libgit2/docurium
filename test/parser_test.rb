@@ -154,6 +154,48 @@ EOF
 
   end
 
+
+  def test_return_struct
+    name = 'tree.h'
+    contents = <<EOF
+typedef struct git_repository git_repository;
+typedef struct git_tree git_tree;
+
+/**
+ * Weak owner ref
+ */
+git_repository *git_tree_owner(git_tree *tree);
+EOF
+
+    actual = parse(name, contents)
+    expected = [{
+                  :file => "tree.h",
+                  :line => 7,
+                  :lineto => 7,
+                  :tdef => nil,
+                  :type => :function,
+                  :name => "git_tree_owner",
+                  :body => "git_repository * git_tree_owner(git_tree *tree);",
+                  :description => " Weak owner ref",
+                  :comments => "",
+                  :sig => "git_tree *",
+                  :args => [{
+                            :name => "tree",
+                            :type => "git_tree *",
+                            :comment => nil
+                          }],
+                  :return => {
+                    :type => "git_repository *",
+                    :comment => nil
+                  },
+                  :decl => "git_repository * git_tree_owner(git_tree *tree)",
+                  :argline => "git_tree *tree"
+                }]
+
+    assert_equal actual, expected
+
+  end
+
   def test_parse_struct
 
     name = 'struct.h'

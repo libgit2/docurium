@@ -134,10 +134,11 @@ class Docurium
       #puts "looking at function #{cursor.spelling}, #{cursor.display_name}"
       cmt = extract_function_comment(comment)
 
-      # Unexposed attribute means that clang doesn't really know
-      # what's behind the type (e.g. for opaque types like git_blob,
-      # where we define the type, but we don't tell anybody what's inside)
-      args = children(cursor).reject {|c| c.kind == :cursor_unexposed_attr} .map do |arg|
+      # We only want to look at parm_decl to avoid looking at a return
+      # struct as a parameter
+      args = children(cursor)
+        .select {|c| c.kind == :cursor_parm_decl }
+        .map do |arg|
         {
           :name => arg.display_name,
           :type => arg.type.spelling,
