@@ -395,7 +395,7 @@ EOF
                   :tdef => :typedef,
                   :name => "my_type",
                   :underlying_type => "struct my_type",
-                  :decl => 'my_type',
+                  :type => :struct,
                 }]
 
     assert_equal actual, expected

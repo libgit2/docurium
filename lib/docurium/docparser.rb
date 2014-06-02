@@ -92,11 +92,10 @@ class Docurium
 
       #puts "have typedef #{child.kind}, #{cursor.extent.start.line}"
       case child.kind
-      when :cursor_typeref
+      when :cursor_type_ref
         #puts "pure typedef, #{cursor.spelling}"
         if child.type.kind == :type_record
           rec[:type] = :struct
-          rec[:block] = ""
         else
           raise "typede of unhandled #{child.type.kind}"
         end
