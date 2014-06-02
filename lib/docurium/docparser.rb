@@ -96,6 +96,10 @@ class Docurium
         #puts "pure typedef, #{cursor.spelling}"
         if child.type.kind == :type_record
           rec[:type] = :struct
+          subject, desc = extract_subject_desc(cursor.comment)
+          rec[:decl] = cursor.spelling
+          rec[:description] = subject
+          rec[:comments] = desc
         else
           raise "typede of unhandled #{child.type.kind}"
         end

@@ -304,7 +304,7 @@ class Docurium
 
     wanted = {
       :functions => %W/type value file line lineto args argline sig return group description comments/.map(&:to_sym),
-      :types => %W/decl type value file line lineto block tdef comments fields/.map(&:to_sym),
+      :types => %W/decl type value file line lineto block tdef description comments fields/.map(&:to_sym),
       :globals => %W/value file line comments/.map(&:to_sym),
       :meta => %W/brief defgroup ingroup comments/.map(&:to_sym),
     }

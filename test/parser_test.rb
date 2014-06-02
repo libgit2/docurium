@@ -394,8 +394,11 @@ EOF
                   :lineto => 4,
                   :tdef => :typedef,
                   :name => "my_type",
+                  :decl => 'my_type',
                   :underlying_type => "struct my_type",
                   :type => :struct,
+                  :description => ' My very own type',
+                  :comments => '',
                 }]
 
     assert_equal actual, expected
