@@ -49,6 +49,74 @@ class Docurium
     opt
   end
 
+  def generate_doc_for(version)
+    out "  - processing version #{version}"
+    index = @repo.index
+    index.clear
+    clear_data(version)
+    read_subtree(index, version, @data[:prefix])
+    parse_headers(index)
+    tally_sigs(version)
+
+    tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
+    if ex = option_version(version, 'examples')
+      if subtree = find_subtree(version, ex) # check that it exists
+        index.read_tree(subtree)
+        out "  - processing examples for #{version}"
+
+        files = []
+        index.each do |entry|
+          next unless entry[:path].match(/\.c$/)
+          files << entry[:path]
+        end
+
+        files.each do |file|
+          out "    # #{file}"
+
+          # highlight, roccoize and link
+          rocco = Rocco.new(file, files, {:language => 'c'}) do
+            ientry = index[file]
+            blob = @repo.lookup(ientry[:oid])
+            blob.content
+          end
+          rocco_layout = Rocco::Layout.new(rocco, tf)
+          rocco_layout.version = version
+          rf = rocco_layout.render
+
+          extlen = -(File.extname(file).length + 1)
+          rf_path = file[0..extlen] + '.html'
+          rel_path = "ex/#{version}/#{rf_path}"
+
+          # look for function names in the examples and link
+          id_num = 0
+          @data[:functions].each do |f, fdata|
+            rf.gsub!(/#{f}([^\w])/) do |fmatch|
+              extra = $1
+              id_num += 1
+              name = f + '-' + id_num.to_s
+              # save data for cross-link
+              @data[:functions][f][:examples] ||= {}
+              @data[:functions][f][:examples][file] ||= []
+              @data[:functions][f][:examples][file] << rel_path + '#' + name
+              "<a name=\"#{name}\" class=\"fnlink\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
+            end
+          end
+
+          # write example to the repo
+          sha = @repo.write(rf, :blob)
+          output_index.add(:path => rel_path, :oid => sha, :mode => 0100644)
+
+          @data[:examples] ||= []
+          @data[:examples] << [file, rel_path]
+        end
+      end
+
+      if version == 'HEAD'
+        show_warnings
+      end
+    end
+  end
+
   def generate_docs
     out "* generating docs"
     output_index = Rugged::Index.new
@@ -56,71 +124,8 @@ class Docurium
     versions = get_versions
     versions << 'HEAD'
     versions.each do |version|
-      out "  - processing version #{version}"
-      index = @repo.index
-      index.clear
-      clear_data(version)
-      read_subtree(index, version, @data[:prefix])
-      parse_headers(index)
-      tally_sigs(version)
 
-      tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
-      if ex = option_version(version, 'examples')
-        if subtree = find_subtree(version, ex) # check that it exists
-          index.read_tree(subtree)
-          out "  - processing examples for #{version}"
-
-          files = []
-          index.each do |entry|
-            next unless entry[:path].match(/\.c$/)
-            files << entry[:path]
-          end
-
-          files.each do |file|
-            out "    # #{file}"
-
-            # highlight, roccoize and link
-            rocco = Rocco.new(file, files, {:language => 'c'}) do
-              ientry = index[file]
-              blob = @repo.lookup(ientry[:oid])
-              blob.content
-            end
-            rocco_layout = Rocco::Layout.new(rocco, tf)
-            rocco_layout.version = version
-            rf = rocco_layout.render
-
-            extlen = -(File.extname(file).length + 1)
-            rf_path = file[0..extlen] + '.html'
-            rel_path = "ex/#{version}/#{rf_path}"
-
-            # look for function names in the examples and link
-            id_num = 0
-            @data[:functions].each do |f, fdata|
-              rf.gsub!(/#{f}([^\w])/) do |fmatch|
-                extra = $1
-                id_num += 1
-                name = f + '-' + id_num.to_s
-                # save data for cross-link
-                @data[:functions][f][:examples] ||= {}
-                @data[:functions][f][:examples][file] ||= []
-                @data[:functions][f][:examples][file] << rel_path + '#' + name
-                "<a name=\"#{name}\" class=\"fnlink\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
-              end
-            end
-
-            # write example to the repo
-            sha = @repo.write(rf, :blob)
-            output_index.add(:path => rel_path, :oid => sha, :mode => 0100644)
-
-            @data[:examples] ||= []
-            @data[:examples] << [file, rel_path]
-          end
-        end
-
-        if version == 'HEAD'
-          show_warnings
-        end
-      end
+      generate_doc_for(version)
 
       sha = @repo.write(@data.to_json, :blob)
       output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
