@@ -113,25 +113,38 @@ class Docurium
   end
 
   def generate_docs
-    out "* generating docs"
     output_index = Rugged::Index.new
     write_site(output_index)
     @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
     versions = get_versions
     versions << 'HEAD'
     nversions = versions.size
-    versions.each do |version|
+    output = Queue.new
+    worker = Thread.new do
+      versions.each do |version|
 
-      data = generate_doc_for(version)
-      examples = format_examples!(data, version)
+        data = generate_doc_for(version)
+        examples = format_examples!(data, version)
 
+        output << [version, data, examples]
+      end
+    end
+
+    print "Generating documentation [0/#{nversions}]\r"
+    for i in 1..nversions
+      version, data, examples = output.pop
+
+      # There's still some work we need to do serially
       tally_sigs!(version, data)
+      sha = @repo.write(data.to_json, :blob)
+
+      print "Generating documentation [#{i}/#{nversions}]\r"
 
       if version == 'HEAD'
+        puts ''
         show_warnings(data)
       end
 
-      sha = @repo.write(data.to_json, :blob)
       output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
       examples.each do |path, id|
         output_index.add(:path => path, :oid => id, :mode => 0100644)
