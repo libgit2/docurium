@@ -28,10 +28,10 @@ class Docurium
       repo_path = Rugged::Repository.discover('.')
       @repo = Rugged::Repository.new(repo_path)
     end
-    clear_data
+    clear_data!
   end
 
-  def clear_data(version = 'HEAD')
+  def clear_data!(version = 'HEAD')
     @data = {:files => [], :functions => {}, :globals => {}, :types => {}, :prefix => ''}
     @data[:prefix] = option_version(version, 'input', '')
   end
@@ -52,10 +52,10 @@ class Docurium
   def generate_doc_for(version, output_index)
     out "  - processing version #{version}"
     index = Rugged::Index.new
-    clear_data(version)
+    clear_data!(version)
     read_subtree(index, version, @data[:prefix])
-    parse_headers(index)
-    tally_sigs(version)
+    parse_headers!(index)
+    tally_sigs!(version)
 
     if ex = option_version(version, 'examples')
       if subtree = find_subtree(version, ex) # check that it exists
@@ -191,7 +191,7 @@ class Docurium
     VersionSorter.sort(tags)
   end
 
-  def parse_headers(index)
+  def parse_headers!(index)
     headers = index.map { |e| e[:path] }.grep(/\.h$/)
 
     files = headers.map do |file|
@@ -201,17 +201,17 @@ class Docurium
     parser = DocParser.new
     headers.each do |header|
       records = parser.parse_file(header, files)
-      update_globals(records)
+      update_globals!(records)
     end
 
     @data[:groups] = group_functions
     @data[:types] = @data[:types].sort # make it an assoc array
-    find_type_usage
+    find_type_usage!
   end
 
   private
 
-  def tally_sigs(version)
+  def tally_sigs!(version)
     @lastsigs ||= {}
     @data[:functions].each do |fun_name, fun_data|
       if !@sigs[fun_name]
@@ -284,7 +284,7 @@ class Docurium
     func.to_a.sort
   end
 
-  def find_type_usage
+  def find_type_usage!
     # go through all the functions and see where types are used and returned
     # store them in the types data
     @data[:functions].each do |func, fdata|
@@ -303,7 +303,7 @@ class Docurium
     end
   end
 
-  def update_globals(recs)
+  def update_globals!(recs)
     return if recs.empty?
 
     wanted = {
