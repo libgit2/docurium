@@ -9,6 +9,7 @@ require 'docurium/docparser'
 require 'pp'
 require 'rugged'
 require 'redcarpet'
+require 'thread'
 
 # Markdown expects the old redcarpet compat API, so let's tell it what
 # to use
@@ -21,19 +22,18 @@ class Docurium
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
-    @groups = {}
     if repo
       @repo = repo
     else
       repo_path = Rugged::Repository.discover('.')
       @repo = Rugged::Repository.new(repo_path)
     end
-    clear_data
   end
 
-  def clear_data(version = 'HEAD')
-    @data = {:files => [], :functions => {}, :globals => {}, :types => {}, :prefix => ''}
-    @data[:prefix] = option_version(version, 'input', '')
+  def init_data(version = 'HEAD')
+    data = {:files => [], :functions => {}, :globals => {}, :types => {}, :prefix => ''}
+    data[:prefix] = option_version(version, 'input', '')
+    data
   end
 
   def option_version(version, option, default = nil)
@@ -49,81 +49,136 @@ class Docurium
     opt
   end
 
-  def generate_docs
-    out "* generating docs"
-    output_index = Rugged::Index.new
-    write_site(output_index)
-    versions = get_versions
-    versions << 'HEAD'
-    versions.each do |version|
-      out "  - processing version #{version}"
-      index = @repo.index
-      index.clear
-      clear_data(version)
-      read_subtree(index, version, @data[:prefix])
-      parse_headers(index)
-      tally_sigs(version)
+  def format_examples!(data, version)
+    examples = []
+    if ex = option_version(version, 'examples')
+      if subtree = find_subtree(version, ex) # check that it exists
+        index = Rugged::Index.new
+        index.read_tree(subtree)
 
-      tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
-      if ex = option_version(version, 'examples')
-        if subtree = find_subtree(version, ex) # check that it exists
-          index.read_tree(subtree)
-          out "  - processing examples for #{version}"
-
-          files = []
-          index.each do |entry|
-            next unless entry[:path].match(/\.c$/)
-            files << entry[:path]
-          end
-
-          files.each do |file|
-            out "    # #{file}"
-
-            # highlight, roccoize and link
-            rocco = Rocco.new(file, files, {:language => 'c'}) do
-              ientry = index[file]
-              blob = @repo.lookup(ientry[:oid])
-              blob.content
-            end
-            rocco_layout = Rocco::Layout.new(rocco, tf)
-            rocco_layout.version = version
-            rf = rocco_layout.render
-
-            extlen = -(File.extname(file).length + 1)
-            rf_path = file[0..extlen] + '.html'
-            rel_path = "ex/#{version}/#{rf_path}"
-
-            # look for function names in the examples and link
-            id_num = 0
-            @data[:functions].each do |f, fdata|
-              rf.gsub!(/#{f}([^\w])/) do |fmatch|
-                extra = $1
-                id_num += 1
-                name = f + '-' + id_num.to_s
-                # save data for cross-link
-                @data[:functions][f][:examples] ||= {}
-                @data[:functions][f][:examples][file] ||= []
-                @data[:functions][f][:examples][file] << rel_path + '#' + name
-                "<a name=\"#{name}\" class=\"fnlink\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
-              end
-            end
-
-            # write example to the repo
-            sha = @repo.write(rf, :blob)
-            output_index.add(:path => rel_path, :oid => sha, :mode => 0100644)
-
-            @data[:examples] ||= []
-            @data[:examples] << [file, rel_path]
-          end
+        files = []
+        index.each do |entry|
+          next unless entry[:path].match(/\.c$/)
+          files << entry[:path]
         end
 
-        if version == 'HEAD'
-          show_warnings
+        files.each do |file|
+          # highlight, roccoize and link
+          rocco = Rocco.new(file, files, {:language => 'c'}) do
+            ientry = index[file]
+            blob = @repo.lookup(ientry[:oid])
+            blob.content
+          end
+          rocco_layout = Rocco::Layout.new(rocco, @tf)
+          rocco_layout.version = version
+          rf = rocco_layout.render
+
+          extlen = -(File.extname(file).length + 1)
+          rf_path = file[0..extlen] + '.html'
+          rel_path = "ex/#{version}/#{rf_path}"
+
+          # look for function names in the examples and link
+          id_num = 0
+          data[:functions].each do |f, fdata|
+            rf.gsub!(/#{f}([^\w])/) do |fmatch|
+              extra = $1
+              id_num += 1
+              name = f + '-' + id_num.to_s
+              # save data for cross-link
+              data[:functions][f][:examples] ||= {}
+              data[:functions][f][:examples][file] ||= []
+              data[:functions][f][:examples][file] << rel_path + '#' + name
+              "<a name=\"#{name}\" class=\"fnlink\" href=\"../../##{version}/group/#{fdata[:group]}/#{f}\">#{f}</a>#{extra}"
+            end
+          end
+
+          # write example to the repo
+          sha = @repo.write(rf, :blob)
+          examples << [rel_path, sha]
+
+          data[:examples] ||= []
+          data[:examples] << [file, rel_path]
         end
       end
+    end
 
-      sha = @repo.write(@data.to_json, :blob)
+    examples
+  end
+
+  def generate_doc_for(version)
+    index = Rugged::Index.new
+    read_subtree(index, version, option_version(version, 'input', ''))
+    data = parse_headers(index, version)
+    data
+  end
+
+  def generate_docs
+    output_index = Rugged::Index.new
+    write_site(output_index)
+    @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
+    versions = get_versions
+    versions << 'HEAD'
+    nversions = versions.size
+    output = Queue.new
+    pipes = {}
+    versions.each do |version|
+      # We don't need to worry about joining since this process is
+      # going to die immediately
+      read, write = IO.pipe
+      pid = Process.fork do
+        read.close
+
+        data = generate_doc_for(version)
+        examples = format_examples!(data, version)
+
+        Marshal.dump([version, data, examples], write)
+        write.close
+      end
+
+      pipes[pid] = read
+      write.close
+    end
+
+    print "Generating documentation [0/#{nversions}]\r"
+    head_data = nil
+
+    # This may seem odd, but we need to keep reading from the pipe or
+    # the buffer will fill and they'll block and never exit. Therefore
+    # we can't rely on Process.wait to tell us when the work is
+    # done. Instead read from all the pipes concurrently and send the
+    # ruby objects through the queue.
+    Thread.abort_on_exception = true
+    pipes.each do |pid, read|
+      Thread.new do
+        result = read.read
+        output << Marshal.load(result)
+      end
+    end
+
+    for i in 1..nversions
+      version, data, examples = output.pop
+
+      # There's still some work we need to do serially
+      tally_sigs!(version, data)
+      sha = @repo.write(data.to_json, :blob)
+
+      print "Generating documentation [#{i}/#{nversions}]\r"
+
+      # Store it so we can show it at the end
+      if version == 'HEAD'
+        head_data = data
+      end
+
       output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
+      examples.each do |path, id|
+        output_index.add(:path => path, :oid => id, :mode => 0100644)
+      end
+
+      if head_data
+        puts ''
+        show_warnings(data)
+      end
+
     end
 
     project = {
@@ -131,7 +186,6 @@ class Docurium
       :github   => @options['github'],
       :name     => @options['name'],
       :signatures => @sigs,
-      :groups   => @groups
     }
     sha = @repo.write(project.to_json, :blob)
     output_index.add(:path => "project.json", :oid => sha, :mode => 0100644)
@@ -155,12 +209,12 @@ class Docurium
     puts "\tupdated #{br}"
   end
 
-  def show_warnings
+  def show_warnings(data)
     out '* checking your api'
 
     # check for unmatched paramaters
     unmatched = []
-    @data[:functions].each do |f, fdata|
+    data[:functions].each do |f, fdata|
       unmatched << f if fdata[:comments] =~ /@param/
     end
     if unmatched.size > 0
@@ -187,29 +241,32 @@ class Docurium
     VersionSorter.sort(tags)
   end
 
-  def parse_headers(index)
+  def parse_headers(index, version)
     headers = index.map { |e| e[:path] }.grep(/\.h$/)
 
     files = headers.map do |file|
       [file, @repo.lookup(index[file][:oid]).content]
     end
 
+    data = init_data(version)
     parser = DocParser.new
     headers.each do |header|
       records = parser.parse_file(header, files)
-      update_globals(records)
+      update_globals!(data, records)
     end
 
-    @data[:groups] = group_functions
-    @data[:types] = @data[:types].sort # make it an assoc array
-    find_type_usage
+    data[:groups] = group_functions!(data)
+    data[:types] = data[:types].sort # make it an assoc array
+    find_type_usage!(data)
+
+    data
   end
 
   private
 
-  def tally_sigs(version)
+  def tally_sigs!(version, data)
     @lastsigs ||= {}
-    @data[:functions].each do |fun_name, fun_data|
+    data[:functions].each do |fun_name, fun_data|
       if !@sigs[fun_name]
         @sigs[fun_name] ||= {:exists => [], :changes => {}}
       else
@@ -257,9 +314,9 @@ class Docurium
     !!@options['branch']
   end
 
-  def group_functions
+  def group_functions!(data)
     func = {}
-    @data[:functions].each_pair do |key, value|
+    data[:functions].each_pair do |key, value|
       if @options['prefix']
         k = key.gsub(@options['prefix'], '')
       else
@@ -270,8 +327,7 @@ class Docurium
       if !rest
         group = value[:file].gsub('.h', '').gsub('/', '_')
       end
-      @data[:functions][key][:group] = group
-      @groups[key] = group
+      data[:functions][key][:group] = group
       func[group] ||= []
       func[group] << key
       func[group].sort!
@@ -280,26 +336,26 @@ class Docurium
     func.to_a.sort
   end
 
-  def find_type_usage
+  def find_type_usage!(data)
     # go through all the functions and see where types are used and returned
     # store them in the types data
-    @data[:functions].each do |func, fdata|
-      @data[:types].each_with_index do |tdata, i|
+    data[:functions].each do |func, fdata|
+      data[:types].each_with_index do |tdata, i|
         type, typeData = tdata
-        @data[:types][i][1][:used] ||= {:returns => [], :needs => []}
+        data[:types][i][1][:used] ||= {:returns => [], :needs => []}
         if fdata[:return][:type].index(/#{type}[ ;\)\*]/)
-          @data[:types][i][1][:used][:returns] << func
-          @data[:types][i][1][:used][:returns].sort!
+          data[:types][i][1][:used][:returns] << func
+          data[:types][i][1][:used][:returns].sort!
         end
         if fdata[:argline].index(/#{type}[ ;\)\*]/)
-          @data[:types][i][1][:used][:needs] << func
-          @data[:types][i][1][:used][:needs].sort!
+          data[:types][i][1][:used][:needs] << func
+          data[:types][i][1][:used][:needs].sort!
         end
       end
     end
   end
 
-  def update_globals(recs)
+  def update_globals!(data, recs)
     return if recs.empty?
 
     wanted = {
@@ -325,7 +381,7 @@ class Docurium
       # process this type of record
       case r[:type]
       when :function
-        @data[:functions][r[:name]] ||= {}
+        data[:functions][r[:name]] ||= {}
         wanted[:functions].each do |k|
           next unless r.has_key? k
           conents = nil
@@ -334,18 +390,18 @@ class Docurium
           else
             contents = r[k]
           end
-          @data[:functions][r[:name]][k] = contents
+          data[:functions][r[:name]][k] = contents
         end
         file_map[r[:file]][:functions] << r[:name]
 
       when :define, :macro
-        @data[:globals][r[:decl]] ||= {}
+        data[:globals][r[:decl]] ||= {}
         wanted[:globals].each do |k|
           next unless r.has_key? k
           if k == :description || k == :comments
-            @data[:globals][r[:decl]][k] = md.render r[k]
+            data[:globals][r[:decl]][k] = md.render r[k]
           else
-            @data[:globals][r[:decl]][k] = r[k]
+            data[:globals][r[:decl]][k] = r[k]
           end
         end
 
@@ -358,52 +414,52 @@ class Docurium
         if !r[:name]
           # Explode unnamed enum into multiple global defines
           r[:decl].each do |n|
-            @data[:globals][n] ||= {
+            data[:globals][n] ||= {
               :file => r[:file], :line => r[:line],
               :value => "", :comments => md.render(r[:comments]),
             }
             m = /#{Regexp.quote(n)}/.match(r[:body])
             if m
-              @data[:globals][n][:line] += m.pre_match.scan("\n").length
+              data[:globals][n][:line] += m.pre_match.scan("\n").length
               if m.post_match =~ /\s*=\s*([^,\}]+)/
-                @data[:globals][n][:value] = $1
+                data[:globals][n][:value] = $1
               end
             end
           end
         else # enum has name
-          @data[:types][r[:name]] ||= {}
+          data[:types][r[:name]] ||= {}
           wanted[:types].each do |k|
             next unless r.has_key? k
             contents = r[k]
             if k == :comments
               contents = md.render r[k]
             elsif k == :block
-              old_block = @data[:types][r[:name]][k]
+              old_block = data[:types][r[:name]][k]
               contents = old_block ? [old_block, r[k]].join("\n") : r[k]
             elsif k == :fields
-              type = @data[:types][r[:name]]
+              type = data[:types][r[:name]]
               type[:fields] = []
               r[:fields].each do |f|
                 f[:comments] = md.render(f[:comments])
               end
             end
-            @data[:types][r[:name]][k] = contents
+            data[:types][r[:name]][k] = contents
           end
         end
 
       when :struct, :fnptr
-        @data[:types][r[:name]] ||= {}
+        data[:types][r[:name]] ||= {}
         r[:value] ||= r[:name]
         wanted[:types].each do |k|
           next unless r.has_key? k
           if k == :comments
-            @data[:types][r[:name]][k] = md.render r[k]
+            data[:types][r[:name]][k] = md.render r[k]
           else
-            @data[:types][r[:name]][k] = r[k]
+            data[:types][r[:name]][k] = r[k]
           end
         end
         if r[:type] == :fnptr
-          @data[:types][r[:name]][:type] = "function pointer"
+          data[:types][r[:name]][:type] = "function pointer"
         end
 
       else
@@ -412,7 +468,7 @@ class Docurium
 
     end
 
-    @data[:files] << file_map.values[0]
+    data[:files] << file_map.values[0]
   end
 
   def add_dir_to_index(index, prefix, dir)
