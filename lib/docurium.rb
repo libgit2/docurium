@@ -49,7 +49,7 @@ class Docurium
     opt
   end
 
-  def generate_doc_for(version)
+  def generate_doc_for(version, output_index)
     out "  - processing version #{version}"
     index = Rugged::Index.new
     clear_data(version)
@@ -124,7 +124,7 @@ class Docurium
     versions << 'HEAD'
     versions.each do |version|
 
-      generate_doc_for(version)
+      generate_doc_for(version, output_index)
 
       sha = @repo.write(@data.to_json, :blob)
       output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
