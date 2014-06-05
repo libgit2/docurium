@@ -49,12 +49,12 @@ class Docurium
     opt
   end
 
-  def format_examples!(data, version, output_index)
+  def format_examples!(data, version)
+    examples = []
     if ex = option_version(version, 'examples')
       if subtree = find_subtree(version, ex) # check that it exists
         index = Rugged::Index.new
         index.read_tree(subtree)
-        out "  - processing examples for #{version}"
 
         files = []
         index.each do |entry|
@@ -63,8 +63,6 @@ class Docurium
         end
 
         files.each do |file|
-          out "    # #{file}"
-
           # highlight, roccoize and link
           rocco = Rocco.new(file, files, {:language => 'c'}) do
             ientry = index[file]
@@ -96,17 +94,18 @@ class Docurium
 
           # write example to the repo
           sha = @repo.write(rf, :blob)
-          output_index.add(:path => rel_path, :oid => sha, :mode => 0100644)
+          examples << [rel_path, sha]
 
           data[:examples] ||= []
           data[:examples] << [file, rel_path]
         end
       end
     end
+
+    examples
   end
 
   def generate_doc_for(version)
-    out "  - processing version #{version}"
     index = Rugged::Index.new
     read_subtree(index, version, option_version(version, 'input', ''))
     data = parse_headers(index, version)
@@ -124,8 +123,8 @@ class Docurium
     versions.each do |version|
 
       data = generate_doc_for(version)
+      examples = format_examples!(data, version)
 
-      format_examples!(data, version, output_index)
       tally_sigs!(version, data)
 
       if version == 'HEAD'
@@ -134,6 +133,9 @@ class Docurium
 
       sha = @repo.write(data.to_json, :blob)
       output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
+      examples.each do |path, id|
+        output_index.add(:path => path, :oid => id, :mode => 0100644)
+      end
     end
 
     project = {
