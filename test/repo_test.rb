@@ -30,8 +30,7 @@ END
 
     @path = File.dirname(__FILE__) + '/fixtures/git2/api.docurium'
     @doc = Docurium.new(@path, @repo)
-    @doc.parse_headers!(index)
-    @data = @doc.data
+    @data = @doc.parse_headers(index, 'HEAD')
   end
 
   def teardown
