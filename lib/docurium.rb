@@ -54,7 +54,6 @@ class Docurium
     index = Rugged::Index.new
     read_subtree(index, version, option_version(version, 'input', ''))
     data = parse_headers(index, version)
-    tally_sigs!(version, data)
 
     if ex = option_version(version, 'examples')
       if subtree = find_subtree(version, ex) # check that it exists
@@ -123,6 +122,8 @@ class Docurium
     versions.each do |version|
 
       data = generate_doc_for(version, output_index)
+
+      tally_sigs!(version, data)
 
       if version == 'HEAD'
         show_warnings(data)
