@@ -57,7 +57,6 @@ class Docurium
     parse_headers(index)
     tally_sigs(version)
 
-    tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
     if ex = option_version(version, 'examples')
       if subtree = find_subtree(version, ex) # check that it exists
         index.read_tree(subtree)
@@ -78,7 +77,7 @@ class Docurium
             blob = @repo.lookup(ientry[:oid])
             blob.content
           end
-          rocco_layout = Rocco::Layout.new(rocco, tf)
+          rocco_layout = Rocco::Layout.new(rocco, @tf)
           rocco_layout.version = version
           rf = rocco_layout.render
 
@@ -120,6 +119,7 @@ class Docurium
     out "* generating docs"
     output_index = Rugged::Index.new
     write_site(output_index)
+    @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
     versions = get_versions
     versions << 'HEAD'
     versions.each do |version|
