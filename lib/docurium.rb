@@ -9,6 +9,7 @@ require 'docurium/docparser'
 require 'pp'
 require 'rugged'
 require 'redcarpet'
+require 'thread'
 
 # Markdown expects the old redcarpet compat API, so let's tell it what
 # to use
@@ -48,14 +49,10 @@ class Docurium
     opt
   end
 
-  def generate_doc_for(version, output_index)
-    out "  - processing version #{version}"
-    index = Rugged::Index.new
-    read_subtree(index, version, option_version(version, 'input', ''))
-    data = parse_headers(index, version)
-
+  def format_examples!(data, version, output_index)
     if ex = option_version(version, 'examples')
       if subtree = find_subtree(version, ex) # check that it exists
+        index = Rugged::Index.new
         index.read_tree(subtree)
         out "  - processing examples for #{version}"
 
@@ -105,9 +102,14 @@ class Docurium
           data[:examples] << [file, rel_path]
         end
       end
-
     end
+  end
 
+  def generate_doc_for(version)
+    out "  - processing version #{version}"
+    index = Rugged::Index.new
+    read_subtree(index, version, option_version(version, 'input', ''))
+    data = parse_headers(index, version)
     data
   end
 
@@ -118,10 +120,12 @@ class Docurium
     @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
     versions = get_versions
     versions << 'HEAD'
+    nversions = versions.size
     versions.each do |version|
 
-      data = generate_doc_for(version, output_index)
+      data = generate_doc_for(version)
 
+      format_examples!(data, version, output_index)
       tally_sigs!(version, data)
 
       if version == 'HEAD'
