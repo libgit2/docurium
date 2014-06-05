@@ -120,17 +120,41 @@ class Docurium
     versions << 'HEAD'
     nversions = versions.size
     output = Queue.new
-    worker = Thread.new do
-      versions.each do |version|
+    pipes = {}
+    versions.each do |version|
+      # We don't need to worry about joining since this process is
+      # going to die immediately
+      read, write = IO.pipe
+      pid = Process.fork do
+        read.close
 
         data = generate_doc_for(version)
         examples = format_examples!(data, version)
 
-        output << [version, data, examples]
+        Marshal.dump([version, data, examples], write)
+        write.close
       end
+
+      pipes[pid] = read
+      write.close
     end
 
     print "Generating documentation [0/#{nversions}]\r"
+    head_data = nil
+
+    # This may seem odd, but we need to keep reading from the pipe or
+    # the buffer will fill and they'll block and never exit. Therefore
+    # we can't rely on Process.wait to tell us when the work is
+    # done. Instead read from all the pipes concurrently and send the
+    # ruby objects through the queue.
+    Thread.abort_on_exception = true
+    pipes.each do |pid, read|
+      Thread.new do
+        result = read.read
+        output << Marshal.load(result)
+      end
+    end
+
     for i in 1..nversions
       version, data, examples = output.pop
 
@@ -140,15 +164,21 @@ class Docurium
 
       print "Generating documentation [#{i}/#{nversions}]\r"
 
+      # Store it so we can show it at the end
       if version == 'HEAD'
-        puts ''
-        show_warnings(data)
+        head_data = data
       end
 
       output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
       examples.each do |path, id|
         output_index.add(:path => path, :oid => id, :mode => 0100644)
       end
+
+      if head_data
+        puts ''
+        show_warnings(data)
+      end
+
     end
 
     project = {
