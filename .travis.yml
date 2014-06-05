@@ -4,3 +4,10 @@ rvm:
  - ruby-2.1
  - ruby-head
  - rbx
+
+env:
+ - LLVM_CONFIG=llvm-config-3.3
+
+before_install:
+ - sudo apt-get update
+ - sudo apt-get install libclang-3.3-dev llvm-3.3

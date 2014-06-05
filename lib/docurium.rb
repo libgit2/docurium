@@ -4,7 +4,8 @@ require 'version_sorter'
 require 'rocco'
 require 'docurium/version'
 require 'docurium/layout'
-require 'docurium/cparser'
+require 'libdetect'
+require 'docurium/docparser'
 require 'pp'
 require 'rugged'
 require 'redcarpet'
@@ -187,8 +188,15 @@ class Docurium
   end
 
   def parse_headers(index)
-    headers(index).each do |header|
-      records = parse_header(index, header)
+    headers = index.map { |e| e[:path] }.grep(/\.h$/)
+
+    files = headers.map do |file|
+      [file, @repo.lookup(index[file][:oid]).content]
+    end
+
+    parser = DocParser.new
+    headers.each do |header|
+      records = parser.parse_file(header, files)
       update_globals(records)
     end
 
@@ -272,15 +280,6 @@ class Docurium
     func.to_a.sort
   end
 
-  def headers(index = nil)
-    h = []
-    index.each do |entry|
-      next unless entry[:path].match(/\.h$/)
-      h << entry[:path]
-    end
-    h
-  end
-
   def find_type_usage
     # go through all the functions and see where types are used and returned
     # store them in the types data
@@ -300,17 +299,12 @@ class Docurium
     end
   end
 
-  def parse_header(index, path)
-    id = index[path][:oid]
-    blob = @repo.lookup(id)
-    parser = Docurium::CParser.new
-    parser.parse_text(path, blob.content)
-  end
-
   def update_globals(recs)
+    return if recs.empty?
+
     wanted = {
       :functions => %W/type value file line lineto args argline sig return group description comments/.map(&:to_sym),
-      :types => %W/decl type value file line lineto block tdef comments/.map(&:to_sym),
+      :types => %W/decl type value file line lineto block tdef description comments fields/.map(&:to_sym),
       :globals => %W/value file line comments/.map(&:to_sym),
       :meta => %W/brief defgroup ingroup comments/.map(&:to_sym),
     }
@@ -386,10 +380,12 @@ class Docurium
             elsif k == :block
               old_block = @data[:types][r[:name]][k]
               contents = old_block ? [old_block, r[k]].join("\n") : r[k]
-            elsif k == :decl
+            elsif k == :fields
               type = @data[:types][r[:name]]
-              type[:sections] ||= []
-              type[:sections] << [md.render(r[:comments]), r[k]]
+              type[:fields] = []
+              r[:fields].each do |f|
+                f[:comments] = md.render(f[:comments])
+              end
             end
             @data[:types][r[:name]][k] = contents
           end
