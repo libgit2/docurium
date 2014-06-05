@@ -51,8 +51,7 @@ class Docurium
 
   def generate_doc_for(version)
     out "  - processing version #{version}"
-    index = @repo.index
-    index.clear
+    index = Rugged::Index.new
     clear_data(version)
     read_subtree(index, version, @data[:prefix])
     parse_headers(index)
