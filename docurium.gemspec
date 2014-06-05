@@ -13,15 +13,15 @@ Gem::Specification.new do |s|
   s.description = s.summary
   s.license = 'MIT'
 
-  s.add_dependency "version_sorter", "~>1.1.0"
-  s.add_dependency "mustache", ">= 0.99.4"
+  s.add_dependency "version_sorter", "~>1.1"
+  s.add_dependency "mustache", "~> 0.99"
   s.add_dependency "rocco", "~>0.8"
   s.add_dependency "gli", "~>2.5"
   s.add_dependency "rugged", "~>0.19"
   s.add_dependency "redcarpet", "~>3.0"
-  s.add_dependency "ffi-clang", ">= 0.1.3"
+  s.add_dependency "ffi-clang", "~> 0.2"
   s.add_development_dependency "bundler",   "~>1.0"
-  s.add_development_dependency "rake"
+  s.add_development_dependency "rake", "~> 10.1"
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
