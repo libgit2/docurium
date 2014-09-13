@@ -22,12 +22,7 @@ class Docurium
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
-    if repo
-      @repo = repo
-    else
-      repo_path = Rugged::Repository.discover('.')
-      @repo = Rugged::Repository.new(repo_path)
-    end
+    @repo = repo || Rugged::Repository.discover('.')
   end
 
   def init_data(version = 'HEAD')
@@ -195,7 +190,7 @@ class Docurium
     refname = "refs/heads/#{br}"
     tsha = output_index.write_tree(@repo)
     puts "\twrote tree   #{tsha}"
-    ref = Rugged::Reference.lookup(@repo, refname)
+    ref = @repo.references[refname]
     user = { :name => @repo.config['user.name'], :email => @repo.config['user.email'], :time => Time.now }
     options = {}
     options[:tree] = tsha
@@ -236,9 +231,7 @@ class Docurium
   end
 
   def get_versions
-    tags = []
-    @repo.tags.each { |tag| tags << tag.gsub(%r(^refs/tags/), '') }
-    VersionSorter.sort(tags)
+    VersionSorter.sort(@repo.tags.map { |tag| tag.name.gsub(%r(^refs/tags/), '') })
   end
 
   def parse_headers(index, version)
@@ -282,10 +275,10 @@ class Docurium
   def find_subtree(version, path)
     tree = nil
     if version == 'HEAD'
-      tree = @repo.lookup(@repo.head.target).tree
+      tree = @repo.head.target.tree
     else
-      trg = @repo.lookup(Rugged::Reference.lookup(@repo, "refs/tags/#{version}").target)
-      if(trg.class == Rugged::Tag)
+      trg = @repo.references["refs/tags/#{version}"].target
+      if(trg.kind_of? Rugged::Tag::Annotation)
         trg = trg.target
       end
 

@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.add_dependency "mustache", "~> 0.99"
   s.add_dependency "rocco", "~>0.8"
   s.add_dependency "gli", "~>2.5"
-  s.add_dependency "rugged", "~>0.19"
+  s.add_dependency "rugged", "~>0.21"
   s.add_dependency "redcarpet", "~>3.0"
   s.add_dependency "ffi-clang", "~> 0.2"
   s.add_development_dependency "bundler",   "~>1.0"
