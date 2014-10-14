@@ -185,6 +185,10 @@ class Docurium
     sha = @repo.write(project.to_json, :blob)
     output_index.add(:path => "project.json", :oid => sha, :mode => 0100644)
 
+    css = File.read(File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'css.css')))
+    sha = @repo.write(css, :blob)
+    output_index.add(:path => "ex/css.css", :oid => sha, :mode => 0100644)
+
     br = @options['branch']
     out "* writing to branch #{br}"
     refname = "refs/heads/#{br}"
