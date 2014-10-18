@@ -1,3 +1,4 @@
+require 'tempfile'
 require 'ffi/clang'
 include FFI::Clang
 
