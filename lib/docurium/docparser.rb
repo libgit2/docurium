@@ -101,7 +101,7 @@ class Docurium
           rec[:description] = subject
           rec[:comments] = desc
         else
-          raise "typede of unhandled #{child.type.kind}"
+          rec[:name] = cursor.spelling
         end
       when :cursor_enum_decl
         rec.merge! extract_enum(child)
@@ -114,8 +114,6 @@ class Docurium
         rec[:decl] = cursor.spelling
         rec[:description] = subject
         rec[:comments] = desc
-      when :cursor_type_ref
-        rec[:decl] = cursor.spelling
       else
         raise "No idea how to handle #{child.kind}"
       end
