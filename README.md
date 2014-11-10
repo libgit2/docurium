@@ -81,4 +81,3 @@ If you want to fix or change something, please fork on GitHub, push your change 
 MIT, see LICENCE file
 
 
-# vim:ft=markdown
