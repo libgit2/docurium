@@ -9,6 +9,7 @@ require 'docurium/docparser'
 require 'pp'
 require 'rugged'
 require 'redcarpet'
+require 'redcarpet/compat'
 require 'thread'
 
 # Markdown expects the old redcarpet compat API, so let's tell it what
