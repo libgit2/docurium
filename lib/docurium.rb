@@ -65,13 +65,24 @@ class Docurium
             blob = @repo.lookup(ientry[:oid])
             blob.content
           end
-          rocco_layout = Rocco::Layout.new(rocco, @tf)
-          rocco_layout.version = version
-          rf = rocco_layout.render
 
           extlen = -(File.extname(file).length + 1)
           rf_path = file[0..extlen] + '.html'
           rel_path = "ex/#{version}/#{rf_path}"
+
+          rocco_layout = Rocco::Layout.new(rocco, @tf)
+          # find out how deep our file is so we can use the right
+          # number of ../ in the path
+          depth = rel_path.count('/') - 1
+          if depth == 0
+            rocco_layout[:dirsup] = "./"
+          else
+            rocco_layout[:dirsup] = "../"*depth
+          end
+
+          rocco_layout.version = version
+          rf = rocco_layout.render
+
 
           # look for function names in the examples and link
           id_num = 0
