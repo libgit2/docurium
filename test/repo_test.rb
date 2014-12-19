@@ -129,8 +129,8 @@ END
 
   def test_can_parse_callback
     cb = @data[:callbacks]['git_callback_do_work']
-    assert_equal 'int',             cb[:return][:type]
-
+    # we can mostly assume that the rest works as it's the same as for the functions
+    assert_equal 'int', cb[:return][:type]
   end
 
 end
