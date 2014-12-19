@@ -111,11 +111,15 @@ class Docurium
         #puts "typed struct, #{cursor.spelling}"
         rec.merge! extract_struct(child)
       when :cursor_parm_decl
-        #puts "have parm #{cursor.spelling}, #{cursor.display_name}"
-        subject, desc = extract_subject_desc(cursor.comment)
-        rec[:decl] = cursor.spelling
-        rec[:description] = subject
-        rec[:comments] = desc
+        rec.merge! extract_function(cursor)
+        rec[:type] = :callback
+        # this is wasteful, but we don't get the array from outside
+        cmt = extract_function_comment(cursor.comment)
+        ret = {
+               :type => extract_callback_result(rec[:underlying_type]),
+               :comment => cmt[:return]
+              }
+        rec[:return] = ret
       else
         raise "No idea how to handle #{child.kind}"
       end
@@ -123,6 +127,24 @@ class Docurium
       # functions stored
       rec[:name] = cursor.spelling
       rec
+    end
+
+    def extract_callback_result(type)
+      type[0..(type.index('(') - 1)].strip
+    end
+
+    def extract_function_args(cursor, cmt)
+      # We only want to look at parm_decl to avoid looking at a return
+      # struct as a parameter
+      children(cursor)
+        .select {|c| c.kind == :cursor_parm_decl }
+        .map do |arg|
+        {
+          :name => arg.display_name,
+          :type => arg.type.spelling,
+          :comment => cmt[:args][arg.display_name],
+        }
+      end
     end
 
     def extract_subject_desc(comment)
@@ -136,18 +158,7 @@ class Docurium
 
       #puts "looking at function #{cursor.spelling}, #{cursor.display_name}"
       cmt = extract_function_comment(comment)
-
-      # We only want to look at parm_decl to avoid looking at a return
-      # struct as a parameter
-      args = children(cursor)
-        .select {|c| c.kind == :cursor_parm_decl }
-        .map do |arg|
-        {
-          :name => arg.display_name,
-          :type => arg.type.spelling,
-          :comment => cmt[:args][arg.display_name],
-        }
-      end
+      args = extract_function_args(cursor, cmt)
       #args = args.reject { |arg| arg[:comment].nil? }
 
       ret = {
