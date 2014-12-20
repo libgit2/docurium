@@ -484,6 +484,16 @@ $(function() {
         }
       })
 
+      // look for callbacks
+      _.each(data.callbacks, function(f, name) {
+	if (name.search(value) > -1) {
+	  var gl = functionLink('callback', name, version)
+	  var url = '#' + gl
+	  searchResults.push({url: url, name: name, match: 'callback', navigate: gl})
+	  return
+	}
+      })
+
       this.reset(searchResults)
     },
   })
