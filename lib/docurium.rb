@@ -27,7 +27,7 @@ class Docurium
   end
 
   def init_data(version = 'HEAD')
-    data = {:files => [], :functions => {}, :globals => {}, :types => {}, :prefix => ''}
+    data = {:files => [], :functions => {}, :callbacks => {}, :globals => {}, :types => {}, :prefix => ''}
     data[:prefix] = option_version(version, 'input', '')
     data
   end
@@ -389,17 +389,17 @@ class Docurium
 
       # process this type of record
       case r[:type]
-      when :function
-        data[:functions][r[:name]] ||= {}
+      when :function, :callback
+          t = r[:type] == :function ? :functions : :callbacks
+        data[t][r[:name]] ||= {}
         wanted[:functions].each do |k|
           next unless r.has_key? k
-          conents = nil
           if k == :description || k == :comments
             contents = md.render r[k]
           else
             contents = r[k]
           end
-          data[:functions][r[:name]][k] = contents
+          data[t][r[:name]][k] = contents
         end
         file_map[r[:file]][:functions] << r[:name]
 

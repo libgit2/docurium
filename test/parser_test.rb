@@ -406,4 +406,41 @@ EOF
 
   end
 
+  def test_callaback
+    name = 'typeref.h'
+    contents = <<EOF
+/**
+* This is a callback type
+*
+* @return whether to reschedule
+*/
+typedef int (*some_callback)(int *foo);
+EOF
+
+    actual = parse(name, contents)
+    expected = [{
+                  :file => "typeref.h",
+                  :line => 6,
+                  :lineto => 6,
+                  :tdef => :typedef,
+                  :name => "some_callback",
+                  :underlying_type => "int (*)(int *)",
+                  :type => :callback,
+                  :body => ' some_callback(int *foo);',
+                  :description => ' This is a callback type',
+                  :comments => ' ',
+                  :sig => "int *",
+                  :args => [{:name => "foo",
+                             :type => "int *",
+                             :comment => nil,
+                            }],
+                  :return => {:type => 'int',
+                              :comment => " whether to reschedule"},
+                  :decl => ' some_callback(int *foo)',
+                  :argline => 'int *foo',
+                }]
+
+    assert_equal actual, expected
+  end
+
 end

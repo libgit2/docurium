@@ -39,8 +39,8 @@ END
 
   def test_can_parse_headers
     keys = @data.keys.map { |k| k.to_s }.sort
-    assert_equal ['files', 'functions', 'globals', 'groups', 'prefix', 'types'], keys
-    assert_equal 153, @data[:functions].size
+    assert_equal ['callbacks', 'files', 'functions', 'globals', 'groups', 'prefix', 'types'], keys
+    assert_equal 154, @data[:functions].size
   end
 
   def test_can_extract_enum_from_define
@@ -114,7 +114,7 @@ END
   end
 
   def test_can_group_functions
-    assert_equal 14, @data[:groups].size
+    assert_equal 15, @data[:groups].size
     group, funcs = @data[:groups].first
     assert_equal 'blob', group
     assert_equal 6, funcs.size
@@ -125,6 +125,12 @@ END
     idxentry = @data[:types].find { |a| a[0] == 'GIT_IDXENTRY' }
     assert idxentry, "GIT_IDXENTRY did not get automatically created"
     assert_equal 2, idxentry[1][:sections].size
+  end
+
+  def test_can_parse_callback
+    cb = @data[:callbacks]['git_callback_do_work']
+    # we can mostly assume that the rest works as it's the same as for the functions
+    assert_equal 'int', cb[:return][:type]
   end
 
 end

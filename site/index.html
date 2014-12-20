@@ -138,6 +138,7 @@
        <code class="params"><%= sig %></code>
      </div>
      <!-- function history -->
+     <% if (sigs) { %>
      <div class="signatures">
        <h3>versions</h3>
        <ul>
@@ -146,6 +147,7 @@
 	 <% }) %>
        </ul>
      </div>
+     <% } %> <!-- if we have version history -->
      <div class="fileLink">Defined in: <a href="<%= fileLink %>"> <%= data.file %></a></div>
      <% if (data.examples) { %>
      <div class="funcEx">Used in examples:
@@ -161,6 +163,7 @@
      </ul>
      </div>
      <% } %> <!-- if we have examples -->
+     <% if (alsoLinks) { %>
      <div class="also">
        Also in <a href="<%= alsoGroup %>"><%= groupName %></a> group: <br/>
        <% _.each(_.initial(alsoLinks), function(link) { %>
@@ -169,6 +172,7 @@
        <% var link = _.last(alsoLinks) %>
        <a href="<%= link.url %>"><%= link.name %></a>
      </div>
+     <% } %> <!-- if we have "also" links -->
     </script>
 
     <!-- main page, list of groups and their functions -->
