@@ -394,7 +394,6 @@ class Docurium
         data[t][r[:name]] ||= {}
         wanted[:functions].each do |k|
           next unless r.has_key? k
-          conents = nil
           if k == :description || k == :comments
             contents = md.render r[k]
           else
