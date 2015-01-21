@@ -14,7 +14,7 @@ module LibDetect
     File.exist? DARWIN_LIBCLANG
     ENV['LIBCLANG'] = DARWIN_LIBCLANG
   when /linux/
-    prog = 'llvm-config-3.4'
+    prog = 'llvm-config'
     if find_executable(prog)
       ENV['LLVM_CONFIG'] = prog
     end
