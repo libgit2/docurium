@@ -188,6 +188,11 @@ class Docurium
 
     end
 
+    # We tally the sigantures in the order they finished, which is
+    # arbitrary due to the concurrency, so we need to sort them once
+    # they've finsihed.
+    sort_sigs!
+
     project = {
       :versions => versions.reverse,
       :github   => @options['github'],
@@ -285,6 +290,14 @@ class Docurium
       end
       @sigs[fun_name][:exists] << version
       @lastsigs[fun_name] = fun_data[:sig]
+    end
+  end
+
+  def sort_sigs!
+    @sigs.keys.each do |fn|
+      VersionSorter.sort!(@sigs[fn][:exists])
+      # Put HEAD at the back
+      @sigs[fn][:exists] << @sigs[fn][:exists].shift
     end
   end
 

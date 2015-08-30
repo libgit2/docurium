@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.description = s.summary
   s.license = 'MIT'
 
-  s.add_dependency "version_sorter", "~>1.1"
+  s.add_dependency "version_sorter", "~>2.0"
   s.add_dependency "mustache", "~> 0.99"
   s.add_dependency "rocco", "~>0.8"
   s.add_dependency "gli", "~>2.5"
