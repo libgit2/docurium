@@ -252,7 +252,10 @@ class Docurium
   end
 
   def get_versions
-    VersionSorter.sort(@repo.tags.map { |tag| tag.name.gsub(%r(^refs/tags/), '') })
+    releases = @repo.tags
+               .map { |tag| tag.name.gsub(%r(^refs/tags/), '') }
+               .delete_if { |tagname| tagname.match(%r(-rc\d*$)) }
+    VersionSorter.sort(releases)
   end
 
   def parse_headers(index, version)
