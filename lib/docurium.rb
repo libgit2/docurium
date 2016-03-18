@@ -167,6 +167,7 @@ class Docurium
 
       # There's still some work we need to do serially
       tally_sigs!(version, data)
+      force_utf8(data)
       sha = @repo.write(data.to_json, :blob)
 
       print "Generating documentation [#{i}/#{nversions}]\r"
@@ -223,6 +224,21 @@ class Docurium
     csha = Rugged::Commit.create(@repo, options)
     puts "\twrote commit #{csha}"
     puts "\tupdated #{br}"
+  end
+
+  def force_utf8(data)
+    # Walk the data to force strings encoding to UTF-8.
+    if data.instance_of? Hash
+      data.each do |key, value|
+        if [:comment, :comments, :description].include?(key)
+          data[key] = value.force_encoding('UTF-8') unless value.nil?
+        else
+          force_utf8(value)
+        end
+      end
+    elsif data.respond_to?(:each)
+      data.each { |x| force_utf8(x) }
+    end
   end
 
   def show_warnings(data)
