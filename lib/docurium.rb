@@ -378,9 +378,12 @@ class Docurium
   end
 
   def find_type_usage!(data)
-    # go through all the functions and see where types are used and returned
+    # go through all the functions and callbacks and see where other types are used and returned
     # store them in the types data
-    data[:functions].each do |func, fdata|
+    h = {}
+    h.merge!(data[:functions])
+    h.merge!(data[:callbacks])
+    h.each do |func, fdata|
       data[:types].each_with_index do |tdata, i|
         type, typeData = tdata
         data[:types][i][1][:used] ||= {:returns => [], :needs => []}

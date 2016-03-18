@@ -606,7 +606,10 @@ $(function() {
     },
 
     groupOf: function (func) {
-      return this.get('data')['functions'][func]['group']
+      if(func in this.get('data')['functions']) {
+        return this.get('data')['functions'][func]['group']
+      }
+      return 'callback'
     },
 
     github_file: function(file, line, lineto) {

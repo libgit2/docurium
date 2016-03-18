@@ -191,7 +191,7 @@
 
     <script type="text/template" id="uses-template">
       <% if (returns.length > 0) { %>
-      <h3>Returns</h3>
+      <h3>Returned by</h3>
       <% _.each(_.initial(returns), function(fun) { %>
       <a href="<%= fun.url %>"><%= fun.name %></a>
       <% }) %> <!-- loop over each 'return' -->
@@ -200,7 +200,7 @@
       <% } %> <!-- if we have 'returns' -->
 
       <% if (needs.length > 0) { %>
-      <h3>Argument In</h3>
+      <h3>Argument in</h3>
       <% _.each(_.initial(needs), function(fun) { %>
       <a href="<%= fun.url %>"><%= fun.name %></a>
       <% }) %> <!-- loop over each 'need' -->
