@@ -17,6 +17,12 @@ $(function() {
 	return {name: name, link: link, num: group[1].length}
       })
 
+      // Callbacks
+      var callbacks = _.map(_.keys(data['callbacks']), function(name) {
+	var link = functionLink('callback', name, version)
+	return {name: name, link: link}
+      })
+
       // Types
       var getName = function(type) {
 	var name = type[0];
@@ -50,8 +56,8 @@ $(function() {
 	})
       }
 
-      this.set('data', {funs: funs, enums: enums, structs: structs, opaques: opaques,
-			files: files, examples: examples})
+      this.set('data', {funs: funs, callbacks: callbacks, enums: enums, structs: structs,
+	                opaques: opaques, files: files, examples: examples})
     },
   })
 
@@ -78,12 +84,24 @@ $(function() {
     render: function() {
       var data = this.model.get('data')
 
-      var enumList = this.typeTemplate({title: 'Enums', elements: data.enums})
-      var structList = this.typeTemplate({title: 'Structs', elements: data.structs})
-      var opaquesList = this.typeTemplate({title: 'Opaque Structs', elements: data.opaques})
       var menu = $(this.template({funs: data.funs, files: data.files, examples: data.examples}))
 
-      $('#types-list', menu).append(enumList, structList, opaquesList)
+      if (data.enums.length) {
+          var enumList = this.typeTemplate({title: 'Enums', elements: data.enums})
+          $('#types-list', menu).append(enumList)
+      }
+      if (data.structs.length) {
+          var structList = this.typeTemplate({title: 'Structs', elements: data.structs})
+          $('#types-list', menu).append(structList)
+      }
+      if (data.opaques.length) {
+          var opaquesList = this.typeTemplate({title: 'Opaque Structs', elements: data.opaques})
+          $('#types-list', menu).append(opaquesList)
+      }
+      if (data.callbacks.length) {
+          var callbacksList = this.typeTemplate({title: 'Callbacks', elements: data.callbacks})
+          $('#types-list', menu).append(callbacksList)
+      }
 
       this.$el.html(menu)
       return this
@@ -581,7 +599,7 @@ $(function() {
       })
     },
 
-    // look for structs and link them 
+    // look for structs and link them
     hotLink: function(text) {
       types = this.get('data')['types']
       var version = this.get('version')
