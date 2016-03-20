@@ -241,7 +241,7 @@ $(function() {
 	var cdata = docurium.get('data')['callbacks']
 	ldata = cdata
       } else {
-	var functions = group[1]
+	var functions = _.filter(group[1], function(f){ return f != fname})
       }
 
       // Function Arguments
