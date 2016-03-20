@@ -387,11 +387,11 @@ class Docurium
       data[:types].each_with_index do |tdata, i|
         type, typeData = tdata
         data[:types][i][1][:used] ||= {:returns => [], :needs => []}
-        if fdata[:return][:type].index(/#{type}[ ;\)\*]/)
+        if fdata[:return][:type].index(/#{type}[ ;\)\*]?/)
           data[:types][i][1][:used][:returns] << func
           data[:types][i][1][:used][:returns].sort!
         end
-        if fdata[:argline].index(/#{type}[ ;\)\*]/)
+        if fdata[:argline].index(/#{type}[ ;\)\*]?/)
           data[:types][i][1][:used][:needs] << func
           data[:types][i][1][:used][:needs].sort!
         end
