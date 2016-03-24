@@ -409,6 +409,7 @@ $(function() {
       var cdata = o.callbacks
       var version = o.version
 
+      this.gname = gname.charAt(0).toUpperCase() + gname.substring(1).toLowerCase()
       this.functions = _.map(group[1], function(name) {
 	var url = '#' + functionLink(gname, name, version)
 	var d = fdata[name]
