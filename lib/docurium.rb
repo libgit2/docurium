@@ -167,6 +167,7 @@ class Docurium
 
       # There's still some work we need to do serially
       tally_sigs!(version, data)
+      force_utf8(data)
       sha = @repo.write(data.to_json, :blob)
 
       print "Generating documentation [#{i}/#{nversions}]\r"
@@ -223,6 +224,21 @@ class Docurium
     csha = Rugged::Commit.create(@repo, options)
     puts "\twrote commit #{csha}"
     puts "\tupdated #{br}"
+  end
+
+  def force_utf8(data)
+    # Walk the data to force strings encoding to UTF-8.
+    if data.instance_of? Hash
+      data.each do |key, value|
+        if [:comment, :comments, :description].include?(key)
+          data[key] = value.force_encoding('UTF-8') unless value.nil?
+        else
+          force_utf8(value)
+        end
+      end
+    elsif data.respond_to?(:each)
+      data.each { |x| force_utf8(x) }
+    end
   end
 
   def show_warnings(data)
@@ -362,17 +378,20 @@ class Docurium
   end
 
   def find_type_usage!(data)
-    # go through all the functions and see where types are used and returned
+    # go through all the functions and callbacks and see where other types are used and returned
     # store them in the types data
-    data[:functions].each do |func, fdata|
+    h = {}
+    h.merge!(data[:functions])
+    h.merge!(data[:callbacks])
+    h.each do |func, fdata|
       data[:types].each_with_index do |tdata, i|
         type, typeData = tdata
         data[:types][i][1][:used] ||= {:returns => [], :needs => []}
-        if fdata[:return][:type].index(/#{type}[ ;\)\*]/)
+        if fdata[:return][:type].index(/#{type}[ ;\)\*]?/)
           data[:types][i][1][:used][:returns] << func
           data[:types][i][1][:used][:returns].sort!
         end
-        if fdata[:argline].index(/#{type}[ ;\)\*]/)
+        if fdata[:argline].index(/#{type}[ ;\)\*]?/)
           data[:types][i][1][:used][:needs] << func
           data[:types][i][1][:used][:needs].sort!
         end
