@@ -149,7 +149,8 @@ class Docurium
 
     def extract_subject_desc(comment)
       subject = comment.child.text
-      desc = (comment.find_all { |cmt| cmt.kind == :comment_paragraph }).drop(1).map(&:text).join("\n\n")
+      paras = comment.find_all { |cmt| cmt.kind == :comment_paragraph }.drop(1).map { |p| p.map(&:text).join() }
+      desc = paras.join("\n\n")
       return subject, desc
     end
 
