@@ -15,7 +15,7 @@ module LibDetect
     ENV['LIBCLANG'] = DARWIN_LIBCLANG
   when /linux/
     prog = 'llvm-config'
-    if find_executable(prog)
+    if find_executable(prog) and not ENV.has_key?('LLVM_CONFIG')
       ENV['LLVM_CONFIG'] = prog
     end
   end
