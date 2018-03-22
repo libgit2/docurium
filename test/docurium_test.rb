@@ -20,7 +20,7 @@ class DocuriumTest < Minitest::Test
     end
 
     @path = File.dirname(__FILE__) + '/fixtures/git2/api.docurium'
-    @doc = Docurium.new(@path, @repo)
+    @doc = Docurium.new(@path, {}, @repo)
     @data = @doc.parse_headers(index, 'HEAD')
   end
 

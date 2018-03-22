@@ -19,11 +19,12 @@ Rocco::Markdown = RedcarpetCompat
 class Docurium
   attr_accessor :branch, :output_dir, :data
 
-  def initialize(config_file, repo = nil)
+  def initialize(config_file, cli_options = {}, repo = nil)
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
     @repo = repo || Rugged::Repository.discover(config_file)
+    @cli_options = cli_options
   end
 
   def init_data(version = 'HEAD')
@@ -119,14 +120,14 @@ class Docurium
     data
   end
 
-  def generate_docs(options)
+  def generate_docs
     output_index = Rugged::Index.new
     write_site(output_index)
     @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
     versions = get_versions
     versions << 'HEAD'
     # If the user specified versions, validate them and overwrite
-    if !(vers = options[:for]).empty?
+    if !(vers = @cli_options[:for]).empty?
       vers.each do |v|
         next if versions.include?(v)
         puts "Unknown version #{v}"
