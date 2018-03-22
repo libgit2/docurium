@@ -179,7 +179,7 @@ class Docurium
       # There's still some work we need to do serially
       tally_sigs!(version, data)
       force_utf8(data)
-      sha = @repo.write(data.to_json, :blob)
+      sha = @repo.write(data.to_json, :blob) unless dry_run?
 
       print "Generating documentation [#{i}/#{nversions}]\r"
 
@@ -188,9 +188,11 @@ class Docurium
         head_data = data
       end
 
-      output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
-      examples.each do |path, id|
-        output_index.add(:path => path, :oid => id, :mode => 0100644)
+      unless dry_run?
+        output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
+        examples.each do |path, id|
+          output_index.add(:path => path, :oid => id, :mode => 0100644)
+        end
       end
 
       if head_data
@@ -199,6 +201,8 @@ class Docurium
       end
 
     end
+
+    return if dry_run?
 
     # We tally the signatures in the order they finished, which is
     # arbitrary due to the concurrency, so we need to sort them once
@@ -561,5 +565,9 @@ class Docurium
 
   def out(text)
     puts text
+  end
+
+  def dry_run?
+    @cli_options[:dry_run]
   end
 end
