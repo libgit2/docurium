@@ -62,8 +62,64 @@ END
 
   def test_can_find_type_usage
     oid = @data[:types].assoc('git_oid')
-    assert_equal 10, oid[1][:used][:returns].size
-    assert_equal 39, oid[1][:used][:needs].size
+    oid_returns = [
+      "git_commit_id",
+      "git_commit_parent_oid",
+      "git_commit_tree_oid",
+      "git_object_id",
+      "git_odb_object_id",
+      "git_oid_shorten_new",
+      "git_reference_oid",
+      "git_tag_id",
+      "git_tag_target_oid",
+      "git_tree_entry_id",
+      "git_tree_id"
+    ]
+    assert_equal oid_returns, oid[1][:used][:returns]
+    oid_needs = [
+      "git_blob_create_frombuffer",
+      "git_blob_create_fromfile",
+      "git_blob_lookup",
+      "git_commit_create",
+      "git_commit_create_o",
+      "git_commit_create_ov",
+      "git_commit_create_v",
+      "git_commit_lookup",
+      "git_object_lookup",
+      "git_odb_exists",
+      "git_odb_hash",
+      "git_odb_open_rstream",
+      "git_odb_read",
+      "git_odb_read_header",
+      "git_odb_write",
+      "git_oid_allocfmt",
+      "git_oid_cmp",
+      "git_oid_cpy",
+      "git_oid_fmt",
+      "git_oid_mkraw",
+      "git_oid_mkstr",
+      "git_oid_pathfmt",
+      "git_oid_shorten_add",
+      "git_oid_shorten_free",
+      "git_oid_to_string",
+      "git_reference_create_oid",
+      "git_reference_create_oid_f",
+      "git_reference_set_oid",
+      "git_revwalk_hide",
+      "git_revwalk_next",
+      "git_revwalk_push",
+      "git_tag_create",
+      "git_tag_create_f",
+      "git_tag_create_fo",
+      "git_tag_create_frombuffer",
+      "git_tag_create_o",
+      "git_tag_lookup",
+      "git_tree_create_fromindex",
+      "git_tree_lookup",
+      "git_treebuilder_insert",
+      "git_treebuilder_write"
+    ]
+    assert_equal oid_needs, oid[1][:used][:needs]
   end
 
   def test_can_parse_normal_functions
@@ -104,7 +160,12 @@ END
     assert_equal 'callback',        func[:args][2][:name]
     assert_equal 'int (*)(const char *, void *)', func[:args][2][:type]
     assert_equal 'Function which will be called for every listed ref', func[:args][2][:comment]
-    assert_equal 8, func[:comments].split("\n").size
+    expect_comment =<<-EOF
+    <p>The listed references may be filtered by type, or using a bitwise OR of several types. Use the magic value <code>GIT_REF_LISTALL</code> to obtain all references, including packed ones.</p>
+
+    <p>The <code>callback</code> function will be called for each of the references in the repository, and will receive the name of the reference and the <code>payload</code> value passed to this method.</p>
+    EOF
+    assert_equal expect_comment.split("\n").map(&:strip), func[:comments].split("\n")
   end
 
   def test_can_get_the_full_description_from_multi_liners
