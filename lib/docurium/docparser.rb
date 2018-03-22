@@ -87,7 +87,6 @@ class Docurium
         #  :continue
         #end
 
-        next :continue if cursor.comment.kind == :comment_null
         next :continue if cursor.spelling == ""
 
         extent = cursor.extent

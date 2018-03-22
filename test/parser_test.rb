@@ -172,29 +172,81 @@ git_repository *git_tree_owner(git_tree *tree);
 EOF
 
     actual = parse(name, contents)
-    expected = [{
-                  :file => "tree.h",
-                  :line => 7,
-                  :lineto => 7,
-                  :tdef => nil,
-                  :type => :function,
-                  :name => "git_tree_owner",
-                  :body => "git_repository * git_tree_owner(git_tree *tree);",
-                  :description => " Weak owner ref",
-                  :comments => "",
-                  :sig => "git_tree *",
-                  :args => [{
-                            :name => "tree",
-                            :type => "git_tree *",
-                            :comment => nil
-                          }],
-                  :return => {
-                    :type => "git_repository *",
-                    :comment => nil
+    expected = [
+                  {
+                    :file => "tree.h",
+                    :line => 1,
+                    :lineto => 1,
+                    :tdef => nil,
+                    :type => :struct,
+                    :name => "git_repository",
+                    :description => "",
+                    :comments => "",
+                    :fields => [],
+                    :decl => []
                   },
-                  :decl => "git_repository * git_tree_owner(git_tree *tree)",
-                  :argline => "git_tree *tree"
-                }]
+                  {
+                    :file => "tree.h",
+                    :line => 1,
+                    :lineto => 1,
+                    :tdef => :typedef,
+                    :name => "git_repository",
+                    :underlying_type => "struct git_repository",
+                    :type => :struct,
+                    :decl => "git_repository",
+                    :description => "",
+                    :comments => ""
+                  },
+                  {
+                    :file => "tree.h",
+                    :line => 2,
+                    :lineto => 2,
+                    :tdef => nil,
+                    :type => :struct,
+                    :name => "git_tree",
+                    :description => "",
+                    :comments => "",
+                    :fields => [],
+                    :decl => []
+                  },
+                  {
+                    :file => "tree.h",
+                    :line => 2,
+                    :lineto => 2,
+                    :tdef => :typedef,
+                    :name => "git_tree",
+                    :underlying_type => "struct git_tree",
+                    :type => :struct,
+                    :decl => "git_tree",
+                    :description => "",
+                    :comments => ""
+                  },
+                  {
+                    :file => "tree.h",
+                    :line => 7,
+                    :lineto => 7,
+                    :tdef => nil,
+                    :type => :function,
+                    :name => "git_tree_owner",
+                    :body => "git_repository * git_tree_owner(git_tree *tree);",
+                    :description => " Weak owner ref",
+                    :comments => "",
+                    :sig => "git_tree *",
+                    :args => [
+                      {
+                        :name => "tree",
+                        :type => "git_tree *",
+                        :comment => nil
+                      }
+                    ],
+                    :return => {
+                      :type => "git_repository *",
+                      :comment => nil
+                    },
+                    :decl => "git_repository * git_tree_owner(git_tree *tree)",
+                    :argline => "git_tree *tree"
+                    }
+                  ]
 
     assert_equal expected, actual
 
@@ -392,7 +444,20 @@ typedef struct my_type my_type;
 EOF
 
     actual = parse(name, contents)
-    expected = [{
+    expected = [
+                {
+                  :file => "typeref.h",
+                  :line => 4,
+                  :lineto => 4,
+                  :tdef => nil,
+                  :type => :struct,
+                  :name => "my_type",
+                  :description => "",
+                  :comments => "",
+                  :fields => [],
+                  :decl => []
+                },
+                {
                   :file => "typeref.h",
                   :line => 4,
                   :lineto => 4,
