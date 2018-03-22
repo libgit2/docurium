@@ -2,7 +2,7 @@ require 'minitest/autorun'
 require 'docurium'
 require 'rugged'
 
-class DocuriumTest < MiniTest::Unit::TestCase
+class DocuriumTest < Minitest::Test
 
   def setup
     @dir = Dir.mktmpdir()

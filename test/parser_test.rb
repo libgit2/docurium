@@ -2,7 +2,7 @@ require 'minitest/autorun'
 require 'docurium'
 require 'pp'
 
-class TestParser < Minitest::Unit::TestCase
+class ParserTest < Minitest::Test
 
   def setup
     @parser = Docurium::DocParser.new
