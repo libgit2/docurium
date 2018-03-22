@@ -12,7 +12,7 @@ class GenTest < MiniTest::Unit::TestCase
       Docurium::CLI.gen(file.path)
     end
 
-      Docurium.new file.path
+    assert_raises(Rugged::RepositoryError) { Docurium.new file.path }
   end
 
 end

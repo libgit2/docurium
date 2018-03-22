@@ -23,7 +23,7 @@ class Docurium
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
-    @repo = repo || Rugged::Repository.discover('.')
+    @repo = repo || Rugged::Repository.discover(config_file)
   end
 
   def init_data(version = 'HEAD')
