@@ -28,6 +28,13 @@ class DocuriumTest < Minitest::Test
     FileUtils.remove_entry(@dir)
   end
 
+  def test_can_parse
+    refute_nil @data
+    assert_equal [:files, :functions, :callbacks, :globals, :types, :prefix, :groups], @data.keys
+    files = %w(blob.h callback.h cherrypick.h commit.h common.h errors.h index.h object.h odb.h odb_backend.h oid.h refs.h repository.h revwalk.h signature.h tag.h tree.h types.h)
+    assert_equal files, @data[:files].map {|d| d[:file] }
+  end
+
   def test_can_parse_headers
     keys = @data.keys.map { |k| k.to_s }.sort
     assert_equal ['callbacks', 'files', 'functions', 'globals', 'groups', 'prefix', 'types'], keys
