@@ -374,9 +374,9 @@ class Docurium
         k = key
       end
       group, rest = k.split('_', 2)
-      next if group.empty?
-      if !rest
-        group = value[:file].gsub('.h', '').gsub('/', '_')
+      if group.empty?
+        puts "empty group for function #{key}"
+        next
       end
       data[:functions][key][:group] = group
       func[group] ||= []

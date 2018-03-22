@@ -175,7 +175,8 @@ END
   end
 
   def test_can_group_functions
-    assert_equal 15, @data[:groups].size
+    groups = %w(blob commit index lasterror object odb oid reference repository revwalk signature strerror tag tree treebuilder work)
+    assert_equal groups, @data[:groups].map {|g| g[0]}
     group, funcs = @data[:groups].first
     assert_equal 'blob', group
     assert_equal 6, funcs.size
