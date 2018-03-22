@@ -255,17 +255,13 @@
       <p><%= type.data.comments %></p>
       <% } %>
 
-      <table>
+      <table class="funcTable">
         <% _.each(type.data.fields, function(field) { %>
           <tr>
-            <td><code><%= field.type %></code></td>
-            <td><code><%= field.name %></code></td>
-            <tr>
-          <% if (field.comments) { %>
-          <tr>
-            <td colspan="2" class="type-comment"><%= field.comments %></td>
+            <td valign="top" nowrap="true"><%= field.type %></td>
+            <td valign="top" class="var"><%= field.name %></td>
+            <td class="type-comment"><% if (field.comments) { %><%= field.comments %><% } %></td>
           </tr>
-          <% } %>
         <% }) %>
       </table>
 
