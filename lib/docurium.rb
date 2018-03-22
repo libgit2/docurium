@@ -119,12 +119,13 @@ class Docurium
     data
   end
 
-  def generate_docs
+  def generate_docs(options)
     output_index = Rugged::Index.new
     write_site(output_index)
     @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
     versions = get_versions
     versions << 'HEAD'
+    versions = versions & options[:for] unless options[:for].empty?
     nversions = versions.size
     output = Queue.new
     pipes = {}

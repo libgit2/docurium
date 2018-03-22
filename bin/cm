@@ -13,6 +13,7 @@ version Docurium::Version
 desc 'Generate HTML documentation'
 long_desc 'Generate HTML docs from a Docurium config file'
 command :doc do |c|
+  c.flag :for, :desc => "The version to generate", :multiple => true
   c.action do |global_options,options,args|
     file = args.first
     Docurium::CLI.doc(file, options)
