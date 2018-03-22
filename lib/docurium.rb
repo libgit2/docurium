@@ -435,7 +435,7 @@ class Docurium
       # process this type of record
       case r[:type]
       when :function, :callback
-          t = r[:type] == :function ? :functions : :callbacks
+        t = r[:type] == :function ? :functions : :callbacks
         data[t][r[:name]] ||= {}
         wanted[:functions].each do |k|
           next unless r.has_key? k
