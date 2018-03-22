@@ -130,6 +130,12 @@ table.structTable tr td {
   color: #833;
 }
 
+.enumTable .comment,
+.funcTable .comment,
+.structTable .comment {
+  padding-left: 3em;
+}
+
 code.params {
  white-space: pre-wrap;       /* css-3 */
  white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
@@ -258,6 +264,3 @@ p.functionList a.introd {
   color: #933;
 }
 
-.type-comment {
-  padding-left: 3em;
-}
