@@ -431,7 +431,7 @@ class Docurium
 
   def read_subtree(index, version, path)
     tree = find_subtree(version, path)
-    index.read_tree(tree)
+    index.read_tree(tree) rescue nil
   end
 
   def valid_config(file)
