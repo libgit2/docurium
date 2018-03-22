@@ -192,7 +192,7 @@ EOF
                   :argline => "git_tree *tree"
                 }]
 
-    assert_equal actual, expected
+    assert_equal expected, actual
 
   end
 
@@ -377,7 +377,7 @@ EOF
                   :underlying_type => "int"
                 }]
 
-    assert_equal actual, expected
+    assert_equal expected, actual
 
     name = 'typeref.h'
     contents = <<EOF
@@ -401,7 +401,7 @@ EOF
                   :comments => '',
                 }]
 
-    assert_equal actual, expected
+    assert_equal expected, actual
 
 
   end
