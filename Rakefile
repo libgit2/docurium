@@ -5,8 +5,7 @@ require 'rubygems/package_task'
 task :default => :test
 
 gemspec = Gem::Specification::load(File.expand_path('../docurium.gemspec', __FILE__))
-Gem::PackageTask.new(gemspec) do |pkg|
-end
+Gem::PackageTask.new(gemspec).define
 
 Rake::TestTask.new do |t|
   t.libs << 'libs' << 'test'
