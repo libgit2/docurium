@@ -136,6 +136,11 @@ table.structTable tr td {
   padding-left: 3em;
 }
 
+.funcTable .type,
+.structTable .type {
+  text-align: right;
+}
+
 code.params {
  white-space: pre-wrap;       /* css-3 */
  white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
