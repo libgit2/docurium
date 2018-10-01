@@ -362,6 +362,10 @@ $(function() {
       var needs = _.map(data.used.needs, toPair, docurium)
       var fileLink = {name: data.file, url: docurium.github_file(data.file, data.line, data.lineto)}
 
+      // Hot link our field types
+      data.fields = _.map(data.fields, function(field) {
+        return {type: this.hotLink(field.type), name: field.name, comments: field.comments}
+      }, docurium)
 
       this.set('data', {tname: tname, data: data, returns: returns, needs: needs, fileLink: fileLink})
     }
