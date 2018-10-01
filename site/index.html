@@ -258,14 +258,12 @@
       <table class="structTable">
         <% _.each(type.data.fields, function(field) { %>
           <tr>
-            <td valign="top">
-              <code><%= field.type %></code>
-              <span class="var"><%= field.name %>
-            </td>
+            <td valign="top"><%= field.type %></td>
+            <td class="var"><%= field.name %></td>
             <% if (field.comments) { %>
           </tr>
           <tr>
-            <td><span class="comment"><%= field.comments %></td>
+            <td colspan="2"><span class="comment"><%= field.comments %></td>
             <% } %>
           </tr>
         <% }) %>
