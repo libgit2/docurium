@@ -111,8 +111,10 @@
       <table class="funcTable">
         <% _.each(args, function(arg) { %>
         <tr>
-          <td valign="top" class="type" nowrap="true"><%= arg.link %></td>
+          <td valign="top" class="type" nowrap="true" rowspan="<%= (arg.comment ? 2 : 1) %>"><%= arg.link %></td>
           <td valign="top" class="var"><%= arg.name %></td>
+        </tr>
+        <tr>
           <td class="comment"><%= arg.comment %></td>
         </tr>
         <% }) %>
@@ -231,13 +233,9 @@
       <table class="enumTable">
         <% _.each(type.data.fields, function(field) { %>
         <tr>
-          <td><code><%= field.name %></code></td>
+          <td class="type"><code><%= field.name %></code></td>
+          <td class="comment"><%= field.comments %></td>
         </tr>
-        <% if (field.comments) { %>
-        <tr>
-          <td class="type-comment"><%= field.comments %></td>
-        </tr>
-        <% } %>
         <% }) %>
       </table>
       <%= uses %>
@@ -258,12 +256,12 @@
       <table class="structTable">
         <% _.each(type.data.fields, function(field) { %>
           <tr>
-            <td class="type" valign="top"><%= field.type %></td>
+            <td class="type" valign="top" rowspan="<%= (field.comments ? 2 : 1) %>"><%= field.type %></td>
             <td class="var"><%= field.name %></td>
             <% if (field.comments) { %>
           </tr>
           <tr>
-            <td colspan="2"><span class="comment"><%= field.comments %></td>
+            <td><span class="comment"><%= field.comments %></td>
             <% } %>
           </tr>
         <% }) %>

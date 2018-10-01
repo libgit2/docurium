@@ -130,12 +130,7 @@ table.structTable tr td {
   color: #833;
 }
 
-.enumTable .comment,
-.funcTable .comment,
-.structTable .comment {
-  padding-left: 3em;
-}
-
+.enumTable .type,
 .funcTable .type,
 .structTable .type {
   text-align: right;
