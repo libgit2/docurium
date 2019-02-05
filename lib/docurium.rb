@@ -600,6 +600,6 @@ class Docurium
   end
 
   def interesting?(type, what)
-    (@cli_options["debug-#{type}"] || []).include?(what)
+    @cli_options['debug'] || (@cli_options["debug-#{type}"] || []).include?(what)
   end
 end
