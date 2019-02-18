@@ -125,7 +125,16 @@ class Docurium
     @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
     versions = get_versions
     versions << 'HEAD'
-    versions = versions & options[:for] unless options[:for].empty?
+    # If the user specified versions, validate them and overwrite
+    if !(vers = options[:for]).empty?
+      vers.each do |v|
+        next if versions.include?(v)
+        puts "Unknown version #{v}"
+        exit(false)
+      end
+      versions = vers
+    end
+
     nversions = versions.size
     output = Queue.new
     pipes = {}
