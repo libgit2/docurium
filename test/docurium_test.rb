@@ -119,7 +119,7 @@ END
       "git_treebuilder_insert",
       "git_treebuilder_write"
     ]
-    assert_equal oid_needs, oid[1][:used][:needs]
+    assert_equal oid_needs, oid[1][:used][:needs].sort
   end
 
   def test_can_parse_normal_functions
