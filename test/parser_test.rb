@@ -70,7 +70,7 @@ EOF
 */
 int some_function(
     char *string,
-    size_t len);
+    int len);
 EOF
 
     actual = parse(name, contents)
@@ -80,10 +80,10 @@ EOF
                   :tdef => nil,
                   :type => :function,
                   :name => 'some_function',
-                  :body => "int some_function(char *string, size_t len);",
+                  :body => "int some_function(char *string, int len);",
                   :description => ' Do something',
                   :comments => " More explanation of what we do\n\n ",
-                  :sig => 'char *::size_t',
+                  :sig => 'char *::int',
                   :args => [{
                               :name => 'string',
                               :type => 'char *',
@@ -91,15 +91,15 @@ EOF
                             },
                             {
                               :name => 'len',
-                              :type => 'size_t',
+                              :type => 'int',
                               :comment => nil
                             }],
                   :return => {
                     :type => 'int',
                     :comment => ' an integer value'
                   },
-                  :decl => "int some_function(char *string, size_t len)",
-                  :argline => "char *string, size_t len",
+                  :decl => "int some_function(char *string, int len)",
+                  :argline => "char *string, int len",
                 }]
 
     assert_equal expected, actual
@@ -192,7 +192,7 @@ EOF
                   :argline => "git_tree *tree"
                 }]
 
-    assert_equal actual, expected
+    assert_equal expected, actual
 
   end
 
@@ -377,7 +377,7 @@ EOF
                   :underlying_type => "int"
                 }]
 
-    assert_equal actual, expected
+    assert_equal expected, actual
 
     name = 'typeref.h'
     contents = <<EOF
@@ -401,7 +401,7 @@ EOF
                   :comments => '',
                 }]
 
-    assert_equal actual, expected
+    assert_equal expected, actual
 
 
   end

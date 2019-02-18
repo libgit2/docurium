@@ -39,6 +39,12 @@
 # define GIT_END_DECL    /* empty */
 #endif
 
+/*
+ * libclang won't consider anything with size_t to have comments unless we use
+ * this hack.
+ */
+typedef size_t size_t;
+
 /** Declare a public function exported for application use. */
 #ifdef __GNUC__
 # define GIT_EXTERN(type) extern \
