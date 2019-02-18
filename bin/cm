@@ -13,6 +13,7 @@ version Docurium::Version
 desc 'Generate HTML documentation'
 long_desc 'Generate HTML docs from a Docurium config file'
 command :doc do |c|
+  c.flag :for, :desc => "The version to generate", :multiple => true
   c.action do |global_options,options,args|
     file = args.first
     Docurium::CLI.doc(file, options)
@@ -34,8 +35,10 @@ pre { |global,command,options,args| true }
 post { |global,command,options,args| true }
 
 on_error do |exception|
-  puts exception
-  puts exception.backtrace
+  if !exception.is_a?(SystemExit)
+    puts exception
+    puts exception.backtrace
+  end
 end
 
 exit run(ARGV)

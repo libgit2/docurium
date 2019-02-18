@@ -3,7 +3,7 @@ require 'docurium'
 require 'docurium/cli'
 require 'tempfile'
 
-class GenTest < MiniTest::Unit::TestCase
+class GenTest < Minitest::Test
 
   # make sure we can read what we give the user
   def test_read_generated_file
@@ -12,7 +12,7 @@ class GenTest < MiniTest::Unit::TestCase
       Docurium::CLI.gen(file.path)
     end
 
-      Docurium.new file.path
+    assert_raises(Rugged::RepositoryError) { Docurium.new file.path }
   end
 
 end

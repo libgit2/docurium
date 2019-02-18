@@ -3,7 +3,7 @@ class Docurium
 
     def self.doc(idir, options)
       doc = Docurium.new(idir)
-      doc.generate_docs
+      doc.generate_docs(options)
     end
 
     def self.gen(file)
