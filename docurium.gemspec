@@ -14,14 +14,14 @@ Gem::Specification.new do |s|
   s.license = 'MIT'
 
   s.add_dependency "version_sorter", "~>2.0"
-  s.add_dependency "mustache", "~> 0.99"
+  s.add_dependency "mustache", "~> 1.1"
   s.add_dependency "rocco", "~>0.8"
   s.add_dependency "gli", "~>2.5"
   s.add_dependency "rugged", "~>0.21"
   s.add_dependency "redcarpet", "~>3.0"
-  s.add_dependency "ffi-clang", "~> 0.2"
+  s.add_dependency "ffi-clang", "~> 0.5"
   s.add_development_dependency "bundler",   "~>1.0"
-  s.add_development_dependency "rake", "~> 10.1"
+  s.add_development_dependency "rake", "~> 12"
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
