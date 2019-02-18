@@ -9,7 +9,6 @@ rvm:
  - ruby-2.4
  - ruby-2.5
  - ruby-head
- - rbx
 
 env:
  - LLVM_CONFIG=llvm-config-6.0
