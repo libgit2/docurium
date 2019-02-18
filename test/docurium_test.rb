@@ -40,7 +40,7 @@ END
   def test_can_parse_headers
     keys = @data.keys.map { |k| k.to_s }.sort
     assert_equal ['callbacks', 'files', 'functions', 'globals', 'groups', 'prefix', 'types'], keys
-    assert_equal 154, @data[:functions].size
+    assert_equal 155, @data[:functions].size
   end
 
   def test_can_extract_enum_from_define
@@ -175,8 +175,8 @@ END
   end
 
   def test_can_group_functions
-    groups = %w(blob commit index lasterror object odb oid reference repository revwalk signature strerror tag tree treebuilder work)
-    assert_equal groups, @data[:groups].map {|g| g[0]}
+    groups = %w(blob cherrypick commit index lasterror object odb oid reference repository revwalk signature strerror tag tree treebuilder work)
+    assert_equal groups, @data[:groups].map {|g| g[0]}.sort
     group, funcs = @data[:groups].first
     assert_equal 'blob', group
     assert_equal 6, funcs.size
