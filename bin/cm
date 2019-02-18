@@ -35,8 +35,10 @@ pre { |global,command,options,args| true }
 post { |global,command,options,args| true }
 
 on_error do |exception|
-  puts exception
-  puts exception.backtrace
+  if !exception.is_a?(SystemExit)
+    puts exception
+    puts exception.backtrace
+  end
 end
 
 exit run(ARGV)
