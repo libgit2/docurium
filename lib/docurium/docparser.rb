@@ -18,7 +18,7 @@ class Docurium
       unsaved = files.map do |name, contents|
         full_path = File.join(tmpdir, name)
         dirname = File.dirname(full_path)
-        FileUtils.mkdir_p(dirname) unless Dir.exists? dirname
+        FileUtils.mkdir_p(dirname) unless Dir.exist? dirname
         File.new(full_path, File::CREAT).close()
 
         UnsavedFile.new(full_path, contents)
