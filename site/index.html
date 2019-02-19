@@ -218,7 +218,7 @@
 
     <!-- listing for an enum -->
     <script type="text/template" id="enum-template">
-      <h1 class="funcTitle"><%= type.tname %><small><%= type.type %></small></h1>
+      <h1 class="enumTitle"><%= type.tname %><small><%= type.type %></small></h1>
       <p><%= type.value %></p>
 
       <% if (type.data.description) { %>
@@ -228,7 +228,7 @@
       <p><%= type.data.comments %></p>
       <% } %>
 
-      <table>
+      <table class="enumTable">
         <% _.each(type.data.fields, function(field) { %>
         <tr>
           <td><code><%= field.name %></code></td>
@@ -245,7 +245,7 @@
 
     <!-- listing for a struct -->
     <script type="text/template" id="struct-template">
-      <h1 class="funcTitle"><%= type.tname %><small><%= type.type %></small></h1>
+      <h1 class="structTitle"><%= type.tname %><small><%= type.type %></small></h1>
       <p><%= type.value %></p>
 
       <% if (type.data.description) { %>
@@ -255,7 +255,7 @@
       <p><%= type.data.comments %></p>
       <% } %>
 
-      <table class="funcTable">
+      <table class="structTable">
         <% _.each(type.data.fields, function(field) { %>
           <tr>
             <td valign="top" nowrap="true"><%= field.type %></td>
