@@ -199,9 +199,9 @@ class Docurium
 
     end
 
-    # We tally the sigantures in the order they finished, which is
+    # We tally the signatures in the order they finished, which is
     # arbitrary due to the concurrency, so we need to sort them once
-    # they've finsihed.
+    # they've finished.
     sort_sigs!
 
     project = {
@@ -435,7 +435,7 @@ class Docurium
       # process this type of record
       case r[:type]
       when :function, :callback
-          t = r[:type] == :function ? :functions : :callbacks
+        t = r[:type] == :function ? :functions : :callbacks
         data[t][r[:name]] ||= {}
         wanted[:functions].each do |k|
           next unless r.has_key? k
