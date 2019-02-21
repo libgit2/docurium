@@ -15,3 +15,5 @@ GIT_BEGIN_DECL
 GIT_EXTERN(int) git_cherrypick(char *input);
 
 GIT_END_DECL
+
+#endif
