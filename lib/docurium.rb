@@ -421,7 +421,7 @@ class Docurium
 
     file_map = {}
 
-    md = Redcarpet::Markdown.new Redcarpet::Render::HTML, :no_intra_emphasis => true
+    md = Redcarpet::Markdown.new(Redcarpet::Render::HTML.new({}), :no_intra_emphasis => true)
     recs.each do |r|
 
       # initialize filemap for this file
