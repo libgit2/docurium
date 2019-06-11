@@ -9,15 +9,6 @@ class DocuriumTest < Minitest::Test
 
     @repo = Rugged::Repository.init_at(@dir, :bare)
 
-    config = <<END
-{
- "name":   "libgit2",
- "github": "libgit2/libgit2",
- "prefix": "git_",
- "branch": "gh-pages"
-}
-END
-
     # Create an index as we would have read from the user's repository
     index = Rugged::Index.new
     headers = File.dirname(__FILE__) + '/fixtures/git2/'
