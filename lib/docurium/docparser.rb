@@ -66,6 +66,7 @@ class Docurium
       # Override the path we want to filter by
       filename = File.join(@tmpdir, orig_filename)
       args = includes.map { |path| "-I#{path}" }
+      args << '-ferror-limit=1'
 
       tu = Index.new(true, true).parse_translation_unit(filename, args, @unsaved, {:detailed_preprocessing_record => 1})
 
