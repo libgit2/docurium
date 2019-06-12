@@ -117,16 +117,23 @@ table.methods tr td.methodName a {
   font-weight: bold;
 }
 
-table.funcTable tr td {
+table.funcTable tr td,
+table.structTable tr td {
   padding: 5px 10px;
   border-bottom: 1px solid #eee;
 }
-table.funcTable tr td.comment {
-  color: #999;
-}
-table.funcTable tr td.var {
+
+.enumTable .var,
+.funcTable .var,
+.structTable .var {
   font-weight: bold;
   color: #833;
+}
+
+.enumTable .type,
+.funcTable .type,
+.structTable .type {
+  text-align: right;
 }
 
 code.params {
@@ -152,7 +159,9 @@ code.params {
 
 .returns { margin-bottom: 15px; }
 
-h1.funcTitle {
+h1.funcTitle,
+h1.enumTitle,
+h1.structTitle {
   font-size: 1.6em;
 }
 h3.funcDesc {
@@ -255,6 +264,3 @@ p.functionList a.introd {
   color: #933;
 }
 
-.type-comment {
-  padding-left: 3em;
-}

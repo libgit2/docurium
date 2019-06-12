@@ -502,13 +502,24 @@ class Docurium
 
       when :struct, :fnptr
         data[:types][r[:name]] ||= {}
+        known = data[:types][r[:name]]
         r[:value] ||= r[:name]
-        wanted[:types].each do |k|
-          next unless r.has_key? k
-          if k == :comments
-            data[:types][r[:name]][k] = md.render r[k]
-          else
-            data[:types][r[:name]][k] = r[k]
+        # we don't want to override "opaque" structs with typedefs or
+        # "public" documentation
+        unless r[:tdef].nil? and known[:fields] and known[:comments] and known[:description]
+          wanted[:types].each do |k|
+            next unless r.has_key? k
+            if k == :comments
+              data[:types][r[:name]][k] = md.render r[k]
+            else
+              data[:types][r[:name]][k] = r[k]
+            end
+          end
+        else
+          # We're about to skip that type. Just make sure we preserve the
+          # :fields comment
+          if r[:fields] and known[:fields].empty?
+            data[:types][r[:name]][:fields] = r[:fields]
           end
         end
         if r[:type] == :fnptr

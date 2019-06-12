@@ -152,11 +152,16 @@ class DocuriumTest < Minitest::Test
     assert_equal 'int (*)(const char *, void *)', func[:args][2][:type]
     assert_equal 'Function which will be called for every listed ref', func[:args][2][:comment]
     expect_comment =<<-EOF
-    <p>The listed references may be filtered by type, or using a bitwise OR of several types. Use the magic value <code>GIT_REF_LISTALL</code> to obtain all references, including packed ones.</p>
+<p>The listed references may be filtered by type, or using
+ a bitwise OR of several types. Use the magic value
+ <code>GIT_REF_LISTALL</code> to obtain all references, including
+ packed ones.</p>
 
-    <p>The <code>callback</code> function will be called for each of the references in the repository, and will receive the name of the reference and the <code>payload</code> value passed to this method.</p>
+<p>The <code>callback</code> function will be called for each of the references
+ in the repository, and will receive the name of the reference and
+ the <code>payload</code> value passed to this method.</p>
     EOF
-    assert_equal expect_comment.split("\n").map(&:strip), func[:comments].split("\n")
+    assert_equal expect_comment.split("\n"), func[:comments].split("\n")
   end
 
   def test_can_get_the_full_description_from_multi_liners

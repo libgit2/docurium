@@ -212,6 +212,45 @@ GIT_EXTERN(const char *) git_repository_path(git_repository *repo);
  */
 GIT_EXTERN(const char *) git_repository_workdir(git_repository *repo);
 
+/**
+ * Extended options structure for `git_repository_init_ext`.
+ *
+ * This contains extra options for `git_repository_init_ext` that enable
+ * additional initialization features.  The fields are:
+ *
+ * * flags - Combination of GIT_REPOSITORY_INIT flags above.
+ * * mode  - Set to one of the standard GIT_REPOSITORY_INIT_SHARED_...
+ *        constants above, or to a custom value that you would like.
+ * * workdir_path - The path to the working dir or NULL for default (i.e.
+ *        repo_path parent on non-bare repos).  IF THIS IS RELATIVE PATH,
+ *        IT WILL BE EVALUATED RELATIVE TO THE REPO_PATH.  If this is not
+ *        the "natural" working directory, a .git gitlink file will be
+ *        created here linking to the repo_path.
+ * * description - If set, this will be used to initialize the "description"
+ *        file in the repository, instead of using the template content.
+ * * template_path - When GIT_REPOSITORY_INIT_EXTERNAL_TEMPLATE is set,
+ *        this contains the path to use for the template directory.  If
+ *        this is NULL, the config or default directory options will be
+ *        used instead.
+ * * initial_head - The name of the head to point HEAD at.  If NULL, then
+ *        this will be treated as "master" and the HEAD ref will be set
+ *        to "refs/heads/master".  If this begins with "refs/" it will be
+ *        used verbatim; otherwise "refs/heads/" will be prefixed.
+ * * origin_url - If this is non-NULL, then after the rest of the
+ *        repository initialization is completed, an "origin" remote
+ *        will be added pointing to this URL.
+ */
+typedef struct {
+	unsigned int version;
+	uint32_t    flags;
+	uint32_t    mode;
+	const char *workdir_path;
+	const char *description;
+	const char *template_path;
+	const char *initial_head;
+	const char *origin_url;
+} git_repository_init_options;
+
 /** @} */
 GIT_END_DECL
 #endif
