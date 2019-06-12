@@ -266,8 +266,8 @@ class Docurium
 
     # check for changed signatures
     sigchanges = []
-    @sigs.each do |fun, data|
-      if data[:changes]['HEAD']
+    @sigs.each do |fun, sig_data|
+      if sig_data[:changes]['HEAD']
         sigchanges << fun
       end
     end
@@ -383,7 +383,6 @@ class Docurium
       func[group] << key
       func[group].sort!
     end
-    misc = []
     func.to_a.sort
   end
 
@@ -395,7 +394,7 @@ class Docurium
     h.merge!(data[:callbacks])
     h.each do |func, fdata|
       data[:types].each_with_index do |tdata, i|
-        type, typeData = tdata
+        type = tdata[0]
         data[:types][i][1][:used] ||= {:returns => [], :needs => []}
         if fdata[:return][:type].index(/#{type}[ ;\)\*]?/)
           data[:types][i][1][:used][:returns] << func

@@ -30,11 +30,9 @@ class Docurium
 
       FileUtils.remove_entry(tmpdir)
 
-      cursor = tu.cursor
-
       recs = []
 
-      cursor.visit_children do |cursor, parent|
+      tu.cursor.visit_children do |cursor, parent|
         #puts "visiting #{cursor.kind} - #{cursor.spelling}"
         location = cursor.location
         next :continue if location.file == nil
