@@ -50,6 +50,7 @@ GIT_BEGIN_DECL
  * stat() functions, for all platforms.
  */
 #include <sys/types.h>
+#include <stdint.h>
 
 #if defined(_MSC_VER)
 
