@@ -10,6 +10,7 @@ require 'pp'
 require 'rugged'
 require 'redcarpet'
 require 'redcarpet/compat'
+require 'parallel'
 require 'thread'
 
 # Markdown expects the old redcarpet compat API, so let's tell it what
@@ -135,68 +136,34 @@ class Docurium
       versions = vers
     end
 
-    nversions = versions.size
-    output = Queue.new
-    pipes = {}
-    versions.each do |version|
-      # We don't need to worry about joining since this process is
-      # going to die immediately
-      read, write = IO.pipe
-      pid = Process.fork do
-        read.close
-
-        data = generate_doc_for(version)
-        examples = format_examples!(data, version)
-
-        Marshal.dump([version, data, examples], write)
-        write.close
-      end
-
-      pipes[pid] = read
-      write.close
-    end
-
-    print "Generating documentation [0/#{nversions}]\r"
     head_data = nil
-
-    # This may seem odd, but we need to keep reading from the pipe or
-    # the buffer will fill and they'll block and never exit. Therefore
-    # we can't rely on Process.wait to tell us when the work is
-    # done. Instead read from all the pipes concurrently and send the
-    # ruby objects through the queue.
-    Thread.abort_on_exception = true
-    pipes.each do |pid, read|
-      Thread.new do
-        result = read.read
-        output << Marshal.load(result)
-      end
-    end
-
-    for i in 1..nversions
-      version, data, examples = output.pop
-
+    nversions = versions.count
+    Parallel.each_with_index(versions, finish: -> (version, index, result) do
+      version, data, examples = result
       # There's still some work we need to do serially
       tally_sigs!(version, data)
       force_utf8(data)
       sha = @repo.write(data.to_json, :blob)
 
-      print "Generating documentation [#{i}/#{nversions}]\r"
+      puts "Adding documentation for #{version} [#{index}/#{nversions}]"
 
       # Store it so we can show it at the end
-      if version == 'HEAD'
-        head_data = data
-      end
+      head_data = data if version == 'HEAD'
 
       output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
       examples.each do |path, id|
         output_index.add(:path => path, :oid => id, :mode => 0100644)
       end
+    end) do |version, index|
+      puts "Generating documentation for #{version} [#{index}/#{nversions}]"
+      data = generate_doc_for(version)
+      examples = format_examples!(data, version)
+      [version, data, examples]
+    end
 
-      if head_data
-        puts ''
-        show_warnings(data)
-      end
-
+    if head_data
+      puts ''
+      show_warnings(head_data)
     end
 
     # We tally the signatures in the order they finished, which is
