@@ -268,9 +268,20 @@ class Docurium
       def _message; "signature changed"; end
     end
 
+    class MissingDocumentation < Warning
+      def initialize(type, identifier)
+        super :missing_documentation, type, identifier
+      end
+
+      def _message
+        ["missing documentation for %s", :type]
+      end
+    end
+
     WARNINGS = [
       :unmatched_param,
       :signature_changed,
+      :missing_documentation,
     ]
 
     attr_reader :warning, :type, :identifier
@@ -301,6 +312,17 @@ class Docurium
     sigchanges = []
     @sigs.each do |fun, sig_data|
       warnings << Warning::SignatureChanged.new(fun) if sig_data[:changes]['HEAD']
+    end
+
+    # check for undocumented things
+    types = [:functions, :callbacks, :globals, :types]
+    types.each do |type_id|
+      under_type = type_id.tap {|t| break t.to_s[0..-2].to_sym }
+      data[type_id].each do |ident, type|
+        under_type = type[:type] if type_id == :types
+
+        warnings << Warning::MissingDocumentation.new(under_type, ident) if type[:description].empty?
+      end
     end
 
     warnings.group_by {|w| w.warning }.each do |klass, klass_warnings|
