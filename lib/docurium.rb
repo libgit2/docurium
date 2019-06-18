@@ -251,29 +251,65 @@ class Docurium
     end
   end
 
+  class Warning
+    class UnmatchedParameter < Warning
+      def initialize(function)
+        super :unmatched_param, :function, function
+      end
+
+      def _message; "unmatched param"; end
+    end
+
+    class SignatureChanged < Warning
+      def initialize(function)
+        super :signature_changed, :function, function
+      end
+
+      def _message; "signature changed"; end
+    end
+
+    WARNINGS = [
+      :unmatched_param,
+      :signature_changed,
+    ]
+
+    attr_reader :warning, :type, :identifier
+
+    def initialize(warning, type, identifier)
+      raise ArgumentError.new("invalid warning class") unless WARNINGS.include?(warning)
+      @warning = warning
+      @type = type
+      @identifier = identifier
+    end
+
+    def message
+      msg = self._message
+      msg.shift % msg.map {|a| self.send(a).to_s } if msg.kind_of?(Array)
+    end
+  end
+
   def show_warnings(data)
     out '* checking your api'
+    warnings = []
 
     # check for unmatched paramaters
-    unmatched = []
     data[:functions].each do |f, fdata|
-      unmatched << f if fdata[:comments] =~ /@param/
-    end
-    if unmatched.size > 0
-      out '  - unmatched params in'
-      unmatched.sort.each { |p| out ("\t" + p) }
+      warnings << Warning::UnmatchedParameter.new(f) if fdata[:comments] =~ /@param/
     end
 
     # check for changed signatures
     sigchanges = []
     @sigs.each do |fun, sig_data|
-      if sig_data[:changes]['HEAD']
-        sigchanges << fun
-      end
+      warnings << Warning::SignatureChanged.new(fun) if sig_data[:changes]['HEAD']
     end
-    if sigchanges.size > 0
-      out '  - signature changes in'
-      sigchanges.sort.each { |p| out ("\t" + p) }
+
+    warnings.group_by {|w| w.warning }.each do |klass, klass_warnings|
+      klass_warnings.group_by {|w| w.type }.each do |type, type_warnings|
+        out "  - " + type_warnings[0].message
+        type_warnings.sort_by {|w| w.identifier }.each do |warning|
+          out "\t" + warning.identifier
+        end
+      end
     end
   end
 
