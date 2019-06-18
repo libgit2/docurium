@@ -322,6 +322,15 @@ class Docurium
         under_type = type[:type] if type_id == :types
 
         warnings << Warning::MissingDocumentation.new(under_type, ident) if type[:description].empty?
+
+        case type[:type]
+        when :struct
+          if type[:fields]
+            type[:fields].each do |field|
+              warnings << Warning::MissingDocumentation.new(:field, "#{ident}.#{field[:name]}") if field[:comments].empty?
+            end
+          end
+        end
       end
     end
 
