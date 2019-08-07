@@ -10,9 +10,9 @@ class Docurium
     # included in our default search path, so as a workaround we execute clang
     # in verbose mode and grab its include paths from the output.
     def find_clang_includes
-      clang = ENV["CLANG"] || "clang"
+      bindir = `#{ENV["LLVM_CONFIG"]} --bindir`.strip
+      clang = "#{bindir}/clang"
       output, _status = Open3.capture2e("#{clang} -v -x c -", :stdin_data => "")
-      #output = `#{clang} -v -x c - </dev/null`
       includes = []
       output.each_line do |line|
         if line =~ %r{^\s+/.*lib/clang.*/include}
