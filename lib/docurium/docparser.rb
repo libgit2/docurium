@@ -1,10 +1,28 @@
 require 'tempfile'
 require 'fileutils'
 require 'ffi/clang'
+require 'open3'
 include FFI::Clang
 
 class Docurium
   class DocParser
+    # The include directory where clang has its basic type definitions is not
+    # included in our default search path, so as a workaround we execute clang
+    # in verbose mode and grab its include paths from the output.
+    def find_clang_includes
+      clang = ENV["CLANG"] || "clang"
+      output, _status = Open3.capture2e("#{clang} -v -x c -", :stdin_data => "")
+      #output = `#{clang} -v -x c - </dev/null`
+      includes = []
+      output.each_line do |line|
+        if line =~ %r{^\s+/.*lib/clang.*/include}
+          includes << line.strip
+        end
+      end
+
+      includes
+    end
+
     # Entry point for this parser
     # Parse `filename` out of the hash `files`
     def parse_file(orig_filename, files)
@@ -24,9 +42,12 @@ class Docurium
         UnsavedFile.new(full_path, contents)
       end
 
+      includes = find_clang_includes
+
       # Override the path we want to filter by
       filename = File.join(tmpdir, orig_filename)
-      tu = Index.new(true, true).parse_translation_unit(filename, ["-DDOCURIUM=1"], unsaved, {:detailed_preprocessing_record => 1})
+      args = includes.map { |path| "-I#{path}" }
+      tu = Index.new(true, true).parse_translation_unit(filename, args, unsaved, {:detailed_preprocessing_record => 1})
 
       FileUtils.remove_entry(tmpdir)
 
