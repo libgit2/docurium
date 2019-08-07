@@ -26,7 +26,7 @@ class Docurium
 
       # Override the path we want to filter by
       filename = File.join(tmpdir, orig_filename)
-      tu = Index.new.parse_translation_unit(filename, ["-DDOCURIUM=1"], unsaved, {:detailed_preprocessing_record => 1})
+      tu = Index.new(true, true).parse_translation_unit(filename, ["-DDOCURIUM=1"], unsaved, {:detailed_preprocessing_record => 1})
 
       FileUtils.remove_entry(tmpdir)
 
