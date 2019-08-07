@@ -45,7 +45,7 @@ class Docurium
         UnsavedFile.new(full_path, contents)
       end
 
-      includes = find_clang_includes
+      includes = find_clang_includes + [tmpdir]
 
       # Override the path we want to filter by
       filename = File.join(tmpdir, orig_filename)
