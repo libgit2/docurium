@@ -12,12 +12,17 @@ class Docurium
     def find_clang_includes
       @includes ||=
         begin
-          bindir = `#{ENV["LLVM_CONFIG"]} --bindir`.strip
-          clang = "#{bindir}/clang"
+          clang = if ENV["LLVM_CONFIG"]
+            bindir = `#{ENV["LLVM_CONFIG"]} --bindir`.strip
+            "#{bindir}/clang"
+          else
+            "clang"
+          end
+
           output, _status = Open3.capture2e("#{clang} -v -x c -", :stdin_data => "")
           includes = []
           output.each_line do |line|
-            if line =~ %r{^\s+/.*lib/clang.*/include}
+            if line =~ %r{^\s+/(.*usr|.*lib/clang.*)/include}
               includes << line.strip
             end
           end
