@@ -5,6 +5,7 @@ addons:
     packages:
       - libclang-6.0-dev
       - llvm-6.0
+      - clang-6.0
 rvm:
  - ruby-2.4
  - ruby-2.5

@@ -28,6 +28,7 @@
 #include "thread-utils.h"
 #include <time.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 # define GIT_BEGIN_DECL  extern "C" {
@@ -38,12 +39,6 @@
   /** End declarations in C mode */
 # define GIT_END_DECL    /* empty */
 #endif
-
-/*
- * libclang won't consider anything with size_t to have comments unless we use
- * this hack.
- */
-typedef size_t size_t;
 
 /** Declare a public function exported for application use. */
 #ifdef __GNUC__
