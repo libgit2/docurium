@@ -111,6 +111,14 @@ class Docurium
         when :cursor_typedef_decl
           debug "have typedef #{cursor.spelling} #{cursor.underlying_type.spelling}"
           rec.update extract_typedef(cursor)
+        when :cursor_variable
+          next :continue
+        when :cursor_macro_definition
+          next :continue
+        when :cursor_inclusion_directive
+          next :continue
+        when :cursor_macro_expansion
+          next :continue
         else
           raise "No idea how to deal with #{cursor.kind}"
         end
