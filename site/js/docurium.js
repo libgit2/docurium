@@ -603,7 +603,7 @@ $(function() {
       _.each(types, function(type) {
         var typeName = type[0];
         var typeData = type[1];
-        var re = new RegExp(typeName + '\\s', 'gi');
+        var re = new RegExp('\\b' + typeName + '\\b', 'gi');
         var link = $('<a>').attr('href', '#' + typeLink(typeName, version)).append(typeName)[0]
         text = text.replace(re, link.outerHTML + ' ')
       });
