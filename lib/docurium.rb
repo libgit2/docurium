@@ -18,12 +18,13 @@ require 'thread'
 Rocco::Markdown = RedcarpetCompat
 
 class Docurium
-  attr_accessor :branch, :output_dir, :data
+  attr_accessor :branch, :output_dir, :data, :head_data
 
   def initialize(config_file, repo = nil)
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
+    @head_data = nil
     @repo = repo || Rugged::Repository.discover(config_file)
   end
 
@@ -116,8 +117,31 @@ class Docurium
   def generate_doc_for(version)
     index = Rugged::Index.new
     read_subtree(index, version, option_version(version, 'input', ''))
-    data = parse_headers(index, version)
-    data
+
+    data = parse_headers(index, version, reference)
+    examples = format_examples!(data, version)
+    [data, examples]
+  end
+
+  def process_project(versions)
+    nversions = versions.count
+    Parallel.each_with_index(versions, finish: -> (version, index, result) do
+      data, examples = result
+      # There's still some work we need to do serially
+      tally_sigs!(version, data)
+      force_utf8(data)
+
+      puts "Adding documentation for #{version} [#{index}/#{nversions}]"
+
+      # Store it so we can show it at the end
+      @head_data = data if version == 'HEAD'
+
+      yield index, version, result if block_given?
+
+    end) do |version, index|
+      puts "Generating documentation for #{version} [#{index}/#{nversions}]"
+      generate_doc_for(version)
+    end
   end
 
   def generate_docs(options)
@@ -136,29 +160,15 @@ class Docurium
       versions = vers
     end
 
-    head_data = nil
-    nversions = versions.count
-    Parallel.each_with_index(versions, finish: -> (version, index, result) do
-      version, data, examples = result
-      # There's still some work we need to do serially
-      tally_sigs!(version, data)
-      force_utf8(data)
+    process_project(versions) do |i, version, result|
+      print "Writing documentation [#{i}/#{versions.count}]\r"
+      data, examples = result
+
       sha = @repo.write(data.to_json, :blob)
-
-      puts "Adding documentation for #{version} [#{index}/#{nversions}]"
-
-      # Store it so we can show it at the end
-      head_data = data if version == 'HEAD'
-
       output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
       examples.each do |path, id|
         output_index.add(:path => path, :oid => id, :mode => 0100644)
       end
-    end) do |version, index|
-      puts "Generating documentation for #{version} [#{index}/#{nversions}]"
-      data = generate_doc_for(version)
-      examples = format_examples!(data, version)
-      [version, data, examples]
     end
 
     if head_data
