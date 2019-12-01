@@ -70,7 +70,15 @@ class Docurium
       args = includes.map { |path| "-I#{path}" }
       args << '-ferror-limit=1'
 
-      tu = Index.new(true, true).parse_translation_unit(filename, args, @unsaved, {:detailed_preprocessing_record => 1})
+      attempts = 3
+      begin
+        tu = Index.new(true, true).parse_translation_unit(filename, args, @unsaved, {:detailed_preprocessing_record => 1})
+      rescue Exception => e
+        puts "Exception raised while parsing #{filename}:#{e}"
+        puts e.inspect
+        retry if attempts > 0
+        return []
+      end
 
       recs = []
 
