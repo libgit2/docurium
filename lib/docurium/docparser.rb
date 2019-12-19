@@ -31,43 +31,57 @@ class Docurium
         end
     end
 
-    # Entry point for this parser
-    # Parse `filename` out of the hash `files`
-    def parse_file(orig_filename, files)
+    def self.with_files(files, opts = {})
+      parser = self.new(files, opts)
+      yield parser
+      parser.cleanup!
+    end
 
+    def initialize(files, opts = {})
       # unfortunately Clang wants unsaved files to exist on disk, so
       # we need to create at least empty files for each unsaved file
       # we're given.
 
-      tmpdir = Dir.mktmpdir()
-
-      unsaved = files.map do |name, contents|
-        full_path = File.join(tmpdir, name)
+      prefix = (opts[:prefix] ? opts[:prefix] + "-" : nil)
+      @tmpdir = Dir.mktmpdir(prefix)
+      @unsaved = files.map do |name, contents|
+        full_path = File.join(@tmpdir, name)
         dirname = File.dirname(full_path)
         FileUtils.mkdir_p(dirname) unless Dir.exist? dirname
         File.new(full_path, File::CREAT).close()
-
         UnsavedFile.new(full_path, contents)
       end
+    end
 
-      includes = find_clang_includes + [tmpdir]
+    def cleanup!
+      FileUtils.remove_entry(@tmpdir)
+    end
+
+    # Entry point for this parser
+    # Parse `filename` out of the hash `files`
+    def parse_file(orig_filename, opts = {})
+
+      includes = find_clang_includes + [@tmpdir]
 
       # Override the path we want to filter by
-      filename = File.join(tmpdir, orig_filename)
+      filename = File.join(@tmpdir, orig_filename)
+      debug_enable if opts[:debug]
+      debug "parsing #{filename} #{@tmpdir}"
       args = includes.map { |path| "-I#{path}" }
-      tu = Index.new(true, true).parse_translation_unit(filename, args, unsaved, {:detailed_preprocessing_record => 1})
+      args << '-ferror-limit=1'
 
-      FileUtils.remove_entry(tmpdir)
+      tu = Index.new(true, true).parse_translation_unit(filename, args, @unsaved, {:detailed_preprocessing_record => 1})
 
       recs = []
 
       tu.cursor.visit_children do |cursor, parent|
-        #puts "visiting #{cursor.kind} - #{cursor.spelling}"
         location = cursor.location
         next :continue if location.file == nil
         next :continue unless location.file == filename
 
-        #puts "for file #{location.file} #{cursor.kind} #{cursor.spelling} #{cursor.comment.kind} #{location.line}"
+        loc = "%d:%d-%d:%d" % [cursor.extent.start.line, cursor.extent.start.column, cursor.extent.end.line, cursor.extent.end.column]
+        debug "#{cursor.location.file}:#{loc} - visiting #{cursor.kind}: #{cursor.spelling}, comment is #{cursor.comment.kind}"
+
         #cursor.visit_children do |c|
         #  puts "  child #{c.kind}, #{c.spelling}, #{c.comment.kind}"
         #  :continue
@@ -84,24 +98,37 @@ class Docurium
           :tdef => nil,
         }
 
-        case cursor.kind
+        extract = case cursor.kind
         when :cursor_function
-          #puts "have function"
-          rec.merge! extract_function(cursor)
+          debug "have function #{cursor.spelling}"
+          rec.update extract_function(cursor)
         when :cursor_enum_decl
-          rec.merge! extract_enum(cursor)
+          debug "have enum #{cursor.spelling}"
+          rec.update extract_enum(cursor)
         when :cursor_struct
-          #puts "raw struct"
-          rec.merge! extract_struct(cursor)
+          debug "have struct #{cursor.spelling}"
+          rec.update extract_struct(cursor)
         when :cursor_typedef_decl
-          rec.merge! extract_typedef(cursor)
+          debug "have typedef #{cursor.spelling} #{cursor.underlying_type.spelling}"
+          rec.update extract_typedef(cursor)
         else
           raise "No idea how to deal with #{cursor.kind}"
         end
 
+        rec.merge! extract
+
         recs << rec
         :continue
       end
+
+      if debug_enabled
+        puts "parse_file: parsed #{recs.size} records for #{filename}:"
+        recs.each do |r|
+          puts "\t#{r}"
+        end
+      end
+
+      debug_restore
 
       recs
     end
@@ -176,15 +203,27 @@ class Docurium
 
     def extract_subject_desc(comment)
       subject = comment.child.text
+      debug "\t\tsubject: #{subject}"
       paras = comment.find_all { |cmt| cmt.kind == :comment_paragraph }.drop(1).map { |p| p.text }
       desc = paras.join("\n\n")
+      debug "\t\tdesc: #{desc}"
       return subject, desc
     end
 
     def extract_function(cursor)
       comment = cursor.comment
 
-      #puts "looking at function #{cursor.spelling}, #{cursor.display_name}"
+      $buggy_functions = %w()
+      debug_set ($buggy_functions.include? cursor.spelling)
+      if debug_enabled
+        puts "\tlooking at function #{cursor.spelling}, #{cursor.display_name}"
+        puts "\tcomment: #{comment}, #{comment.kind}"
+        cursor.visit_children do |cur, parent|
+          puts "\t\tchild: #{cur.spelling}, #{cur.kind}"
+          :continue
+        end
+      end
+
       cmt = extract_function_comment(comment)
       args = extract_function_args(cursor, cmt)
       #args = args.reject { |arg| arg[:comment].nil? }
@@ -209,6 +248,7 @@ class Docurium
       decl = "#{ret[:type]} #{cursor.spelling}(#{argline})"
       body = "#{decl};"
 
+      debug_restore
       #puts cursor.display_name
       # Return the format that docurium expects
       {
@@ -227,6 +267,7 @@ class Docurium
 
     def extract_function_comment(comment)
       subject, desc = extract_subject_desc(comment)
+      debug "\t\textract_function_comment: #{comment}, #{comment.kind}, #{subject}, #{desc}"
 
       args = {}
       (comment.find_all { |cmt| cmt.kind == :comment_param_command }).each do |param|
@@ -302,7 +343,7 @@ class Docurium
         :continue
       end
 
-      #puts "struct value #{values}"
+      debug "\tstruct value #{values}"
 
       rec = {
         :type => :struct,

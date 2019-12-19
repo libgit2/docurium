@@ -4,6 +4,7 @@ require 'version_sorter'
 require 'rocco'
 require 'docurium/version'
 require 'docurium/layout'
+require 'docurium/debug'
 require 'libdetect'
 require 'docurium/docparser'
 require 'pp'
@@ -20,12 +21,13 @@ Rocco::Markdown = RedcarpetCompat
 class Docurium
   attr_accessor :branch, :output_dir, :data, :head_data
 
-  def initialize(config_file, repo = nil)
+  def initialize(config_file, cli_options = {}, repo = nil)
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
     @head_data = nil
     @repo = repo || Rugged::Repository.discover(config_file)
+    @cli_options = cli_options
   end
 
   def init_data(version = 'HEAD')
@@ -118,7 +120,7 @@ class Docurium
     index = Rugged::Index.new
     read_subtree(index, version, option_version(version, 'input', ''))
 
-    data = parse_headers(index, version, reference)
+    data = parse_headers(index, version)
     examples = format_examples!(data, version)
     [data, examples]
   end
@@ -144,14 +146,14 @@ class Docurium
     end
   end
 
-  def generate_docs(options)
+  def generate_docs
     output_index = Rugged::Index.new
     write_site(output_index)
     @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
     versions = get_versions
     versions << 'HEAD'
     # If the user specified versions, validate them and overwrite
-    if !(vers = options[:for]).empty?
+    if !(vers = (@cli_options[:for] || [])).empty?
       vers.each do |v|
         next if versions.include?(v)
         puts "Unknown version #{v}"
@@ -161,13 +163,16 @@ class Docurium
     end
 
     process_project(versions) do |i, version, result|
-      print "Writing documentation [#{i}/#{versions.count}]\r"
       data, examples = result
-
       sha = @repo.write(data.to_json, :blob)
-      output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
-      examples.each do |path, id|
-        output_index.add(:path => path, :oid => id, :mode => 0100644)
+
+      print "Generating documentation [#{i}/#{versions.count}]\r"
+
+      unless dry_run?
+        output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
+        examples.each do |path, id|
+          output_index.add(:path => path, :oid => id, :mode => 0100644)
+        end
       end
     end
 
@@ -175,6 +180,8 @@ class Docurium
       puts ''
       show_warnings(head_data)
     end
+
+    return if dry_run?
 
     # We tally the signatures in the order they finished, which is
     # arbitrary due to the concurrency, so we need to sort them once
@@ -228,29 +235,122 @@ class Docurium
     end
   end
 
-  def show_warnings(data)
-    out '* checking your api'
+  class Warning
+    class UnmatchedParameter < Warning
+      def initialize(function, opts = {})
+        super :unmatched_param, :function, function, opts
+      end
+
+      def _message; "unmatched param"; end
+    end
+
+    class SignatureChanged < Warning
+      def initialize(function, opts = {})
+        super :signature_changed, :function, function, opts
+      end
+
+      def _message; "signature changed"; end
+    end
+
+    class MissingDocumentation < Warning
+      def initialize(type, identifier, opts = {})
+        super :missing_documentation, type, identifier, opts
+      end
+
+      def _message
+        ["%s %s is missing documentation", :type, :identifier]
+      end
+    end
+
+    WARNINGS = [
+      :unmatched_param,
+      :signature_changed,
+      :missing_documentation,
+    ]
+
+    attr_reader :warning, :type, :identifier, :file, :line, :column
+
+    def initialize(warning, type, identifier, opts = {})
+      raise ArgumentError.new("invalid warning class") unless WARNINGS.include?(warning)
+      @warning = warning
+      @type = type
+      @identifier = identifier
+      if type = opts.delete(:type)
+        @file = type[:file]
+        if input_dir = opts.delete(:input_dir)
+          File.expand_path(File.join(input_dir, @file))
+        end
+        @file ||= "<missing>"
+        @line = type[:line] || 1
+        @column = type[:column] || 1
+      end
+    end
+
+    def message
+      msg = self._message
+      msg.shift % msg.map {|a| self.send(a).to_s } if msg.kind_of?(Array)
+    end
+  end
+
+  def collect_warnings(data)
+    warnings = []
+    input_dir = File.join(@project_dir, option_version("HEAD", 'input'))
 
     # check for unmatched paramaters
-    unmatched = []
     data[:functions].each do |f, fdata|
-      unmatched << f if fdata[:comments] =~ /@param/
-    end
-    if unmatched.size > 0
-      out '  - unmatched params in'
-      unmatched.sort.each { |p| out ("\t" + p) }
+      warnings << Warning::UnmatchedParameter.new(f, type: fdata, input_dir: input_dir) if fdata[:comments] =~ /@param/
     end
 
     # check for changed signatures
     sigchanges = []
     @sigs.each do |fun, sig_data|
-      if sig_data[:changes]['HEAD']
-        sigchanges << fun
+      warnings << Warning::SignatureChanged.new(fun) if sig_data[:changes]['HEAD']
+    end
+
+    # check for undocumented things
+    types = [:functions, :callbacks, :globals, :types]
+    types.each do |type_id|
+      under_type = type_id.tap {|t| break t.to_s[0..-2].to_sym }
+      data[type_id].each do |ident, type|
+        under_type = type[:type] if type_id == :types
+
+        warnings << Warning::MissingDocumentation.new(under_type, ident, type: type, input_dir: input_dir) if type[:description].empty?
+
+        case type[:type]
+        when :struct
+          if type[:fields]
+            type[:fields].each do |field|
+              warnings << Warning::MissingDocumentation.new(:field, "#{ident}.#{field[:name]}", type: type, input_dir: input_dir) if field[:comments].empty?
+            end
+          end
+        end
       end
     end
-    if sigchanges.size > 0
-      out '  - signature changes in'
-      sigchanges.sort.each { |p| out ("\t" + p) }
+    warnings
+  end
+
+  def check_warnings(options)
+    versions = []
+    versions << get_versions.pop
+    versions << 'HEAD'
+
+    process_project(versions)
+
+    collect_warnings(head_data).each do |warning|
+      puts "#{warning.file}:#{warning.line}:#{warning.column}: #{warning.message}"
+    end
+  end
+
+  def show_warnings(data)
+    out '* checking your api'
+
+    collect_warnings(data).group_by {|w| w.warning }.each do |klass, klass_warnings|
+      klass_warnings.group_by {|w| w.type }.each do |type, type_warnings|
+        out "  - " + type_warnings[0].message
+        type_warnings.sort_by {|w| w.identifier }.each do |warning|
+          out "\t" + warning.identifier
+        end
+      end
     end
   end
 
@@ -269,10 +369,11 @@ class Docurium
     end
 
     data = init_data(version)
-    parser = DocParser.new
-    headers.each do |header|
-      records = parser.parse_file(header, files)
-      update_globals!(data, records)
+    DocParser.with_files(files, :prefix => version) do |parser|
+      headers.each do |header|
+        records = parser.parse_file(header, debug: interesting?(:file, header))
+        update_globals!(data, records)
+      end
     end
 
     data[:groups] = group_functions!(data)
@@ -345,16 +446,20 @@ class Docurium
   def group_functions!(data)
     func = {}
     data[:functions].each_pair do |key, value|
+      debug_set interesting?(:function, key)
+      debug "grouping #{key}: #{value}"
       if @options['prefix']
         k = key.gsub(@options['prefix'], '')
       else
         k = key
       end
       group, rest = k.split('_', 2)
+      debug "grouped: k: #{k}, group: #{group}, rest: #{rest}"
       if group.empty?
         puts "empty group for function #{key}"
         next
       end
+      debug "grouped: k: #{k}, group: #{group}, rest: #{rest}"
       data[:functions][key][:group] = group
       func[group] ||= []
       func[group] << key
@@ -399,6 +504,25 @@ class Docurium
 
     md = Redcarpet::Markdown.new(Redcarpet::Render::HTML.new({}), :no_intra_emphasis => true)
     recs.each do |r|
+
+      types = %w(function file type).map(&:to_sym)
+      dbg = false
+      types.each do |t|
+        dbg ||= if r[:type] == t and interesting?(t, r[:name])
+          true
+        elsif t == :file and interesting?(:file, r[:file])
+          true
+        elsif [:struct, :enum].include?(r[:type]) and interesting?(:type, r[:name])
+          true
+        else
+          false
+        end
+      end
+
+      debug_set dbg
+
+      debug "processing record: #{r}"
+      debug
 
       # initialize filemap for this file
       file_map[r[:file]] ||= {
@@ -507,6 +631,10 @@ class Docurium
         # Anything else we want to record?
       end
 
+      debug "processed record: #{r}"
+      debug
+
+      debug_restore
     end
 
     data[:files] << file_map.values[0]
@@ -536,5 +664,13 @@ class Docurium
 
   def out(text)
     puts text
+  end
+
+  def dry_run?
+    @cli_options[:dry_run]
+  end
+
+  def interesting?(type, what)
+    @cli_options['debug'] || (@cli_options["debug-#{type}"] || []).include?(what)
   end
 end

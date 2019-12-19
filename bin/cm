@@ -14,9 +14,23 @@ desc 'Generate HTML documentation'
 long_desc 'Generate HTML docs from a Docurium config file'
 command :doc do |c|
   c.flag :for, :desc => "The version to generate", :multiple => true
+  c.switch [:n, "dry-run"], :desc => "Dry-run"
+  c.switch [:d, "debug"], :desc => "Enable debug log"
+  c.flag "debug-file", :desc => "Enable debug output for header", :multiple => true
+  c.flag "debug-function", :desc => "Show debug output when processing function", :multiple => true
+  c.flag "debug-type", :desc => "Show debug output when processing type", :multiple => true
   c.action do |global_options,options,args|
     file = args.first
     Docurium::CLI.doc(file, options)
+  end
+end
+
+desc 'Check documentation for warnings'
+long_desc 'Check a project\'s documentation for issues'
+command :check do |c|
+  c.action do |global_options,options,args|
+    file = args.first
+    Docurium::CLI.check(file, options)
   end
 end
 
