@@ -20,6 +20,7 @@ Gem::Specification.new do |s|
   s.add_dependency "rugged", "~>0.21"
   s.add_dependency "redcarpet", "~>3.0"
   s.add_dependency "ffi-clang", "~> 0.5"
+  s.add_dependency "parallel", "~> 1.17.0"
   s.add_development_dependency "rake", "~> 12"
   s.add_development_dependency "minitest", "~> 5.11"
 

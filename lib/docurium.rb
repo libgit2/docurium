@@ -11,6 +11,7 @@ require 'pp'
 require 'rugged'
 require 'redcarpet'
 require 'redcarpet/compat'
+require 'parallel'
 require 'thread'
 
 # Markdown expects the old redcarpet compat API, so let's tell it what
@@ -118,69 +119,41 @@ class Docurium
   def generate_doc_for(version)
     index = Rugged::Index.new
     read_subtree(index, version, option_version(version, 'input', ''))
+
     data = parse_headers(index, version)
-    data
+    examples = format_examples!(data, version)
+    [data, examples]
   end
 
   def process_project(versions)
-    nversions = versions.size
-    output = Queue.new
-    pipes = {}
-    versions.each do |version|
-      # We don't need to worry about joining since this process is
-      # going to die immediately
-      read, write = IO.pipe
-      pid = Process.fork do
-        read.close
-
-        data = generate_doc_for(version)
-        examples = format_examples!(data, version)
-
-        Marshal.dump([version, data, examples], write)
-        write.close
-      end
-
-      pipes[pid] = read
-      write.close
-    end
-
-    print "Generating documentation [0/#{nversions}]\r"
-
-    # This may seem odd, but we need to keep reading from the pipe or
-    # the buffer will fill and they'll block and never exit. Therefore
-    # we can't rely on Process.wait to tell us when the work is
-    # done. Instead read from all the pipes concurrently and send the
-    # ruby objects through the queue.
-    Thread.abort_on_exception = true
-    pipes.each do |pid, read|
-      Thread.new do
-        result = read.read
-        output << Marshal.load(result)
-      end
-    end
-
-    for i in 1..nversions
-      version, data, examples = output.pop
-
+    nversions = versions.count
+    Parallel.each_with_index(versions, finish: -> (version, index, result) do
+      data, examples = result
       # There's still some work we need to do serially
       tally_sigs!(version, data)
       force_utf8(data)
 
+      puts "Adding documentation for #{version} [#{index}/#{nversions}]"
+
       # Store it so we can show it at the end
       @head_data = data if version == 'HEAD'
 
-      yield i, nversions, version, data, examples if block_given?
+      yield index, version, result if block_given?
+
+    end) do |version, index|
+      puts "Generating documentation for #{version} [#{index}/#{nversions}]"
+      generate_doc_for(version)
     end
   end
 
-  def generate_docs(options)
+  def generate_docs
     output_index = Rugged::Index.new
     write_site(output_index)
     @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
     versions = get_versions
     versions << 'HEAD'
     # If the user specified versions, validate them and overwrite
-    if !(vers = (options[:for] || [])).empty?
+    if !(vers = (@cli_options[:for] || [])).empty?
       vers.each do |v|
         next if versions.include?(v)
         puts "Unknown version #{v}"
@@ -189,8 +162,9 @@ class Docurium
       versions = vers
     end
 
-    process_project(versions) do |i, version, data, examples|
-      @repo.write(data.to_json, :blob)
+    process_project(versions) do |i, version, result|
+      data, examples = result
+      sha = @repo.write(data.to_json, :blob)
 
       print "Generating documentation [#{i}/#{versions.count}]\r"
 
@@ -314,7 +288,7 @@ class Docurium
 
     def message
       msg = self._message
-      msg.shift % msg.map {|a| self.send(a).to_s } if msg.kind_of?(Array)
+      msg.kind_of?(Array) ? msg.shift % msg.map {|a| self.send(a).to_s } : msg
     end
   end
 
