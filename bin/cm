@@ -25,6 +25,15 @@ command :doc do |c|
   end
 end
 
+desc 'Check documentation for warnings'
+long_desc 'Check a project\'s documentation for issues'
+command :check do |c|
+  c.action do |global_options,options,args|
+    file = args.first
+    Docurium::CLI.check(file, options)
+  end
+end
+
 desc 'Generate Docurium config file template'
 long_desc 'Generate Docurium config file template'
 command :gen do |c|

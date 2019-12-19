@@ -18,12 +18,13 @@ require 'thread'
 Rocco::Markdown = RedcarpetCompat
 
 class Docurium
-  attr_accessor :branch, :output_dir, :data
+  attr_accessor :branch, :output_dir, :data, :head_data
 
   def initialize(config_file, cli_options = {}, repo = nil)
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
+    @head_data = nil
     @repo = repo || Rugged::Repository.discover(config_file)
     @cli_options = cli_options
   end
@@ -121,22 +122,7 @@ class Docurium
     data
   end
 
-  def generate_docs
-    output_index = Rugged::Index.new
-    write_site(output_index)
-    @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
-    versions = get_versions
-    versions << 'HEAD'
-    # If the user specified versions, validate them and overwrite
-    if !(vers = @cli_options[:for]).empty?
-      vers.each do |v|
-        next if versions.include?(v)
-        puts "Unknown version #{v}"
-        exit(false)
-      end
-      versions = vers
-    end
-
+  def process_project(versions)
     nversions = versions.size
     output = Queue.new
     pipes = {}
@@ -159,7 +145,6 @@ class Docurium
     end
 
     print "Generating documentation [0/#{nversions}]\r"
-    head_data = nil
 
     # This may seem odd, but we need to keep reading from the pipe or
     # the buffer will fill and they'll block and never exit. Therefore
@@ -180,14 +165,34 @@ class Docurium
       # There's still some work we need to do serially
       tally_sigs!(version, data)
       force_utf8(data)
-      sha = @repo.write(data.to_json, :blob) unless dry_run?
-
-      print "Generating documentation [#{i}/#{nversions}]\r"
 
       # Store it so we can show it at the end
-      if version == 'HEAD'
-        head_data = data
+      @head_data = data if version == 'HEAD'
+
+      yield i, nversions, version, data, examples if block_given?
+    end
+  end
+
+  def generate_docs(options)
+    output_index = Rugged::Index.new
+    write_site(output_index)
+    @tf = File.expand_path(File.join(File.dirname(__FILE__), 'docurium', 'layout.mustache'))
+    versions = get_versions
+    versions << 'HEAD'
+    # If the user specified versions, validate them and overwrite
+    if !(vers = (options[:for] || [])).empty?
+      vers.each do |v|
+        next if versions.include?(v)
+        puts "Unknown version #{v}"
+        exit(false)
       end
+      versions = vers
+    end
+
+    process_project(versions) do |i, version, data, examples|
+      @repo.write(data.to_json, :blob)
+
+      print "Generating documentation [#{i}/#{versions.count}]\r"
 
       unless dry_run?
         output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
@@ -195,12 +200,11 @@ class Docurium
           output_index.add(:path => path, :oid => id, :mode => 0100644)
         end
       end
+    end
 
-      if head_data
-        puts ''
-        show_warnings(data)
-      end
-
+    if head_data
+      puts ''
+      show_warnings(head_data)
     end
 
     return if dry_run?
@@ -257,29 +261,122 @@ class Docurium
     end
   end
 
-  def show_warnings(data)
-    out '* checking your api'
+  class Warning
+    class UnmatchedParameter < Warning
+      def initialize(function, opts = {})
+        super :unmatched_param, :function, function, opts
+      end
+
+      def _message; "unmatched param"; end
+    end
+
+    class SignatureChanged < Warning
+      def initialize(function, opts = {})
+        super :signature_changed, :function, function, opts
+      end
+
+      def _message; "signature changed"; end
+    end
+
+    class MissingDocumentation < Warning
+      def initialize(type, identifier, opts = {})
+        super :missing_documentation, type, identifier, opts
+      end
+
+      def _message
+        ["%s %s is missing documentation", :type, :identifier]
+      end
+    end
+
+    WARNINGS = [
+      :unmatched_param,
+      :signature_changed,
+      :missing_documentation,
+    ]
+
+    attr_reader :warning, :type, :identifier, :file, :line, :column
+
+    def initialize(warning, type, identifier, opts = {})
+      raise ArgumentError.new("invalid warning class") unless WARNINGS.include?(warning)
+      @warning = warning
+      @type = type
+      @identifier = identifier
+      if type = opts.delete(:type)
+        @file = type[:file]
+        if input_dir = opts.delete(:input_dir)
+          File.expand_path(File.join(input_dir, @file))
+        end
+        @file ||= "<missing>"
+        @line = type[:line] || 1
+        @column = type[:column] || 1
+      end
+    end
+
+    def message
+      msg = self._message
+      msg.shift % msg.map {|a| self.send(a).to_s } if msg.kind_of?(Array)
+    end
+  end
+
+  def collect_warnings(data)
+    warnings = []
+    input_dir = File.join(@project_dir, option_version("HEAD", 'input'))
 
     # check for unmatched paramaters
-    unmatched = []
     data[:functions].each do |f, fdata|
-      unmatched << f if fdata[:comments] =~ /@param/
-    end
-    if unmatched.size > 0
-      out '  - unmatched params in'
-      unmatched.sort.each { |p| out ("\t" + p) }
+      warnings << Warning::UnmatchedParameter.new(f, type: fdata, input_dir: input_dir) if fdata[:comments] =~ /@param/
     end
 
     # check for changed signatures
     sigchanges = []
     @sigs.each do |fun, sig_data|
-      if sig_data[:changes]['HEAD']
-        sigchanges << fun
+      warnings << Warning::SignatureChanged.new(fun) if sig_data[:changes]['HEAD']
+    end
+
+    # check for undocumented things
+    types = [:functions, :callbacks, :globals, :types]
+    types.each do |type_id|
+      under_type = type_id.tap {|t| break t.to_s[0..-2].to_sym }
+      data[type_id].each do |ident, type|
+        under_type = type[:type] if type_id == :types
+
+        warnings << Warning::MissingDocumentation.new(under_type, ident, type: type, input_dir: input_dir) if type[:description].empty?
+
+        case type[:type]
+        when :struct
+          if type[:fields]
+            type[:fields].each do |field|
+              warnings << Warning::MissingDocumentation.new(:field, "#{ident}.#{field[:name]}", type: type, input_dir: input_dir) if field[:comments].empty?
+            end
+          end
+        end
       end
     end
-    if sigchanges.size > 0
-      out '  - signature changes in'
-      sigchanges.sort.each { |p| out ("\t" + p) }
+    warnings
+  end
+
+  def check_warnings(options)
+    versions = []
+    versions << get_versions.pop
+    versions << 'HEAD'
+
+    process_project(versions)
+
+    collect_warnings(head_data).each do |warning|
+      puts "#{warning.file}:#{warning.line}:#{warning.column}: #{warning.message}"
+    end
+  end
+
+  def show_warnings(data)
+    out '* checking your api'
+
+    collect_warnings(data).group_by {|w| w.warning }.each do |klass, klass_warnings|
+      klass_warnings.group_by {|w| w.type }.each do |type, type_warnings|
+        out "  - " + type_warnings[0].message
+        type_warnings.sort_by {|w| w.identifier }.each do |warning|
+          out "\t" + warning.identifier
+        end
+      end
     end
   end
 
