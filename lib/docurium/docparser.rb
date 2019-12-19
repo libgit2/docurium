@@ -31,33 +31,44 @@ class Docurium
         end
     end
 
-    # Entry point for this parser
-    # Parse `filename` out of the hash `files`
-    def parse_file(orig_filename, files)
+    def self.with_files(files, opts = {})
+      parser = self.new(files, opts)
+      yield parser
+      parser.cleanup!
+    end
 
+    def initialize(files, opts = {})
       # unfortunately Clang wants unsaved files to exist on disk, so
       # we need to create at least empty files for each unsaved file
       # we're given.
 
-      tmpdir = Dir.mktmpdir()
-
-      unsaved = files.map do |name, contents|
-        full_path = File.join(tmpdir, name)
+      prefix = (opts[:prefix] ? opts[:prefix] + "-" : nil)
+      @tmpdir = Dir.mktmpdir(prefix)
+      @unsaved = files.map do |name, contents|
+        full_path = File.join(@tmpdir, name)
         dirname = File.dirname(full_path)
         FileUtils.mkdir_p(dirname) unless Dir.exist? dirname
         File.new(full_path, File::CREAT).close()
-
         UnsavedFile.new(full_path, contents)
       end
+    end
 
-      includes = find_clang_includes + [tmpdir]
+    def cleanup!
+      FileUtils.remove_entry(@tmpdir)
+    end
+
+    # Entry point for this parser
+    # Parse `filename` out of the hash `files`
+    def parse_file(orig_filename)
+
+      includes = find_clang_includes + [@tmpdir]
 
       # Override the path we want to filter by
-      filename = File.join(tmpdir, orig_filename)
+      filename = File.join(@tmpdir, orig_filename)
       args = includes.map { |path| "-I#{path}" }
-      tu = Index.new(true, true).parse_translation_unit(filename, args, unsaved, {:detailed_preprocessing_record => 1})
+      args << '-ferror-limit=1'
 
-      FileUtils.remove_entry(tmpdir)
+      tu = Index.new(true, true).parse_translation_unit(filename, args, @unsaved, {:detailed_preprocessing_record => 1})
 
       recs = []
 

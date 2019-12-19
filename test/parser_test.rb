@@ -4,13 +4,17 @@ require 'pp'
 
 class ParserTest < Minitest::Test
 
-  def setup
-    @parser = Docurium::DocParser.new
+  def teardown
+    @parser.cleanup! if @parser
   end
 
   # e.g. parse('git2/refs.h')
+  # contents is either a string (the contents of "path")
+  # or a hash of paths => contents
   def parse(path, contents)
-    @parser.parse_file(path, [[path, contents]])
+    contents = [[path, contents]] if contents.is_a? String
+    @parser = Docurium::DocParser.new(contents)
+    @parser.parse_file(path)
   end
 
   def test_single_function
@@ -122,7 +126,7 @@ EOF
 GIT_EXTERN(int) some_public_function(int val);
 EOF
 
-    actual = @parser.parse_file(name_b, [[name_a, contents_a], [name_b, contents_b]])
+    actual = parse(name_b, [[name_a, contents_a], [name_b, contents_b]])
     # "Fix" the path so we remove the temp dir
     actual[0][:file] = File.split(actual[0][:file])[-1]
 

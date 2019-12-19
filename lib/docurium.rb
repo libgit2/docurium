@@ -389,10 +389,11 @@ class Docurium
     end
 
     data = init_data(version)
-    parser = DocParser.new
-    headers.each do |header|
-      records = parser.parse_file(header, files)
-      update_globals!(data, records)
+    DocParser.with_files(files, :prefix => version) do |parser|
+      headers.each do |header|
+        records = parser.parse_file(header)
+        update_globals!(data, records)
+      end
     end
 
     data[:groups] = group_functions!(data)
