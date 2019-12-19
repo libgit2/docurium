@@ -288,7 +288,7 @@ class Docurium
 
     def message
       msg = self._message
-      msg.shift % msg.map {|a| self.send(a).to_s } if msg.kind_of?(Array)
+      msg.kind_of?(Array) ? msg.shift % msg.map {|a| self.send(a).to_s } : msg
     end
   end
 
