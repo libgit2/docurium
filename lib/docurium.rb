@@ -4,6 +4,7 @@ require 'version_sorter'
 require 'rocco'
 require 'docurium/version'
 require 'docurium/layout'
+require 'docurium/debug'
 require 'libdetect'
 require 'docurium/docparser'
 require 'pp'
@@ -19,12 +20,13 @@ Rocco::Markdown = RedcarpetCompat
 class Docurium
   attr_accessor :branch, :output_dir, :data, :head_data
 
-  def initialize(config_file, repo = nil)
+  def initialize(config_file, cli_options = {}, repo = nil)
     raise "You need to specify a config file" if !config_file
     raise "You need to specify a valid config file" if !valid_config(config_file)
     @sigs = {}
     @head_data = nil
     @repo = repo || Rugged::Repository.discover(config_file)
+    @cli_options = cli_options
   end
 
   def init_data(version = 'HEAD')
@@ -192,9 +194,11 @@ class Docurium
 
       print "Generating documentation [#{i}/#{versions.count}]\r"
 
-      output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
-      examples.each do |path, id|
-        output_index.add(:path => path, :oid => id, :mode => 0100644)
+      unless dry_run?
+        output_index.add(:path => "#{version}.json", :oid => sha, :mode => 0100644)
+        examples.each do |path, id|
+          output_index.add(:path => path, :oid => id, :mode => 0100644)
+        end
       end
     end
 
@@ -202,6 +206,8 @@ class Docurium
       puts ''
       show_warnings(head_data)
     end
+
+    return if dry_run?
 
     # We tally the signatures in the order they finished, which is
     # arbitrary due to the concurrency, so we need to sort them once
@@ -391,7 +397,7 @@ class Docurium
     data = init_data(version)
     DocParser.with_files(files, :prefix => version) do |parser|
       headers.each do |header|
-        records = parser.parse_file(header)
+        records = parser.parse_file(header, debug: interesting?(:file, header))
         update_globals!(data, records)
       end
     end
@@ -466,16 +472,20 @@ class Docurium
   def group_functions!(data)
     func = {}
     data[:functions].each_pair do |key, value|
+      debug_set interesting?(:function, key)
+      debug "grouping #{key}: #{value}"
       if @options['prefix']
         k = key.gsub(@options['prefix'], '')
       else
         k = key
       end
       group, rest = k.split('_', 2)
+      debug "grouped: k: #{k}, group: #{group}, rest: #{rest}"
       if group.empty?
         puts "empty group for function #{key}"
         next
       end
+      debug "grouped: k: #{k}, group: #{group}, rest: #{rest}"
       data[:functions][key][:group] = group
       func[group] ||= []
       func[group] << key
@@ -520,6 +530,25 @@ class Docurium
 
     md = Redcarpet::Markdown.new(Redcarpet::Render::HTML.new({}), :no_intra_emphasis => true)
     recs.each do |r|
+
+      types = %w(function file type).map(&:to_sym)
+      dbg = false
+      types.each do |t|
+        dbg ||= if r[:type] == t and interesting?(t, r[:name])
+          true
+        elsif t == :file and interesting?(:file, r[:file])
+          true
+        elsif [:struct, :enum].include?(r[:type]) and interesting?(:type, r[:name])
+          true
+        else
+          false
+        end
+      end
+
+      debug_set dbg
+
+      debug "processing record: #{r}"
+      debug
 
       # initialize filemap for this file
       file_map[r[:file]] ||= {
@@ -628,6 +657,10 @@ class Docurium
         # Anything else we want to record?
       end
 
+      debug "processed record: #{r}"
+      debug
+
+      debug_restore
     end
 
     data[:files] << file_map.values[0]
@@ -657,5 +690,13 @@ class Docurium
 
   def out(text)
     puts text
+  end
+
+  def dry_run?
+    @cli_options[:dry_run]
+  end
+
+  def interesting?(type, what)
+    @cli_options['debug'] || (@cli_options["debug-#{type}"] || []).include?(what)
   end
 end

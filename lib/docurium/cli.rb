@@ -2,8 +2,8 @@ class Docurium
   class CLI
 
     def self.doc(idir, options)
-      doc = Docurium.new(idir)
-      doc.generate_docs(options)
+      doc = Docurium.new(idir, options)
+      doc.generate_docs
     end
 
     def self.check(idir, options)
