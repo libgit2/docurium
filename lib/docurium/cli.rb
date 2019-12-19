@@ -6,6 +6,11 @@ class Docurium
       doc.generate_docs(options)
     end
 
+    def self.check(idir, options)
+      doc = Docurium.new(idir)
+      doc.check_warnings(options)
+    end
+
     def self.gen(file)
 
 temp = <<-TEMPLATE
