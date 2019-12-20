@@ -1,0 +1,48 @@
+name: Docurium CI
+
+on:
+  pull_request:
+  push:
+    branches:
+    - master
+    - maint/*
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: [ '2.4.6', '2.5.5', '2.6.3' ]
+        os: [ ubuntu-18.04, macOS-latest ]
+
+    runs-on: ${{ matrix.os }}
+
+    name: Ruby ${{ matrix.ruby }} on ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@master
+    - name: update submodule
+      run: git submodule update --init
+    - name: Install Linux packages
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt update
+        sudo apt install -y libclang-6.0-dev llvm-6.0 clang-6.0
+    - name: Set up Ruby on Linux
+      if: runner.os == 'Linux'
+      uses: actions/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+    - name: Set up Ruby on macOS
+      if: runner.os == 'macOS'
+      run: |
+        brew install rbenv
+        rbenv install ${{ matrix.ruby }}
+        rbenv local ${{ matrix.ruby }}
+    - name: run build
+      run: |
+        if [ -x rbenv ]; then eval "$(rbenv init -)"; fi
+        ruby --version
+        gem install bundler
+        bundle install --path vendor
+        export LLVM_CONFIG=llvm-config-6.0
+        bundle exec rake
