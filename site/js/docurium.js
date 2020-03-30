@@ -627,7 +627,7 @@ $(function() {
       if(line) {
         url += '#L' + line.toString()
         if(lineto) {
-          url += '-' + lineto.toString()
+          url += '-L' + lineto.toString()
         }
       } else {
         url += '#files'
