@@ -52,7 +52,7 @@ class DocuriumTest < Minitest::Test
   end
 
   def test_can_find_type_usage
-    oid = @data[:types].assoc('git_oid')
+    oid = @data[:types].find {|a| a[0] == 'git_oid' }
     oid_returns = [
       "git_commit_id",
       "git_commit_parent_oid",
