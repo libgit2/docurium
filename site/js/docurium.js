@@ -127,6 +127,17 @@ $(function() {
     renderName: function() {
       var name = this.model.get('name')
       var title = name + ' API'
+
+      var version = this.model.get('version')
+      if (version !== "HEAD") {
+        title += ' - Version ' + version;
+      }
+
+      var h1 = document.getElementsByTagName('h1')[0]
+      if (h1 && h1.textContent !== '') {
+        title += ' - ' + h1.textContent;
+      }
+
       this.title.text(title)
       document.title = title
       return this
