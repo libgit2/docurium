@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
   s.add_dependency "redcarpet", "~>3.0"
   s.add_dependency "ffi-clang", "~> 0.5"
   s.add_dependency "parallel", "~> 1.20"
-  s.add_development_dependency "rake", "~> 12"
+  s.add_development_dependency "rake", "~> 13"
   s.add_development_dependency "minitest", "~> 5.11"
 
   s.files         = `git ls-files`.split("\n")
