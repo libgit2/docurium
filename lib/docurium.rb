@@ -162,6 +162,11 @@ class Docurium
       versions = vers
     end
 
+    if (@repo.config['user.name'].nil? || @repo.config['user.email'].nil?)
+      puts "ERROR: 'user.name' or 'user.email' is not configured. Docurium will not be able to commit the documentation"
+      exit(false)
+    end
+
     process_project(versions) do |i, version, result|
       data, examples = result
       sha = @repo.write(data.to_json, :blob)
