@@ -1,0 +1,37 @@
+name: Docurium
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: [head, 2.6, 2.5, 2.4]
+        os: [ ubuntu-18.04, macos-latest ]
+
+    name: Ruby ${{ matrix.ruby }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ endsWith(matrix.ruby, 'head') || matrix.ruby == 'debug' }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Linux packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y libclang-6.0-dev llvm-6.0 clang-6.0
+      - name: Set up Ruby ${{ matrix.ruby }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - name: Run tests
+        run: |
+          [ -x /usr/bin/llvm-config-6.0 ] && export LLVM_CONFIG=llvm-config-6.0
+          bundle exec rake
