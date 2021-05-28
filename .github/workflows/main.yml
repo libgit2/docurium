@@ -14,7 +14,11 @@ jobs:
       matrix:
         ruby: [head, 3.0, 2.7, 2.6]
         llvm: ["6.0", 7, 8, 9, 10]
-        os: [ ubuntu-18.04, macos-latest ]
+        os: [ ubuntu-18.04 ]
+        include:
+          - os: macos-latest
+            ruby: 2.6
+            llvm: ~ # system
 
     name: Ruby ${{ matrix.ruby }} / LLVM ${{ matrix.llvm }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
