@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [head, 2.6, 2.5, 2.4]
+        ruby: [head, 3.0, 2.7, 2.6]
         os: [ ubuntu-18.04, macos-latest ]
 
     name: Ruby ${{ matrix.ruby }} on ${{ matrix.os }}
