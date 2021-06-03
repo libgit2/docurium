@@ -30,7 +30,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          sudo apt install -y libclang-${{ matrix.llvm }}-dev llvm-${{ matrix.llvm }} clang-${{ matrix.llvm }}
+          sudo apt install -y python-pygments libclang-${{ matrix.llvm }}-dev llvm-${{ matrix.llvm }} clang-${{ matrix.llvm }}
       - name: Set up Ruby ${{ matrix.ruby }}
         uses: ruby/setup-ruby@v1
         with:
