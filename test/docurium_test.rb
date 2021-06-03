@@ -28,6 +28,13 @@ class DocuriumTest < Minitest::Test
     FileUtils.remove_entry(@dir)
   end
 
+  def test_can_parse
+    refute_nil @data
+    assert_equal [:files, :functions, :callbacks, :globals, :types, :prefix, :groups], @data.keys
+    files = %w(blob.h callback.h cherrypick.h commit.h common.h errors.h index.h object.h odb.h odb_backend.h oid.h refs.h repository.h revwalk.h signature.h tag.h tree.h types.h)
+    assert_equal files, @data[:files].map {|d| d[:file] }
+  end
+
   def test_can_parse_headers
     keys = @data.keys.map { |k| k.to_s }.sort
     assert_equal ['callbacks', 'files', 'functions', 'globals', 'groups', 'prefix', 'types'], keys
@@ -162,6 +169,40 @@ class DocuriumTest < Minitest::Test
  the <code>payload</code> value passed to this method.</p>
     EOF
     assert_equal expect_comment.split("\n"), func[:comments].split("\n")
+  end
+
+  def test_can_handle_bulleted_lists
+    type = @data[:types].find {|name, data| name == 'git_repository_init_options' }
+    refute_nil type
+    expect_comment = <<-EOF
+<p>This contains extra options for <code>git_repository_init_ext</code> that enable
+ additional initialization features.  The fields are:</p>
+
+<ul>
+<li>flags - Combination of GIT_REPOSITORY_INIT flags above.</li>
+<li>mode  - Set to one of the standard GIT_REPOSITORY_INIT_SHARED_...
+    constants above, or to a custom value that you would like.</li>
+<li>workdir_path - The path to the working dir or NULL for default (i.e.
+    repo_path parent on non-bare repos).  IF THIS IS RELATIVE PATH,
+    IT WILL BE EVALUATED RELATIVE TO THE REPO_PATH.  If this is not
+    the &quot;natural&quot; working directory, a .git gitlink file will be
+    created here linking to the repo_path.</li>
+<li>description - If set, this will be used to initialize the &quot;description&quot;
+    file in the repository, instead of using the template content.</li>
+<li>template_path - When GIT_REPOSITORY_INIT_EXTERNAL_TEMPLATE is set,
+    this contains the path to use for the template directory.  If
+    this is NULL, the config or default directory options will be
+    used instead.</li>
+<li>initial_head - The name of the head to point HEAD at.  If NULL, then
+    this will be treated as &quot;master&quot; and the HEAD ref will be set
+    to &quot;refs/heads/master&quot;.  If this begins with &quot;refs/&quot; it will be
+    used verbatim; otherwise &quot;refs/heads/&quot; will be prefixed.</li>
+<li>origin_url - If this is non-NULL, then after the rest of the
+    repository initialization is completed, an &quot;origin&quot; remote
+    will be added pointing to this URL.</li>
+</ul>
+EOF
+    assert_equal expect_comment, type[1][:comments]
   end
 
   def test_can_get_the_full_description_from_multi_liners
