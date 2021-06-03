@@ -1,7 +1,9 @@
 source "http://rubygems.org"
 
-platforms :rbx do
-  gem 'rubysl', '~> 2.2'
+if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.0.0')
+  platforms :rbx do
+    gem 'rubysl', '~> 2.2'
+  end
 end
 
 gemspec
