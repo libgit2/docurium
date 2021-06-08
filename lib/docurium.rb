@@ -474,22 +474,33 @@ class Docurium
   end
 
   def find_type_usage!(data)
-    # go through all the functions and callbacks and see where other types are used and returned
+    # go through all functions, callbacks, and structs
+    # see which other types are used and returned
     # store them in the types data
     h = {}
     h.merge!(data[:functions])
     h.merge!(data[:callbacks])
-    h.each do |func, fdata|
+
+    structs = data[:types].find_all {|t, tdata| (tdata[:type] == :struct and tdata[:fields] and not tdata[:fields].empty?) }
+    structs = Hash[structs.map {|t, tdata| [t, tdata] }]
+    h.merge!(structs)
+
+    h.each do |use, use_data|
       data[:types].each_with_index do |tdata, i|
-        type = tdata[0]
-        data[:types][i][1][:used] ||= {:returns => [], :needs => []}
-        if fdata[:return][:type].index(/#{type}[ ;\)\*]?/)
-          data[:types][i][1][:used][:returns] << func
+        type, typeData = tdata
+
+        data[:types][i][1][:used] ||= {:returns => [], :needs => [], :fields => []}
+        if use_data[:return] && use_data[:return][:type].index(/#{type}[ ;\)\*]?/)
+          data[:types][i][1][:used][:returns] << use
           data[:types][i][1][:used][:returns].sort!
         end
-        if fdata[:argline].index(/#{type}[ ;\)\*]?/)
-          data[:types][i][1][:used][:needs] << func
+        if use_data[:argline] && use_data[:argline].index(/#{type}[ ;\)\*]?/)
+          data[:types][i][1][:used][:needs] << use
           data[:types][i][1][:used][:needs].sort!
+        end
+        if use_data[:fields] and use_data[:fields].find {|f| f[:type] == type }
+          data[:types][i][1][:used][:fields] << use
+          data[:types][i][1][:used][:fields].sort!
         end
       end
     end

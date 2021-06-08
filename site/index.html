@@ -212,6 +212,15 @@
       <a href="<%= fun.url %>"><%= fun.name %></a>.
       <% } %> <!-- if we have 'needs' -->
 
+      <% if (fields.length > 0) { %>
+      <h3>Field in</h3>
+      <% _.each(_.initial(fields), function(fun) { %>
+        <a href="<%= fun.url %>"><%= fun.name %></a>,
+      <% }) %><!-- loop over each 'field' -->
+      <% var fun = _.last(fields) %>
+      <a href="<%= fun.url %>"><%= fun.name %></a>
+      <% } %><!-- if we have 'fields' -->
+
       <div class="fileLink">
         Defined in:
         <a href="<%= fileLink.url %>"><%= fileLink.name %></a>

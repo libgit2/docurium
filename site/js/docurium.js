@@ -352,14 +352,20 @@ $(function() {
       var tname = tdata[0]
       var data = tdata[1]
 
-      var toPair = function(fun) {
+      var toFuncPair = function(fun) {
         var gname = this.groupOf(fun)
         var url = '#' + functionLink(gname, fun, version)
         return {name: fun, url: url}
       }
 
-      var returns = _.map(data.used.returns, toPair, docurium)
-      var needs = _.map(data.used.needs, toPair, docurium)
+      var toTypePair = function(type) {
+        var url = '#' + typeLink(type, version)
+        return {name: type, url: url}
+      }
+
+      var returns = _.map(data.used.returns, toFuncPair, docurium)
+      var needs = _.map(data.used.needs, toFuncPair, docurium)
+      var fields = _.map(data.used.fields, toTypePair, docurium)
       var fileLink = {name: data.file, url: docurium.github_file(data.file, data.line, data.lineto)}
 
       // Hot link our field types
@@ -367,7 +373,7 @@ $(function() {
         return {type: this.hotLink(field.type), name: field.name, comments: field.comments}
       }, docurium)
 
-      this.set('data', {tname: tname, data: data, returns: returns, needs: needs, fileLink: fileLink})
+      this.set('data', {tname: tname, data: data, returns: returns, needs: needs, fields: fields, fileLink: fileLink})
     }
   })
 
@@ -594,18 +600,17 @@ $(function() {
       types = this.get('data')['types']
       var version = this.get('version')
 
-      for(var i=0; i<types.length; i++) {
-        type = types[i]
-        typeName = type[0]
-        typeData = type[1]
-        re = new RegExp(typeName + '\\s', 'gi');
+      _.each(types, function(type) {
+        var typeName = type[0];
+        var typeData = type[1];
+        var re = new RegExp('\\b' + typeName + '\\b', 'gi');
         var link = $('<a>').attr('href', '#' + typeLink(typeName, version)).append(typeName)[0]
         text = text.replace(re, link.outerHTML + ' ')
-      }
+      });
 
       var callbacks = this.get('data')['callbacks']
       _.each(callbacks, function(cb, typeName) {
-        re = new RegExp(typeName + '$', 'gi');
+        var re = new RegExp(typeName + '$', 'gi');
         var link = $('<a>').attr('href', '#' + functionLink('callback', typeName, version)).append(typeName)[0]
         text = text.replace(re, link.outerHTML + ' ')
       });
